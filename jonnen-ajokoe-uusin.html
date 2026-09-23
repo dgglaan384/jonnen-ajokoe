@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:67-->
-<!--JONNE-NAME:Jonnen ajokoe 67-->
+<!--JONNE-VERSION:68-->
+<!--JONNE-NAME:Jonnen ajokoe 68-->
 <!--JONNE-DATE:2026-09-23-->
-<!--JONNE-NOTES:Monkeyssa pyörivät nyt vain renkaat: iskarit, jarru ja takahaarukka pysyvät paikallaan|Renkaan rajaus kavennettiin mitatun leveyden mukaan-->
+<!--JONNE-NOTES:Jarrulevyt, akselin päät ja ketjuratas eivät enää pyöri renkaan mukana|Renkaan rajaus kapenee navan tuntumassa, jossa kiinteät osat pistävät sivulle-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -4211,6 +4211,9 @@
   // pyöriviksi ryhmiksi. Sama tekniikka kuin pelaajahahmon raajojen irrotuksessa.
   // spec: {axis:'x'|'z', front:[x,y,z], rear:[x,y,z], radius, width} mallin OMISSA koordinaateissa
   // (napojen paikat mitattu malleista erikseen; akseli on se suunta jonka ympäri pyörä pyörii).
+  // Valinnaiset hubRadius/hubWidth kaventavat rajausta aivan navan tuntumassa: siellä ovat
+  // jarrulevy, akselin päät ja ketjuratas, jotka pistävät sivulle leveämmälle kuin itse rengas
+  // eivätkä saa pyöriä sen mukana.
   function splitModelWheels(root, spec){
     var axis = spec.axis === 'x' ? 0 : 2;
     var c1 = axis === 0 ? 1 : 0;   // ympyrätason 1. akseli
@@ -4260,9 +4263,14 @@
           var bucket = 0;
           for(var w=1; w<=2; w++){
             var hub = hubs[w];
-            if(Math.abs(cc[axis] - hub[axis]) > spec.width) continue;
             var d1 = cc[c1] - hub[c1], d2 = cc[c2] - hub[c2];
-            if(d1*d1 + d2*d2 <= r2){ bucket = w; break; }
+            var dr2 = d1*d1 + d2*d2;
+            if(dr2 > r2) continue;
+            // navan tuntumassa kapeampi raja kuin renkaan kehällä
+            var maxW = (spec.hubRadius && dr2 < spec.hubRadius*spec.hubRadius) ? spec.hubWidth : spec.width;
+            if(Math.abs(cc[axis] - hub[axis]) > maxW) continue;
+            bucket = w;
+            break;
           }
           var off = hubs[bucket];
           var arr = buckets[bucket];
@@ -4568,10 +4576,13 @@
       if(node.isMesh){ node.castShadow = true; node.receiveShadow = true; }
     });
     monkeyRoot.visible = false;
-    // Leveys 0,105 on mitattu: itse rengas ja vanne ovat |z| < 0,10, kun taas etuhaarukan putket,
-    // takaiskarit, jarru ja takahaarukka ovat |z| 0,10...0,22. Väljemmällä rajalla ne lähtivät
-    // pyörimään renkaan mukana (pelaaja huomasi tämän heti).
-    monkeyWheels = splitModelWheels(monkeyRoot, {axis:'z', front:[-0.705,-0.368,0], rear:[0.630,-0.368,0], radius:0.26, width:0.105});
+    // Rajat on mitattu mallista navan ALAPUOLELTA, jossa ei ole iskareita eikä haarukoita:
+    // rengas ja vanne mahtuvat |z| < 0,095, kun taas iskarit, haarukan putket ja takahaarukka
+    // ovat 0,10...0,22. Aivan navan tuntumassa (säde < 0,10) raja on vielä kapeampi, koska
+    // jarrulevy, akselin päät ja ketjuratas pistävät siellä sivulle - ne jäivät muuten pyörimään
+    // renkaan mukana.
+    monkeyWheels = splitModelWheels(monkeyRoot, {axis:'z', front:[-0.705,-0.368,0], rear:[0.630,-0.368,0],
+      radius:0.26, width:0.095, hubRadius:0.10, hubWidth:0.055});
     moped.add(monkeyRoot);
   }catch(e){
     console.warn('Monkey-mopon mallin purku epäonnistui:', e);
