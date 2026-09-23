@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:66-->
-<!--JONNE-NAME:Jonnen ajokoe 66-->
+<!--JONNE-VERSION:67-->
+<!--JONNE-NAME:Jonnen ajokoe 67-->
 <!--JONNE-DATE:2026-09-23-->
-<!--JONNE-NOTES:Renkaat pyörivät vihdoin kaikissa kolmessa moposssa|Renkaat irrotetaan mallista omiksi osikseen ja pyörivät oikealla kulmanopeudella vauhdin mukaan|Rekisterikilpi siirtyy kunkin mopomallin omalle perälle eikä enää leiju ilmassa-->
+<!--JONNE-NOTES:Monkeyssa pyörivät nyt vain renkaat: iskarit, jarru ja takahaarukka pysyvät paikallaan|Renkaan rajaus kavennettiin mitatun leveyden mukaan-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -4568,7 +4568,10 @@
       if(node.isMesh){ node.castShadow = true; node.receiveShadow = true; }
     });
     monkeyRoot.visible = false;
-    monkeyWheels = splitModelWheels(monkeyRoot, {axis:'z', front:[-0.705,-0.368,0], rear:[0.630,-0.368,0], radius:0.26, width:0.22});
+    // Leveys 0,105 on mitattu: itse rengas ja vanne ovat |z| < 0,10, kun taas etuhaarukan putket,
+    // takaiskarit, jarru ja takahaarukka ovat |z| 0,10...0,22. Väljemmällä rajalla ne lähtivät
+    // pyörimään renkaan mukana (pelaaja huomasi tämän heti).
+    monkeyWheels = splitModelWheels(monkeyRoot, {axis:'z', front:[-0.705,-0.368,0], rear:[0.630,-0.368,0], radius:0.26, width:0.105});
     moped.add(monkeyRoot);
   }catch(e){
     console.warn('Monkey-mopon mallin purku epäonnistui:', e);
