@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:69-->
-<!--JONNE-NAME:Jonnen ajokoe 69-->
+<!--JONNE-VERSION:70-->
+<!--JONNE-NAME:Jonnen ajokoe 70-->
 <!--JONNE-DATE:2026-09-24-->
-<!--JONNE-NOTES:Valot ja varjot: aurinko seuraa pelaajaa, varjot näkyvät koko kartalla|Uusi metsä: kuusi, mänty, koivu ja pensas, jokainen omana lajinaan|Maasto: notkot, rinteet ja mäkien laet erivärisiä, tekstuurin toisto rikottu|Talot: pystylaudoitus, sokkeli, nurkkalaudat, räystäät ja syvennetyt ikkunat|Tiet: soraiset pientareet, ajourat ja pehmeä reuna nurmeen|Jälkikäsittely: hehku, värisävytys ja vinjetti (pois kevyellä asetuksella)-->
+<!--JONNE-NOTES:Korjattu tien klippaus: risteyslaatat ja päällekkäiset tiet omille korkeuksilleen|Korjattu skootterin renkaan puuttuva tekstuuri|Poistettu näkymätön seinä tieltä: crossirata siirretty pois pääraitin päältä|Uutta: kunto- ja nälkämittari - keulakaato vie kuntoa, nälkä valuu ajan myötä|Ruoka täyttää vatsan, yön yli nukkuminen palauttaa kunnon|Paljon lisää maisemaa: metsiköitä, peltolohkoja, latoja, aitoja, kantoja ja halkopinoja|Näkyvyys kauemmas: sumu alkaa vasta 150 yksikön päästä-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -126,6 +126,22 @@
   .moneyChip .lbl{display:block;font:700 9px/1 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.55;}
   .moneyChip .val{display:block;font:600 22px/1.05 'Teko',sans-serif;margin-top:2px;}
   .moneyChip .val small{font:600 12px 'Teko',sans-serif;opacity:.7;margin-left:1px;}
+  .vitals{
+    position:absolute;top:calc(176px + env(safe-area-inset-top,0px));right:16px;
+    background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:10px;
+    padding:8px 11px;display:flex;flex-direction:column;gap:7px;width:152px;
+  }
+  .vitals[hidden]{display:none;}
+  .vitalRow{display:flex;align-items:center;gap:8px;}
+  .vIcon{font-size:13px;line-height:1;width:16px;text-align:center;}
+  .vTrack{flex:1;height:9px;border-radius:5px;background:rgba(10,12,10,0.55);
+          border:1px solid rgba(251,246,233,0.14);overflow:hidden;display:block;}
+  .vFill{display:block;height:100%;width:100%;border-radius:4px;transition:width .25s linear, background-color .4s linear;}
+  .vFill.health{background:linear-gradient(90deg,#c8402f,#e8654c);}
+  .vFill.hunger{background:linear-gradient(90deg,#c98a1e,#e8c04c);}
+  .vFill.low{background:linear-gradient(90deg,#8d1d12,#c02a17);}
+  .vitals.warn{animation:vitalPulse 1.1s ease-in-out infinite;}
+  @keyframes vitalPulse{0%,100%{border-color:var(--panel-line);}50%{border-color:#e05b3a;}}
   .tunePanel{
     position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:auto;
     background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:12px;
@@ -367,6 +383,10 @@
     <button class="mute" id="muteBtn" type="button">🔊 Ääni</button>
     <button class="missionToggle" id="missionBtn" type="button">📱 Puhelin</button>
     <div class="moneyChip" id="moneyChip"><span class="lbl">Raha</span><span class="val" id="moneyChipVal">40<small>€</small></span></div>
+    <div class="vitals" id="vitals">
+      <div class="vitalRow"><span class="vIcon">❤️</span><span class="vTrack"><span class="vFill health" id="healthFill"></span></span></div>
+      <div class="vitalRow"><span class="vIcon">🍔</span><span class="vTrack"><span class="vFill hunger" id="hungerFill"></span></span></div>
+    </div>
     <div class="missionPanel phone" id="missionPanel" hidden>
       <div class="phoneNotch"></div>
       <div class="phoneScreen">
@@ -572,12 +592,12 @@
   var app = document.getElementById('app');
   var scene = new THREE.Scene();
   var horizonColor = 0xf5e6b8;
-  scene.fog = new THREE.Fog(horizonColor, 70, 420); // sumu alkaa kauempaa ja loppuu kauemmas -> maasto/puut/talot pysyvät terävinä ja näkyvissä pidempään ennen kuin sumu peittää ne
+  scene.fog = new THREE.Fog(horizonColor, 120, 560); // sumu alkaa kauempaa ja loppuu kauemmas -> maasto/puut/talot pysyvät terävinä ja näkyvissä pidempään ennen kuin sumu peittää ne
   // Grafiikka-asetus (ks. applyQuality alempana). Kevyt taso lyhentää näkyvyyttä, jolloin sumu piilottaa
   // kaukaisimman maaston eikä sitä tarvitse piirtää - tehokkain yksittäinen keino heikolla koneella
   // pikselitarkkuuden laskun jälkeen.
   var qualityLevel = 'med';   // 'low' | 'med' | 'high'
-  var fogFarBase = 420;
+  var fogFarBase = 560;
 
   var camera = new THREE.PerspectiveCamera(55, app.clientWidth/app.clientHeight, 0.1, 1000); // takaisin 3. persoonan FOV:iin (oli 72 ensimmäistä persoonaa varten)
   var renderer = new THREE.WebGLRenderer({antialias:true});
@@ -1101,10 +1121,13 @@
   // omille kohdilleen - aiemmin tekstuuri toistui 3 kertaa poikkisuunnassa, jolloin urat olivat vain
   // satunnaisia raitoja eikä pientareita voinut olla lainkaan. Tienpätkien UV:t lasketaan uusiksi
   // setRoadUV():ssä, joten sama tekstuuri istuu oikein jokaisen levyiselle tielle.
-  var roadTexCache = null;
+  var roadTexCache = {};
   var roadTileLength = 8; // montako metriä yksi tekstuuriruutu kattaa tien suunnassa
-  function makeDirtTexture(){
-    if(roadTexCache) return roadTexCache;
+  // withShoulders=false jättää pientareet pois. Risteyslaatat ja muiden teiden päälle jäävät palat
+  // käyttävät sitä: muuten niiden oma soraraita piirtyisi keskelle risteävää ajorataa.
+  function makeDirtTexture(withShoulders){
+    var key = withShoulders === false ? 'plain' : 'edged';
+    if(roadTexCache[key]) return roadTexCache[key];
     var W = 256, H = 512;
     var c = document.createElement('canvas');
     c.width = W; c.height = H;
@@ -1117,6 +1140,7 @@
     }
     // pientareet: karkeampaa ja hieman harmaampaa soraa. Raja ajorataan on liukuva, koska terävä
     // värikaista näytti maalatulta viivalta - oikeasti sora vaihettuu vähitellen tiivistyneeksi tieksi.
+    if(withShoulders !== false){
     var gL = ctx.createLinearGradient(0, 0, W*0.16, 0);
     gL.addColorStop(0, 'rgba(146,142,126,0.92)');
     gL.addColorStop(0.55, 'rgba(158,150,128,0.55)');
@@ -1136,6 +1160,7 @@
     eR.addColorStop(0, 'rgba(88,96,64,0.70)');
     eR.addColorStop(1, 'rgba(88,96,64,0)');
     ctx.fillStyle = eR; ctx.fillRect(W*0.95, 0, W*0.05, H);
+    }
     // keskiharja: vaaleampi, kuivempi pölykaista
     band(0.455, 0.545, 'rgba(226,200,166,0.30)');
     // ajourat: kaksi tummaa, tiivistynyttä kaistaa
@@ -1150,9 +1175,11 @@
     for(var i=0; i<9000; i++){
       var gx = Math.random()*W, gy = Math.random()*H;
       var edge = (gx < W*0.10 || gx > W*0.90);
-      var sz = edge ? 1.4 + Math.random()*2.2 : 1 + Math.random()*1.4;
+      var sz = edge ? 1.2 + Math.random()*1.6 : 1 + Math.random()*1.4;
       var r = Math.random();
-      if(edge) ctx.fillStyle = r<0.4 ? 'rgba(70,70,66,0.45)' : (r<0.75 ? 'rgba(206,202,188,0.45)' : 'rgba(140,132,110,0.40)');
+      // pientareen rae pidetään matalakontrastisena: liian tumma/vaalea pistekohina näytti
+      // kaukaa lumisateelta eikä soralta
+      if(edge) ctx.fillStyle = r<0.4 ? 'rgba(96,94,86,0.26)' : (r<0.75 ? 'rgba(198,193,176,0.24)' : 'rgba(146,138,116,0.22)');
       else ctx.fillStyle = r<0.45 ? 'rgba(134,102,74,0.45)' : (r<0.8 ? 'rgba(196,164,126,0.40)' : 'rgba(92,92,86,0.30)');
       ctx.fillRect(gx, gy, sz, sz);
     }
@@ -1166,7 +1193,7 @@
       ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(kx + (Math.random()-0.5)*3, ky+klen); ctx.stroke();
     }
     // pientareen ruohotupsut: pieniä vihreitä töyhtöjä sulattamassa tien reunan nurmeen
-    for(var t=0; t<220; t++){
+    for(var t=0; withShoulders !== false && t<220; t++){
       var side = Math.random()<0.5;
       var tx = side ? Math.random()*W*0.075 : W - Math.random()*W*0.075;
       var ty = Math.random()*H;
@@ -1179,8 +1206,19 @@
     tex.repeat.set(1, 1);
     tex.anisotropy = maxAniso;
     if(tex.encoding !== undefined) tex.encoding = THREE.sRGBEncoding;
-    roadTexCache = tex;
+    roadTexCache[key] = tex;
     return tex;
+  }
+  // Tiet ovat kaikki litteitä tasoja lähes samalla korkeudella, ja ne menevät risteyksissä
+  // päällekkäin. Jos kaksi tasoa on TÄSMÄLLEEN samalla korkeudella, näytönohjain ei osaa päättää
+  // kumpi on päällä ja tulos välkkyy/repeilee (z-fighting) - ja pientareiden myötä päällimmäisen
+  // soraraita piirtyi keskelle risteävää ajorataa. Siksi jokaisella tietyypillä on oma korkeutensa:
+  // pääraitti päällimmäisenä, sitten kehätie, sitten pistotiet ja alimpana risteyslaatat.
+  function roadLayerY(kind){
+    if(kind === 'main') return roadSurfaceY + 0.030;
+    if(kind === 'loop') return roadSurfaceY + 0.022;
+    if(kind === 'spur') return roadSurfaceY + 0.012;
+    return roadSurfaceY;  // 'junction'
   }
   // Kirjoittaa tienpätkän UV:t uusiksi: u aina tien poikki (0..1) ja v tien suunnassa metreinä
   // jaettuna ruutupituudella. acrossIsU kertoo, onko geometrian u-akseli jo poikkisuuntainen.
@@ -1223,10 +1261,10 @@
   }
   var road = new THREE.Mesh(
     setRoadUV(new THREE.PlaneGeometry(12, 3200), true, 3200),
-    new THREE.MeshStandardMaterial({map:makeDirtTexture(), roughness:0.95, metalness:0})
+    new THREE.MeshStandardMaterial({map:makeDirtTexture(true), roughness:0.95, metalness:0})
   );
   road.rotation.x = -Math.PI/2;
-  road.position.y = roadSurfaceY;
+  road.position.y = roadLayerY('main');
   road.receiveShadow = true;
   scene.add(road);
   roadPaths.push([{x:0, z:-1600}, {x:0, z:1600}]); // pääraitti
@@ -1237,7 +1275,7 @@
   for(var d=-1580; d<1580; d+=8){
     var dash = new THREE.Mesh(new THREE.PlaneGeometry(0.42,3.2), dashMat);
     dash.rotation.x = -Math.PI/2;
-    dash.position.set(0,roadSurfaceY+0.015,d);
+    dash.position.set(0,roadLayerY('main')+0.012,d);
     scene.add(dash);
   }
 
@@ -1246,7 +1284,9 @@
   var loopHalfWidth = 215; // kehätie siirtyi ulommas kun kohteet levisivät
   var loopZMax = 1580;
   var loopZMin = -1580;
-  var loopRoadMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(), roughness:0.95, metalness:0});
+  var loopRoadMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(true), roughness:0.95, metalness:0});
+  // risteyslaattojen ja päällekkäisten palojen materiaali: sama sora mutta ilman pientareita
+  var roadPlainMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(false), roughness:0.95, metalness:0});
   [-loopHalfWidth, loopHalfWidth].forEach(function(lx){
     roadPaths.push([{x:lx, z:loopZMin}, {x:lx, z:loopZMax}]);
     addRoadCorridor(lx, loopZMin, lx, loopZMax, 5);
@@ -1258,14 +1298,14 @@
   [-loopHalfWidth, loopHalfWidth].forEach(function(lx){
     var sideRoad = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(10, 3200), true, 3200), loopRoadMat);
     sideRoad.rotation.x = -Math.PI/2;
-    sideRoad.position.set(lx, roadSurfaceY, 0);
+    sideRoad.position.set(lx, roadLayerY('loop'), 0);
     sideRoad.receiveShadow = true;
     scene.add(sideRoad);
   });
   [loopZMax, loopZMin].forEach(function(lz){
     var crossRoad = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(loopHalfWidth*2+10, 10), false, loopHalfWidth*2+10), loopRoadMat);
     crossRoad.rotation.x = -Math.PI/2;
-    crossRoad.position.set(0, roadSurfaceY, lz);
+    crossRoad.position.set(0, roadLayerY('loop') - 0.004, lz);
     crossRoad.receiveShadow = true;
     scene.add(crossRoad);
   });
@@ -1358,18 +1398,26 @@
       ]);
     }
     if(kind === 'koivu'){
-      // koivu: vaalea runko ja pyöreä, vaaleanvihreä latva
+      // Koivu: vaalea runko ja useasta kimpusta koottu latva. Aiemmin latva oli YKSI pallo
+      // vaalean rungon nokassa, jolloin puu näytti kaukaa tikkarilta tai kivenmöhkäleeltä kepin
+      // päässä. Viisi eri kokoista ja eri suuntaan työntyvää kimppua antaa latvalle muodon.
       return mergeGeoms([
-        trunkAt(0.07, 0.10, 1.75, 0xd6cfbe),
-        blobAt(1.00, 2.45, 0x6e9b45, 0.95),
-        blobAt(0.62, 3.05, 0x77a54c, 0.8)
+        trunkAt(0.07, 0.115, 2.05, 0xd6cfbe),
+        blobAt(0.80, 2.25, 0x6e9b45, 1.05),
+        blobAt(0.66, 2.92, 0x77a54c, 0.95),
+        blobAt(0.54, 2.52, 0x659240, 0.95).translate(0.66, 0, 0.24),
+        blobAt(0.50, 2.34, 0x74a049, 0.95).translate(-0.58, 0, -0.38),
+        blobAt(0.44, 2.72, 0x6b9a44, 0.9).translate(0.18, 0, -0.62),
+        blobAt(0.38, 3.32, 0x82ad55, 0.85)
       ]);
     }
     // pensas: pelkkä matala lehvästö ilman runkoa
     return mergeGeoms([
       blobAt(0.62, 0.48, 0x406b33, 0.8),
       blobAt(0.46, 0.80, 0x497539, 0.8),
-      blobAt(0.38, 0.42, 0x3a6330, 0.9).translate(0.45, 0, 0.2)
+      blobAt(0.38, 0.42, 0x3a6330, 0.9).translate(0.45, 0, 0.2),
+      blobAt(0.34, 0.38, 0x44703a, 0.9).translate(-0.42, 0, -0.26),
+      blobAt(0.30, 0.62, 0x4d7b3c, 0.85).translate(0.16, 0, -0.40)
     ]);
   }
   // Puut sijoitetaan tien varteen kulkusuuntaan (negatiivinen z) koko pidennetyn matkan varrelle -
@@ -1397,6 +1445,40 @@
       x: side2*(10 + Math.random()*48),
       z: 30 + Math.random()*1520,
       s: 0.8 + Math.random()*0.9,
+      rot: Math.random()*Math.PI*2,
+      kind: treeKinds[Math.floor(Math.random()*treeKinds.length)]
+    });
+  }
+  // Leveät metsäalueet: aiemmin puita oli vain tien vieressä (|x| 10-58), joten kaikki sen
+  // ulkopuolinen - eli valtaosa kartasta - oli pelkkää tyhjää nurmea horisonttiin asti. Nämä
+  // täyttävät koko kartan leveyden. Instansoinnin ansiosta 760 lisäpuuta ei maksa yhtään uutta
+  // piirtokutsua, koska ne menevät samoihin neljään lajikohtaiseen InstancedMeshiin.
+  // Puut kasvavat ryppäinä (metsiköinä), ei tasaisena mattona - tasainen hajonta näyttää
+  // keinotekoiselta puistolta, rypäs metsältä.
+  for(var gi2=0; gi2<115; gi2++){
+    var gcx = (Math.random()<0.5?-1:1) * (55 + Math.random()*250);
+    var gcz = (Math.random()*2-1) * 1560;
+    var gRad = 16 + Math.random()*46;
+    var gCount = 6 + Math.floor(Math.random()*13);
+    var gKind = treeKinds[Math.floor(Math.random()*treeKinds.length)];
+    for(var gj=0; gj<gCount; gj++){
+      var ga = Math.random()*Math.PI*2, gr = Math.sqrt(Math.random())*gRad;
+      treeSpots.push({
+        x: gcx + Math.cos(ga)*gr,
+        z: gcz + Math.sin(ga)*gr,
+        s: 0.75 + Math.random()*1.05,
+        rot: Math.random()*Math.PI*2,
+        // rypäässä on pääasiassa yhtä lajia + hieman sekapuustoa, kuten oikeassa metsässä
+        kind: Math.random() < 0.78 ? gKind : treeKinds[Math.floor(Math.random()*treeKinds.length)]
+      });
+    }
+  }
+  // yksittäisiä puita rypästen väliin, ettei väliin jää täysin paljasta
+  for(var gi3=0; gi3<320; gi3++){
+    treeSpots.push({
+      x: (Math.random()<0.5?-1:1) * (45 + Math.random()*265),
+      z: (Math.random()*2-1) * 1570,
+      s: 0.7 + Math.random()*1.0,
       rot: Math.random()*Math.PI*2,
       kind: treeKinds[Math.floor(Math.random()*treeKinds.length)]
     });
@@ -1448,7 +1530,9 @@
   }
   function registerCollider(group, lx, lz, r){
     var p = worldOffset(group, lx, lz);
-    colliders.push({x:p.x, z:p.z, r:r});
+    // obj-viite talteen: sen avulla voi jälkikäteen tarkistaa mihin esineeseen törmäysympyrä
+    // kuuluu (mm. ajoradalle jääneiden näkymättömien esteiden etsiminen)
+    colliders.push({x:p.x, z:p.z, r:r, obj:group});
   }
   function registerColliders(group, list){
     list.forEach(function(c){ registerCollider(group, c.x, c.z, c.r); });
@@ -2245,7 +2329,11 @@
     if(collOut) collOut.push({x:0, z:-22, r:0.15});
     return g;
   }
-  var crossiPos = worldSpread(-10, -520);
+  // Crossirata siirrettiin selvästi lännemmäs (-10 -> -48). Aiemmin 70 x 55 yksikön rata-alue
+  // ylsi pääraitin (x=0) päälle, jolloin radan itäisin hyppyri jäi keskelle ajorataa. Hyppyri on
+  // matala hiekkakumpare hiekkatien värisenä, joten pelaaja ei nähnyt sitä ajaessaan - sen 1,9
+  // yksikön törmäysympyrä tuntui täysin näkymättömältä seinältä keskellä tietä.
+  var crossiPos = worldSpread(-48, -520);
   var crossirataColl = [];
   var crossirata = makeCrossirata(crossirataColl);
   crossirata.position.copy(crossiPos);
@@ -2329,12 +2417,15 @@
   // ---- lähialueen tieverkko: risteys kodin luona haarautuu kauppaan/romuttamolle ja
   // huoltoasemalle/Mac Donaldsille, jottei koko kartta ole enää yksi iso suora ----
   function makeStraightRoad(cx, cz, lenX, lenZ){
+    // lähes neliönmuotoinen pala on risteyslaatta: se menee muiden teiden päälle, joten se saa
+    // pientareettoman materiaalin ja jää korkeudessa kaikkien alle
+    var isJunction = Math.abs(lenX - lenZ) <= 1.5;
     var m = new THREE.Mesh(
       (lenZ >= lenX) ? setRoadUV(new THREE.PlaneGeometry(lenX, lenZ), true, lenZ)
                      : setRoadUV(new THREE.PlaneGeometry(lenX, lenZ), false, lenX),
-      loopRoadMat);
+      isJunction ? roadPlainMat : loopRoadMat);
     m.rotation.x = -Math.PI/2;
-    m.position.set(cx, roadSurfaceY, cz);
+    m.position.set(cx, roadLayerY(isJunction ? 'junction' : 'spur'), cz);
     m.receiveShadow = true;
     scene.add(m);
     // keskilinja minikartalle. Lähes neliönmuotoiset palat ovat liittymälaattoja eivätkä omia teitä,
@@ -2353,11 +2444,13 @@
   // vinoon aseteltava tiepätkä: samanlainen tasomainen tienpätkä kuin makeStraightRoad, mutta koko
   // pätkä on kääritty omaan ryhmäänsä joka käännetään Y-akselin ympäri, joten siitä voi rakentaa
   // mihin tahansa kulmaan osoittavia pätkiä (ei vain akselinsuuntaisia) - näistä koostetaan mutkat.
-  function makeAngledRoad(cx, cz, length, width, angleRad){
+  function makeAngledRoad(cx, cz, length, width, angleRad, yBump){
     var g = new THREE.Group();
     var m = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(length, width), false, length), loopRoadMat);
     m.rotation.x = -Math.PI/2;
-    m.position.y = roadSurfaceY;
+    // mutkan peräkkäiset palat menevät kaarteen sisäreunassa hieman päällekkäin; kasvava yBump
+    // pitää järjestyksen vakiona, jolloin liitoskohtaan ei tule välkkyvää saumaa
+    m.position.y = roadLayerY('spur') + (yBump || 0);
     m.receiveShadow = true;
     g.add(m);
     g.position.set(cx, 0, cz);
@@ -2390,7 +2483,7 @@
       var sdx = b.x-a.x, sdz = b.z-a.z;
       var slen = Math.sqrt(sdx*sdx+sdz*sdz);
       var angle = Math.atan2(-sdz, sdx);
-      makeAngledRoad((a.x+b.x)/2, (a.z+b.z)/2, slen+0.5, width, angle);
+      makeAngledRoad((a.x+b.x)/2, (a.z+b.z)/2, slen+0.5, width, angle, i2*0.0006);
       addRoadCorridor(a.x, a.z, b.x, b.z, width/2);
     }
     roadPaths.push(pts); // sama mutkitteleva keskilinja minikartalle
@@ -3376,6 +3469,11 @@
     dayTime = 0.30;
     foodBoostLeft = 0;
     if(fuel < 25) fuel = 25;
+    // yön yli nukkuminen palauttaa kunnon, mutta aamulla on nälkä
+    health = 100;
+    hunger = Math.max(25, hunger - 18);
+    healthWarned = false; hungerWarned = false;
+    updateVitalsDisplay();
     // nukkuminen hyppää suoraan aamuun, joten mahdollinen pidätys laukeaa heti kun astut ulos
     if(arrestPending){
       arrestPending = false;
@@ -4880,17 +4978,22 @@
       var mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       var replacements = [];
 
+      // Mallin MUUT kärkitiedot (uv, väri, skinnaus...) on kopioitava mukaan, ei pelkkää sijaintia:
+      // ilman uv-koordinaatteja tekstuuria käyttävä materiaali näytteistää aina kohdasta (0,0), eli
+      // renkaasta tuli yksivärinen läiskä. Siksi ämpäreihin kerätään LÄHTEEN KÄRKI-INDEKSIT ja uudet
+      // geometriat kootaan kopioimalla jokainen attribuutti indeksi kerrallaan.
+      var attrNames = Object.keys(mesh.geometry.attributes);
       for(var gi=0; gi<groups.length; gi++){
         var grp = groups[gi];
-        var buckets = [[], [], []];   // 0 runko, 1 etupyörä, 2 takapyörä
-        var vx = [0,0,0], vy = [0,0,0], vz = [0,0,0];
+        var buckets = [[], [], []];   // 0 runko, 1 etupyörä, 2 takapyörä (kärki-indeksejä)
+        var triIdx = [0,0,0];
         var gEnd = Math.min(grp.start + grp.count, totalIdx);
         for(var t=grp.start; t+2 < gEnd; t+=3){
           var cx = 0, cy = 0, cz = 0;
           for(var k=0; k<3; k++){
             var vi = index ? index[t+k] : (t+k);
+            triIdx[k] = vi;
             tmp.set(posAttr.getX(vi), posAttr.getY(vi), posAttr.getZ(vi)).applyMatrix4(local);
-            vx[k] = tmp.x; vy[k] = tmp.y; vz[k] = tmp.z;
             cx += tmp.x; cy += tmp.y; cz += tmp.z;
           }
           cx /= 3; cy /= 3; cz /= 3;
@@ -4907,18 +5010,40 @@
             bucket = w;
             break;
           }
-          var off = hubs[bucket];
-          var arr = buckets[bucket];
-          for(var k2=0; k2<3; k2++){
-            arr.push(vx[k2] - (off ? off[0] : 0), vy[k2] - (off ? off[1] : 0), vz[k2] - (off ? off[2] : 0));
-          }
+          buckets[bucket].push(triIdx[0], triIdx[1], triIdx[2]);
         }
         var mat = mats[grp.materialIndex] || mats[0];
+        var normalMat = new THREE.Matrix3().getNormalMatrix(local);
         for(var bi=0; bi<3; bi++){
-          if(!buckets[bi].length) continue;
+          var idxList = buckets[bi];
+          if(!idxList.length) continue;
+          var off = hubs[bi];
           var bgeom = new THREE.BufferGeometry();
-          bgeom.setAttribute('position', new THREE.Float32BufferAttribute(buckets[bi], 3));
-          bgeom.computeVertexNormals();
+          for(var an=0; an<attrNames.length; an++){
+            var name = attrNames[an];
+            var src = mesh.geometry.attributes[name];
+            var isz = src.itemSize;
+            var dst = new Float32Array(idxList.length * isz);
+            if(name === 'position'){
+              for(var vi2=0; vi2<idxList.length; vi2++){
+                tmp.set(src.getX(idxList[vi2]), src.getY(idxList[vi2]), src.getZ(idxList[vi2])).applyMatrix4(local);
+                dst[vi2*3]   = tmp.x - (off ? off[0] : 0);
+                dst[vi2*3+1] = tmp.y - (off ? off[1] : 0);
+                dst[vi2*3+2] = tmp.z - (off ? off[2] : 0);
+              }
+            } else if(name === 'normal'){
+              for(var vi3=0; vi3<idxList.length; vi3++){
+                tmp.set(src.getX(idxList[vi3]), src.getY(idxList[vi3]), src.getZ(idxList[vi3])).applyMatrix3(normalMat).normalize();
+                dst[vi3*3] = tmp.x; dst[vi3*3+1] = tmp.y; dst[vi3*3+2] = tmp.z;
+              }
+            } else {
+              for(var vi4=0; vi4<idxList.length; vi4++){
+                for(var ci=0; ci<isz; ci++) dst[vi4*isz+ci] = src.array[idxList[vi4]*isz + ci];
+              }
+            }
+            bgeom.setAttribute(name, new THREE.BufferAttribute(dst, isz));
+          }
+          if(!bgeom.attributes.normal) bgeom.computeVertexNormals();
           var bmesh = new THREE.Mesh(bgeom, mat);
           bmesh.castShadow = true;
           bmesh.receiveShadow = true;
@@ -6975,7 +7100,7 @@
     kotiSisaLight.intensity    = (indoorPlace === 'koti')   ? 0.95 : 0;
     kotiSisaLight2.intensity   = (indoorPlace === 'koti')   ? 0.65 : 0;
     scene.fog.far = fogFarBase - rainBlend*(fogFarBase*0.62);
-    scene.fog.near = Math.min(70, fogFarBase*0.42) - rainBlend*35;
+    scene.fog.near = Math.min(150, fogFarBase*0.42) - rainBlend*60;
 
     ensureRainNoise();
     if(rainNoiseGain) rainNoiseGain.gain.setTargetAtTime(muted?0:rainBlend*0.14, audioCtx.currentTime, 0.6);
@@ -7643,14 +7768,29 @@
   }
   // flattenFactor() on nolla teiden ja rakennuspihojen päällä ja ykkönen kaukana niistä, joten
   // samalla funktiolla saa ilmaiseksi "älä tiputa kiveä tielle tai talon pihaan" -tarkistuksen.
+  // cfg.clump kertoo kuinka monta esinettä yhteen ryppääseen tulee ja cfg.clumpR rypäs säteen.
+  // Tasaisesti siroteltu rekvisiitta näyttää koneelliselta ja - mikä pahempaa - harvalta: sama
+  // määrä kiviä ryppäinä lukee maisemana (kivikko, pusikko, kantokenttä) kun taas tasaisena mattona
+  // se lukee tyhjänä peltona jossa on satunnaisia esineitä.
   function scatterInstances(geom, mat, count, cfg){
     var mesh = new THREE.InstancedMesh(geom, mat, count);
     var dummy = new THREE.Object3D();
-    var placed = 0, tries = 0;
+    var clump = cfg.clump || 1, clumpR = cfg.clumpR || 0;
+    var placed = 0, tries = 0, inClump = 0, ccx = 0, ccz = 0;
     while(placed < count && tries < count*60){
       tries++;
-      var x = cfg.minX + propRandom()*(cfg.maxX - cfg.minX);
-      var z = cfg.minZ + propRandom()*(cfg.maxZ - cfg.minZ);
+      var x, z;
+      if(inClump > 0){
+        var ca = propRandom()*Math.PI*2, cr = Math.sqrt(propRandom())*clumpR;
+        x = ccx + Math.cos(ca)*cr;
+        z = ccz + Math.sin(ca)*cr;
+        inClump--;
+      } else {
+        x = cfg.minX + propRandom()*(cfg.maxX - cfg.minX);
+        z = cfg.minZ + propRandom()*(cfg.maxZ - cfg.minZ);
+        ccx = x; ccz = z;
+        inClump = clump - 1;
+      }
       if(flattenFactor(x, z) < cfg.minFlat) continue;
       dummy.position.set(x, terrainHeight(x, z) + (cfg.yOff || 0), z);
       dummy.rotation.set(0, propRandom()*Math.PI*2, 0);
@@ -7672,19 +7812,218 @@
   var optionalProps = [];
   var rockGeom = new THREE.IcosahedronGeometry(0.62, 0);
   rockGeom.scale(1, 0.62, 1);
-  optionalProps.push(scatterInstances(rockGeom, new THREE.MeshStandardMaterial({color:0x8d8b82, roughness:0.95, flatShading:true}), 170, {
-    minX:-300, maxX:300, minZ:-680, maxZ:450, minFlat:0.5, minScale:0.5, maxScale:1.9, yOff:-0.12
+  // Rekvisiitan alue kattoi aiemmin vain x ±300 ja z -680..450, vaikka kartta ulottuu z-suunnassa
+  // ±1600:aan. Sen ulkopuolella - eli reilusti yli puolella kartasta - ei ollut yhtään kiveä tai
+  // pensasta. Nyt alue on koko kartta ja määrät sen mukaiset.
+  optionalProps.push(scatterInstances(rockGeom, new THREE.MeshStandardMaterial({color:0x8d8b82, roughness:0.95, flatShading:true}), 900, {
+    minX:-330, maxX:330, minZ:-1570, maxZ:1520, minFlat:0.5, minScale:0.5, maxScale:1.9, yOff:-0.12,
+    clump:7, clumpR:9
   }));
   var bushGeom = new THREE.SphereGeometry(0.75, 6, 5);
   bushGeom.scale(1, 0.72, 1);
-  optionalProps.push(scatterInstances(bushGeom, new THREE.MeshStandardMaterial({color:0x4e7a3a, roughness:0.95, flatShading:true}), 320, {
-    minX:-300, maxX:300, minZ:-680, maxZ:450, minFlat:0.35, minScale:0.6, maxScale:1.6, yOff:0.12
+  optionalProps.push(scatterInstances(bushGeom, new THREE.MeshStandardMaterial({color:0x4e7a3a, roughness:0.95, flatShading:true}), 1700, {
+    minX:-330, maxX:330, minZ:-1570, maxZ:1520, minFlat:0.35, minScale:0.6, maxScale:1.6, yOff:0.12,
+    clump:9, clumpR:11
   }));
   var baleGeom = new THREE.CylinderGeometry(0.85, 0.85, 1.25, 12);
   baleGeom.rotateZ(Math.PI/2); // paali kyljellään pellolla
-  optionalProps.push(scatterInstances(baleGeom, new THREE.MeshStandardMaterial({color:0xd9c98a, roughness:0.95}), 62, {
-    minX:-280, maxX:280, minZ:-660, maxZ:430, minFlat:0.8, minScale:0.85, maxScale:1.15, yOff:0.8
+  optionalProps.push(scatterInstances(baleGeom, new THREE.MeshStandardMaterial({color:0xd9c98a, roughness:0.95}), 320, {
+    minX:-320, maxX:320, minZ:-1550, maxZ:1500, minFlat:0.8, minScale:0.85, maxScale:1.15, yOff:0.8,
+    clump:5, clumpR:13
   }));
+  // ---- lisää maisemaesineitä: kantoja, halkopinoja, heinäseipäitä ja isoja lohkareita ----
+  // Kaikki instansoituja, eli jokainen laji maksaa täsmälleen yhden piirtokutsun riippumatta siitä
+  // onko niitä kymmenen vai kolmesataa.
+  var stumpGeom = new THREE.CylinderGeometry(0.34, 0.44, 0.52, 7);
+  optionalProps.push(scatterInstances(stumpGeom, new THREE.MeshStandardMaterial({color:0x5b4430, roughness:1, flatShading:true}), 430, {
+    minX:-330, maxX:330, minZ:-1560, maxZ:1510, minFlat:0.6, minScale:0.7, maxScale:1.5, yOff:0.2,
+    clump:8, clumpR:10
+  }));
+  var logPileGeom = mergeGeoms([
+    (function(){ var g = new THREE.CylinderGeometry(0.19,0.19,2.2,7); g.rotateX(Math.PI/2); g.translate(0,0.19,0); return paintGeom(g, 0x6d5137, 0.16); })(),
+    (function(){ var g = new THREE.CylinderGeometry(0.19,0.19,2.2,7); g.rotateX(Math.PI/2); g.translate(0.40,0.19,0); return paintGeom(g, 0x7a5c3e, 0.16); })(),
+    (function(){ var g = new THREE.CylinderGeometry(0.19,0.19,2.2,7); g.rotateX(Math.PI/2); g.translate(-0.40,0.19,0); return paintGeom(g, 0x63492f, 0.16); })(),
+    (function(){ var g = new THREE.CylinderGeometry(0.19,0.19,2.2,7); g.rotateX(Math.PI/2); g.translate(0.20,0.56,0); return paintGeom(g, 0xa2814f, 0.18); })(),
+    (function(){ var g = new THREE.CylinderGeometry(0.19,0.19,2.2,7); g.rotateX(Math.PI/2); g.translate(-0.20,0.56,0); return paintGeom(g, 0x9a7846, 0.18); })()
+  ]);
+  optionalProps.push(scatterInstances(logPileGeom, new THREE.MeshStandardMaterial({vertexColors:true, roughness:1, metalness:0, flatShading:true}), 150, {
+    minX:-320, maxX:320, minZ:-1540, maxZ:1490, minFlat:0.85, minScale:0.85, maxScale:1.3, yOff:0,
+    clump:3, clumpR:4
+  }));
+  var hayPoleGeom = mergeGeoms([
+    (function(){ var g = new THREE.CylinderGeometry(0.05,0.05,2.6,5); g.translate(0,1.3,0); return paintGeom(g, 0x7a6038, 0.12); })(),
+    (function(){ var g = new THREE.ConeGeometry(0.62,1.9,8); g.translate(0,1.05,0); return paintGeom(g, 0xc9b070, 0.20); })()
+  ]);
+  optionalProps.push(scatterInstances(hayPoleGeom, new THREE.MeshStandardMaterial({vertexColors:true, roughness:1, metalness:0, flatShading:true}), 240, {
+    minX:-310, maxX:310, minZ:-1530, maxZ:1480, minFlat:0.9, minScale:0.8, maxScale:1.25, yOff:0,
+    clump:6, clumpR:8
+  }));
+  var bigRockGeom = new THREE.IcosahedronGeometry(1.5, 0);
+  bigRockGeom.scale(1, 0.72, 0.88);
+  optionalProps.push(scatterInstances(bigRockGeom, new THREE.MeshStandardMaterial({color:0x7e7c74, roughness:0.95, flatShading:true}), 210, {
+    minX:-330, maxX:330, minZ:-1560, maxZ:1510, minFlat:0.75, minScale:0.7, maxScale:1.7, yOff:-0.35,
+    clump:4, clumpR:7
+  }));
+
+  // ---- peltolohkot, ladot ja aidat ----
+  // Kartalla oli valtavat alueet pelkkää samanväristä nurmea. Peltolohkot rikkovat sen: kynnettyjä
+  // sarkoja, viljaa ja sänkipeltoa omine väreineen. Jokainen lohko muotoillaan maaston mukaiseksi
+  // (litteä laatta jäisi mäen kylkeen roikkumaan) ja KAIKKI lohkot yhdistetään yhdeksi geometriaksi,
+  // joten koko peltomaisema maksaa yhden piirtokutsun.
+  function fieldFree(cx, cz, w, d){
+    // lohko hylätään jos mikään sen kulmista tai keskipisteistä on liian lähellä tietä tai pihaa
+    var checks = [[0,0],[-0.5,-0.5],[0.5,-0.5],[-0.5,0.5],[0.5,0.5],[0,-0.5],[0,0.5],[-0.5,0],[0.5,0]];
+    for(var i=0; i<checks.length; i++){
+      var px = cx + checks[i][0]*w, pz = cz + checks[i][1]*d;
+      if(flattenFactor(px, pz) < 0.95) return false;
+      if(distToNearestRoad(px, pz) < 16) return false;
+    }
+    return true;
+  }
+  var fieldPatchGeoms = [];
+  var fencePieceGeoms = [];
+  var barnSpots = [];
+  var fieldTones = [
+    {top:0x6b4d33, low:0x593f29},   // kynnetty multa
+    {top:0x8fa447, low:0x76893a},   // oras
+    {top:0xc2b071, low:0xa89a60},   // sänkipelto
+    {top:0x7f9a52, low:0x6a8244}    // heinänurmi
+  ];
+  (function buildFields(){
+    var placed = 0, tries = 0;
+    while(placed < 72 && tries < 5200){
+      tries++;
+      var cx = -330 + propRandom()*660;
+      var cz = -1560 + propRandom()*3070;
+      var w = 26 + propRandom()*46;
+      var d = 26 + propRandom()*46;
+      if(!fieldFree(cx, cz, w, d)) continue;
+      var rot = propRandom()*Math.PI;
+      var tone = fieldTones[Math.floor(propRandom()*fieldTones.length)];
+      var seg = Math.max(4, Math.round(Math.max(w, d)/7));
+      // HUOM. geometria käännetään vaakatasoon, EI meshiä: mesh.rotation kolmella akselilla menisi
+      // Euler-järjestysansaan (sama vika joka nosti hiekkatien aiemmin pystyyn)
+      var g = new THREE.PlaneGeometry(w, d, seg, seg);
+      g.rotateX(-Math.PI/2);
+      g.rotateY(rot);
+      g.translate(cx, 0, cz);
+      var pos = g.attributes.position;
+      var cols = new Float32Array(pos.count*3);
+      var cTop = new THREE.Color(tone.top), cLow = new THREE.Color(tone.low);
+      var cs = Math.cos(-rot), sn = Math.sin(-rot);
+      for(var vi=0; vi<pos.count; vi++){
+        var wx = pos.getX(vi), wz = pos.getZ(vi);
+        pos.setY(vi, terrainHeight(wx, wz) + 0.06);
+        // sarat: paikallinen u-koordinaatti takaisin kierrosta -> raidat kulkevat lohkon suuntaan
+        var lu = (wx-cx)*cs - (wz-cz)*sn;
+        var t = 0.5 + 0.5*Math.sin(lu*1.15);
+        var jitter = 0.94 + propRandom()*0.12;
+        cols[vi*3]   = (cLow.r + (cTop.r-cLow.r)*t) * jitter;
+        cols[vi*3+1] = (cLow.g + (cTop.g-cLow.g)*t) * jitter;
+        cols[vi*3+2] = (cLow.b + (cTop.b-cLow.b)*t) * jitter;
+      }
+      pos.needsUpdate = true;
+      g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      g.computeVertexNormals();
+      fieldPatchGeoms.push(g);
+      // osa lohkoista aidataan: kaksi sivua riittää, koko kehä olisi turhan raskas ja näyttää
+      // maalaismaisemassa liiankin siistiltä
+      if(propRandom() < 0.45) addFieldFence(cx, cz, w, d, rot);
+      // latopaikka lohkon nurkkaan
+      if(propRandom() < 0.38){
+        var bAng = rot + (propRandom()<0.5 ? 0 : Math.PI/2);
+        var bx = cx + Math.cos(rot)*(w*0.5 + 6)*(propRandom()<0.5?-1:1);
+        var bz = cz + Math.sin(rot)*(d*0.5 + 6)*(propRandom()<0.5?-1:1);
+        if(flattenFactor(bx,bz) > 0.95 && distToNearestRoad(bx,bz) > 14) barnSpots.push({x:bx, z:bz, rot:bAng});
+      }
+      placed++;
+    }
+    if(!fieldPatchGeoms.length) return;
+    var fieldMesh = new THREE.Mesh(mergeGeoms(fieldPatchGeoms),
+      new THREE.MeshStandardMaterial({vertexColors:true, roughness:1, metalness:0}));
+    fieldMesh.receiveShadow = true;
+    fieldMesh.frustumCulled = false;
+    scene.add(fieldMesh);
+  })();
+  // aitalinja: kaksi vastakkaista sivua tolppineen ja kahdella vaakariu'ulla. Kaikki palat menevät
+  // samaan listaan ja yhdistetään lopuksi yhdeksi meshiksi.
+  function addFieldFence(cx, cz, w, d, rot){
+    var cs = Math.cos(rot), sn = Math.sin(rot);
+    var sides = [[0, -d/2 - 1.2, w], [0, d/2 + 1.2, w]];
+    for(var si=0; si<sides.length; si++){
+      var lz = sides[si][1], len = sides[si][2] + 2.4;
+      var posts = Math.max(2, Math.round(len/3.1));
+      for(var pi=0; pi<=posts; pi++){
+        var lx = -len/2 + (len/posts)*pi;
+        var wx = cx + lx*cs - lz*sn, wz = cz + lx*sn + lz*cs;
+        var pg = new THREE.BoxGeometry(0.11, 1.15, 0.11);
+        pg.translate(0, 0.575, 0);
+        pg.translate(wx, terrainHeight(wx, wz), wz);
+        fencePieceGeoms.push(paintGeom(pg, 0x8a7350, 0.16));
+      }
+      // riu'ut: kaksi pitkää lautaa koko sivun matkalta
+      for(var ri=0; ri<2; ri++){
+        var wxm = cx + 0*cs - lz*sn, wzm = cz + 0*sn + lz*cs;
+        var rg = new THREE.BoxGeometry(len, 0.085, 0.055);
+        rg.rotateY(-rot);
+        rg.translate(wxm, terrainHeight(wxm, wzm) + 0.48 + ri*0.42, wzm);
+        fencePieceGeoms.push(paintGeom(rg, 0x9c8560, 0.14));
+      }
+    }
+  }
+  (function buildFences(){
+    if(!fencePieceGeoms.length) return;
+    var fenceMesh = new THREE.Mesh(mergeGeoms(fencePieceGeoms),
+      new THREE.MeshStandardMaterial({vertexColors:true, roughness:1, metalness:0, flatShading:true}));
+    fenceMesh.castShadow = true;
+    fenceMesh.frustumCulled = false;
+    scene.add(fenceMesh);
+    optionalProps.push(fenceMesh);
+  })();
+  // lato: punamullattu hirsilato harjakattoineen ja isoine oviaukkoineen. Yksi geometria, joka
+  // instansoidaan jokaiseen latopaikkaan - kymmenet ladot yhdellä piirtokutsulla.
+  (function buildBarns(){
+    if(!barnSpots.length) return;
+    var parts = [];
+    function box(w, h, dd, x, y, z, hex, jit){
+      var g = new THREE.BoxGeometry(w, h, dd);
+      g.translate(x, y, z);
+      return paintGeom(g, hex, jit === undefined ? 0.10 : jit);
+    }
+    parts.push(box(7.2, 3.4, 5.0, 0, 1.7, 0, 0x8d3326, 0.13));         // seinät, punamulta
+    parts.push(box(7.5, 0.35, 5.3, 0, 0.17, 0, 0x6d665c, 0.10));       // kivijalka
+    // harjakatto kahtena kallistettuna laattana
+    var rl = new THREE.BoxGeometry(4.35, 0.17, 5.7);
+    rl.translate(-2.0, 0, 0); rl.rotateZ(0.56); rl.translate(0, 4.35, 0);
+    parts.push(paintGeom(rl, 0x4a423a, 0.10));
+    var rr = new THREE.BoxGeometry(4.35, 0.17, 5.7);
+    rr.translate(2.0, 0, 0); rr.rotateZ(-0.56); rr.translate(0, 4.35, 0);
+    parts.push(paintGeom(rr, 0x4a423a, 0.10));
+    parts.push(box(7.2, 0.16, 0.16, 0, 5.52, 0, 0x2f2a25, 0.08));      // harjapelti
+    parts.push(box(2.6, 2.6, 0.12, 0, 1.45, 2.53, 0x3d2a1e, 0.12));    // iso oviaukko
+    parts.push(box(0.20, 2.7, 0.14, -1.3, 1.5, 2.60, 0xe7dcc4, 0.08)); // ovenpielet
+    parts.push(box(0.20, 2.7, 0.14, 1.3, 1.5, 2.60, 0xe7dcc4, 0.08));
+    parts.push(box(2.8, 0.20, 0.14, 0, 2.85, 2.60, 0xe7dcc4, 0.08));
+    parts.push(box(0.9, 0.9, 0.12, 0, 4.15, 2.50, 0x2b211a, 0.08));    // päädyn heinäluukku
+    var barnGeom = mergeGeoms(parts);
+    var barnMesh = new THREE.InstancedMesh(barnGeom,
+      new THREE.MeshStandardMaterial({vertexColors:true, roughness:0.95, metalness:0, flatShading:true}),
+      barnSpots.length);
+    var bDummy = new THREE.Object3D();
+    for(var bi=0; bi<barnSpots.length; bi++){
+      var bs = barnSpots[bi];
+      bDummy.position.set(bs.x, terrainHeight(bs.x, bs.z), bs.z);
+      bDummy.rotation.set(0, bs.rot, 0);
+      bDummy.scale.set(1, 1, 1);
+      bDummy.updateMatrix();
+      barnMesh.setMatrixAt(bi, bDummy.matrix);
+      colliders.push({x:bs.x, z:bs.z, r:3.4, obj:barnMesh});
+    }
+    barnMesh.castShadow = true;
+    barnMesh.receiveShadow = true;
+    barnMesh.frustumCulled = false;
+    scene.add(barnMesh);
+  })();
 
   // tienreunapaalut: valkoiset paalut punaisella heijastimella teiden varsilla. Paalut tulevat
   // pääraitin varteen sekä kaikkien lyhyiden risteysteiden varsille (pitkä kehätie jätetään väliin,
@@ -7845,6 +8184,84 @@
   // Ruoka ei ole pelkkä koriste: täysi vatsa antaa 3 minuutin ajan +50 % palkkiot hommista ja
   // keikoista, eli syöminen on oikeasti kannattavaa eikä vain maisemarekvisiittaa.
   var foodBoostLeft = 0;     // sekunteja jäljellä täydellä vatsalla
+
+  // ---- kunto ja nälkä ----
+  // Kaksi mittaria HUDissa. Nälkä valuu koko ajan hitaasti tyhjäksi; ajaminen ja etenkin temppuilu
+  // kuluttaa nopeammin. Ruoka täyttää sen. Kun nälkä on nollassa, se alkaa syödä terveyttä.
+  // Terveys menee alas kaatumisista (mm. liian pitkälle viedystä keulasta) ja nousee itsestään
+  // hitaasti takaisin niin kauan kuin vatsassa on ruokaa. Nollaan menevä terveys = kaatuminen ja
+  // herääminen kotipihalla, ei etenemän menetystä.
+  var health = 100;
+  var hunger = 100;
+  var hungerDrainIdle = 0.115;   // yksikköä sekunnissa kävellessä (n. 14 min tyhjäksi)
+  var hungerDrainRide = 0.19;    // mopolla ajaessa
+  var hungerDrainStunt = 0.42;   // keulinnan/stoppien aikana
+  var healthRegenRate = 0.45;    // yksikköä sekunnissa kun vatsassa on ruokaa
+  var starveDamageRate = 1.15;   // yksikköä sekunnissa kun nälkä on nollassa
+  var hungerWarned = false, healthWarned = false;
+  var healthFillEl = document.getElementById('healthFill');
+  var hungerFillEl = document.getElementById('hungerFill');
+  var vitalsEl = document.getElementById('vitals');
+  var vitalsShown = '';
+  function updateVitalsDisplay(){
+    var key = Math.round(health) + '|' + Math.round(hunger);
+    if(key === vitalsShown) return;   // DOM-kirjoitus vain kun luku oikeasti muuttui
+    vitalsShown = key;
+    if(healthFillEl){
+      healthFillEl.style.width = Math.max(0, Math.min(100, health)) + '%';
+      healthFillEl.classList.toggle('low', health < 30);
+    }
+    if(hungerFillEl){
+      hungerFillEl.style.width = Math.max(0, Math.min(100, hunger)) + '%';
+      hungerFillEl.classList.toggle('low', hunger < 25);
+    }
+    if(vitalsEl) vitalsEl.classList.toggle('warn', health < 30 || hunger < 15);
+  }
+  // vahinko yhdestä tapahtumasta; palauttaa true jos terveys loppui
+  function damageHealth(amount, reason){
+    health = Math.max(0, health - amount);
+    updateVitalsDisplay();
+    if(health <= 0) return true;
+    if(health < 30 && !healthWarned){
+      healthWarned = true;
+      showToast(true, '❤️ Kunto heikkenee', (reason || 'Alat olla aika murjottu') + ' - syö jotain ja aja varovaisemmin.', 3400);
+    }
+    return false;
+  }
+  function feedPlayer(amount){
+    hunger = Math.min(100, hunger + amount);
+    if(hunger > 40) hungerWarned = false;
+    // ruoka paikkaa myös vähän kuntoa heti
+    health = Math.min(100, health + amount*0.25);
+    if(health > 35) healthWarned = false;
+    updateVitalsDisplay();
+  }
+  function updateVitals(dt){
+    if(!gameStarted || inStore || jailPhase || crashed) { updateVitalsDisplay(); return; }  // sisätiloissa, putkassa ja kaatuneena aika ei kuluta
+    var drain = hungerDrainIdle;
+    if(mode === 'riding'){
+      drain = (wheelieAngle > 0.12 || stoppieAngle > 0.12) ? hungerDrainStunt : hungerDrainRide;
+    }
+    hunger = Math.max(0, hunger - drain*dt);
+    if(hunger <= 0){
+      if(damageHealth(starveDamageRate*dt, 'Nälkä näpistelee')) { collapseFromVitals(); return; }
+    } else if(hunger > 35 && health < 100){
+      health = Math.min(100, health + healthRegenRate*dt);
+    }
+    if(hunger < 20 && !hungerWarned){
+      hungerWarned = true;
+      showToast(true, '🍔 Nälkä', 'Vatsa kurnii. Grillille tai Mac Donaldsille, tai kunto alkaa laskea.', 3600);
+    }
+    updateVitalsDisplay();
+  }
+  // terveyden loppuminen: sama lopputulos kuin kaatumisessa - herätys kotipihalla, ei etenemän menetystä
+  function collapseFromVitals(){
+    health = 45; hunger = Math.max(hunger, 35);
+    healthWarned = false; hungerWarned = false;
+    updateVitalsDisplay();
+    showToast(true, '😵 Pimeni', 'Jonne romahti. Joku raahasi sinut kotipihalle.', 4200);
+    triggerCrash();
+  }
   var wheelieSafeLeft = 0;   // sekunteja jäljellä Akun energiajuoman keulasuojaa
   function makeGrilli(){
     var g = new THREE.Group();
@@ -7893,6 +8310,7 @@
     money -= cost;
     foodEaten++;
     foodBoostLeft = boostSeconds;
+    feedPlayer(70);   // ateria täyttää vatsan ja paikkaa vähän kuntoa
     updateMoneyDisplay();
     if(inventoryOpen) renderInventory();
     playCatchJingle();
@@ -8847,6 +9265,8 @@
         fishCaught: fishCaught,
         biggestFish: biggestFish,
         foodEaten: foodEaten,
+        health: health,
+        hunger: hunger,
         arcadePlayCount: arcadePlayCount,
         qualityLevel: qualityLevel,
         partsInstalled: partsInstalled,
@@ -8922,6 +9342,8 @@
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
       if(typeof save.biggestFish === 'number') biggestFish = save.biggestFish;
       if(typeof save.foodEaten === 'number') foodEaten = save.foodEaten;
+      if(typeof save.health === 'number') health = Math.max(5, Math.min(100, save.health));
+      if(typeof save.hunger === 'number') hunger = Math.max(0, Math.min(100, save.hunger));
       if(typeof save.arcadePlayCount === 'number') arcadePlayCount = save.arcadePlayCount;
 
       // ladatuista raaka-arvoista riippuvat näkyvät asiat päivitetään samaan tapaan kuin resetGame()issa,
@@ -9123,6 +9545,7 @@
     biggestFish = 0;
     stopFishing();
     foodEaten = 0;
+    health = 100; hunger = 100; healthWarned = false; hungerWarned = false;
     arcadePlayCount = 0;
     foodBoostLeft = 0;
     wheelieSafeLeft = 0;
@@ -9391,7 +9814,9 @@
         } else {
           crashSpin = -1;
           spawnSparks(moped.localToWorld(sparkRearLocal.clone()), 14);
-          triggerCrash();
+          // liian pitkälle viety keula sattuu: iso lovi kuntopalkkiin
+          if(damageHealth(26, 'Keula meni yli ja selkä kävi maassa')) { collapseFromVitals(); }
+          else triggerCrash();
         }
       }
       // stoppie ("lippa" eteenpäin): kova jarrutus reilussa vauhdissa nostaa takarenkaan ilmaan;
@@ -9404,7 +9829,9 @@
       if(stoppieAngle >= maxStoppieAngle){
         crashSpin = 1;
         spawnSparks(moped.localToWorld(sparkFrontLocal.clone()), 14);
-        triggerCrash();
+        // lippa ohjaustangon yli sattuu vielä enemmän kuin keulakaato
+        if(damageHealth(30, 'Lensit ohjaustangon yli')) { collapseFromVitals(); }
+        else triggerCrash();
       }
 
       // keulinnan kesto & rahakerroin: kerroin kasvaa mitä pidempään keula pysyy ilmassa,
@@ -9761,6 +10188,7 @@
     updateNpcFacing(dt, mode === 'riding' ? moped.position : player.position);
     updateFishing(dt);
     updateBoosts(dt);
+    updateVitals(dt);
     updateBoltGame(dt);
     if(kickCooldown > 0) kickCooldown = Math.max(0, kickCooldown - dt);
     blinkPhase += dt;
@@ -10083,6 +10511,27 @@
   // ilman tallennusta hylly täytetään alkuperäisillä osilla; tallennuksesta ladattu hylly jää voimaan
   if(!garageShelf.length && !mopedAssembled()) fillShelfWithOriginals();
   updateMopedAssembly();
+  // ---- ajolinjan siivous ----
+  // Pienet törmäysympyrät (laiturin tolpat, pylväiden jalat, liput) jotka jäivät ajoradan
+  // ajolinjalle tuntuvat pelaajasta näkymättömiltä seiniltä: mopo pysähtyy täyttä vauhtia
+  // johonkin jota ei erota hiekkatiestä. Isoja ympyröitä ei kosketa - ne ovat rakennuksia,
+  // joiden eteen tien kuuluukin loppua ja jotka pelaaja näkee hyvissä ajoin.
+  (function clearLaneSnags(){
+    var removed = 0;
+    for(var i=colliders.length-1; i>=0; i--){
+      var c = colliders[i];
+      if(c.r > 0.4) continue;
+      for(var j=0; j<roadCorridors.length; j++){
+        var rc = roadCorridors[j];
+        if(distToSegment(c.x, c.z, rc.x1, rc.z1, rc.x2, rc.z2) < rc.hw*0.8){
+          colliders.splice(i, 1);
+          removed++;
+          break;
+        }
+      }
+    }
+    return removed;
+  })();
   applyQuality(qualityLevel, false); // tallennettu grafiikka-asetus voimaan heti käynnistyksessä
   openStartScreen();
   animate();
