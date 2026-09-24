@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:74-->
-<!--JONNE-NAME:Jonnen ajokoe 74-->
+<!--JONNE-VERSION:76-->
+<!--JONNE-NAME:Jonnen ajokoe 76-->
 <!--JONNE-DATE:2026-09-24-->
-<!--JONNE-NOTES:MONINPELI TOIMII: aloitusruudun Moninpeli-napista host luo kutsukoodin ja kaveri vastauskoodin|Yhteys menee suoraan koneelta koneelle - ei palvelinta, ei portin avaamista reitittimestä|Näet kaverin ajamassa ja kävelemässä, nimimerkki pään päällä ja oikea mopomalli|Hostin kellonaika jaetaan kaikille, joten vuorokaudenaika pysyy samana|Pelaajalista ruudun vasemmassa laidassa-->
+<!--JONNE-NOTES:Ryhmälista: host luo ryhmän ja kaveri näkee sen launcherin listalla - ei enää kutsukoodeja|Liittyminen yhdellä klikkauksella, maailmakoodi tulee ryhmästä automaattisesti|Vaatii oman huonepalvelimen (mukana valmis palvelinpaketti ja ohje Renderiin)|Koodinvaihto toimii edelleen jos palvelinta ei ole|Launcher 1.3.0: huonepalvelimen osoite asetuksiin ja ryhmälista moninpeli-ikkunaan-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -714,6 +714,7 @@
   var DEFAULT_WORLD_SEED = 19960704;
   var worldSeed = DEFAULT_WORLD_SEED;
   var playerName = 'Jonne';
+  var startServerUrl = '';   // huonepalvelimen osoite launcherista (ks. netServerUrl)
   try{
     if(typeof window !== 'undefined'){
       if(typeof window.JONNE_WORLD_SEED === 'number' && isFinite(window.JONNE_WORLD_SEED)){
@@ -727,6 +728,8 @@
       if(seedMatch) worldSeed = (parseInt(seedMatch[1], 10) >>> 0) || DEFAULT_WORLD_SEED;
       var nameMatch = /[#&?]name=([^&#]{1,32})/.exec(qs);
       if(nameMatch) playerName = decodeURIComponent(nameMatch[1]).slice(0, 16);
+      var srvMatch = /[#&?]server=([^&#]{1,200})/.exec(qs);
+      if(srvMatch) startServerUrl = decodeURIComponent(srvMatch[1]);
     }
   }catch(e){ /* osoitteen lukeminen ei saa kaataa peliä */ }
 
@@ -11237,7 +11240,7 @@
   var netPeers = [];               // hostilla: [{pc, ch, id, name, open}]
   var netHostPc = null;            // clientilla
   var netHostCh = null;
-  var netPendingPc = null;         // hostilla: kutsu jota ei ole vielä hyväksytty
+  var netPending = [];             // hostilla: kutsut jotka odottavat vastauskoodia
   var netRemotes = {};             // id -> {name, avatar, cur, tgt, moped, color}
   var netSendTimer = 0;
   var netClockTimer = 0;
@@ -11601,15 +11604,26 @@
   }
 
   // ---- hostin puoli ----
+  // Host voi kutsua useamman kaverin: jokainen "Luo kutsukoodi" tekee oman yhteyden, ja
+  // kutsut odottavat listalla vastauskoodiaan. Kutsussa on mukana tunniste (oid), jonka
+  // kaveri kaiuttaa vastauksessaan takaisin - näin host tietää mihin kutsuun mikin vastaus
+  // kuuluu, vaikka niitä olisi useampi auki yhtä aikaa. Ilman tunnistetta toinen samaan
+  // aikaan luotu kutsu ylikirjoitti ensimmäisen.
   function netHostCreateInvite(){
     var pc = netNewPc();
-    var peer = {pc:pc, ch:null, id:netNextId++, name:'', open:false};
+    var oid = String(Math.floor(Math.random()*1e9));
+    var peer = {pc:pc, ch:null, id:netNextId++, name:'', open:false, oid:oid};
     peer.ch = pc.createDataChannel('jonne');
     netWirePeer(peer);
-    netPendingPc = peer;
+    // vanhat, kättelemättä jääneet kutsut siivotaan pois kun niitä kertyy liikaa
+    while(netPending.length >= 6){
+      var stale = netPending.shift();
+      try{ stale.pc.close(); }catch(e){}
+    }
+    netPending.push(peer);
     pc.addEventListener('connectionstatechange', function(){
       if(pc.connectionState === 'failed' || pc.connectionState === 'disconnected'){
-        netSetStatus('Yhteys kaveriin katkesi.', 'err');
+        netSetStatus((peer.name || 'Kaverin') + ' yhteys katkesi.', 'err');
         netRemoveRemote(peer.id);
         netRenderList();
       }
@@ -11617,22 +11631,33 @@
     return pc.createOffer()
       .then(function(offer){ return pc.setLocalDescription(offer); })
       .then(function(){ return netWaitIce(pc); })
-      .then(function(){ return netPack({v:1, seed:worldSeed, sdp:pc.localDescription.sdp, name:playerName}); });
+      .then(function(){
+        return netPack({v:1, seed:worldSeed, oid:oid, sdp:pc.localDescription.sdp, name:playerName});
+      });
   }
   function netHostAcceptAnswer(code){
-    var peer = netPendingPc;
-    if(!peer) return Promise.reject(new Error('Luo ensin kutsukoodi.'));
+    if(!netPending.length) return Promise.reject(new Error('Luo ensin kutsukoodi.'));
     return netUnpack(code).then(function(obj){
       if(!obj || !obj.sdp) throw new Error('Vastauskoodi ei kelpaa.');
+      var peer = null, pi;
+      if(obj.oid){
+        for(pi=0; pi<netPending.length; pi++){
+          if(netPending[pi].oid === String(obj.oid)){ peer = netPending[pi]; break; }
+        }
+        if(!peer) throw new Error('Tämä vastauskoodi ei kuulu yhteenkään avoimeen kutsuun. Luo kutsukoodi uudestaan.');
+      } else {
+        peer = netPending[netPending.length-1];   // vanha koodi ilman tunnistetta
+      }
       if(obj.name) peer.name = obj.name;
-      return peer.pc.setRemoteDescription({type:'answer', sdp:obj.sdp});
-    }).then(function(){
-      netPeers.push(peer);
-      netPendingPc = null;
-      netRole = 'host';
-      netSelfId = 0;
-      netRenderList();
-      return true;
+      return peer.pc.setRemoteDescription({type:'answer', sdp:obj.sdp}).then(function(){
+        var ix = netPending.indexOf(peer);
+        if(ix >= 0) netPending.splice(ix, 1);
+        netPeers.push(peer);
+        netRole = 'host';
+        netSelfId = 0;
+        netRenderList();
+        return true;
+      });
     });
   }
   // ---- clientin puoli ----
@@ -11664,16 +11689,20 @@
         .then(function(){ return pc.createAnswer(); })
         .then(function(ans){ return pc.setLocalDescription(ans); })
         .then(function(){ return netWaitIce(pc); })
-        .then(function(){ return netPack({v:1, sdp:pc.localDescription.sdp, name:playerName}); });
+        .then(function(){
+          return netPack({v:1, oid:obj.oid || '', sdp:pc.localDescription.sdp, name:playerName});
+        });
     });
   }
   function netLeave(){
     var i;
+    netCloseRoom();
     for(i=0; i<netPeers.length; i++){
       try{ netPeers[i].pc.close(); }catch(e){}
     }
     netPeers = [];
-    if(netPendingPc){ try{ netPendingPc.pc.close(); }catch(e){} netPendingPc = null; }
+    for(i=0; i<netPending.length; i++){ try{ netPending[i].pc.close(); }catch(e){} }
+    netPending = [];
     if(netHostPc){ try{ netHostPc.close(); }catch(e){} }
     netHostPc = null; netHostCh = null;
     for(var id in netRemotes){
@@ -11682,6 +11711,196 @@
     netRemotes = {};
     netRole = 'off';
     netRenderList();
+  }
+
+
+  // ============================================================================
+  // ---- HUONEPALVELIN: ryhmälista ilman koodien vaihtoa ----
+  //
+  // Palvelin ei näe pelistä mitään: se vain säilyttää listan avoimista ryhmistä ja
+  // välittää WebRTC-kättelyn viestit. Kun yhteys on auki, kaikki pelidata kulkee
+  // suoraan koneelta koneelle eikä palvelimelle enää mene mitään.
+  //
+  // Rooleja on tässä suunnassa toisin päin kuin koodinvaihdossa: liittyjä tekee
+  // tarjouksen (ja siten myös datakanavan) ja host vastaa siihen. Siksi hostille
+  // tarvitaan oma "vastaa tarjoukseen" -polku netHostCreateInviten rinnalle.
+  // ============================================================================
+  var netServerUrl = startServerUrl;   // launcherin antama osoite, muokattavissa paneelista
+  var netRoomId = '';
+  var netRoomToken = '';
+  var netRoomName = '';
+  var netPollTimer = null;
+  var netHeartTimer = null;
+
+  function netApi(path, body){
+    if(!netServerUrl) return Promise.reject(new Error('Palvelimen osoitetta ei ole asetettu.'));
+    var base = netServerUrl.replace(/\/+$/, '');
+    var opt = {method: body ? 'POST' : 'GET', cache:'no-store'};
+    if(body){
+      opt.headers = {'Content-Type':'application/json'};
+      opt.body = JSON.stringify(body);
+    }
+    return fetch(base + path, opt).then(function(r){
+      return r.json().catch(function(){ throw new Error('Palvelin vastasi jotain outoa (' + r.status + ').'); })
+        .then(function(j){
+          if(!r.ok || !j.ok) throw new Error((j && j.error) || ('Palvelinvirhe ' + r.status));
+          return j;
+        });
+    });
+  }
+  // host: vastaa yhteen liittymispyyntöön
+  function netHostAnswerOffer(offerCode, joinerName){
+    var pc = netNewPc();
+    var peer = {pc:pc, ch:null, id:netNextId++, name:joinerName || 'Jonne', open:false, oid:''};
+    pc.addEventListener('datachannel', function(ev){
+      peer.ch = ev.channel;
+      netWirePeer(peer);
+    });
+    pc.addEventListener('connectionstatechange', function(){
+      if(pc.connectionState === 'failed' || pc.connectionState === 'disconnected'){
+        netRemoveRemote(peer.id);
+        var ix = netPeers.indexOf(peer);
+        if(ix >= 0) netPeers.splice(ix, 1);
+        netRenderList();
+      }
+    });
+    return netUnpack(offerCode).then(function(obj){
+      if(!obj || !obj.sdp) throw new Error('Liittyjän tarjous ei kelpaa.');
+      if(obj.name) peer.name = obj.name;
+      return pc.setRemoteDescription({type:'offer', sdp:obj.sdp});
+    }).then(function(){ return pc.createAnswer(); })
+      .then(function(ans){ return pc.setLocalDescription(ans); })
+      .then(function(){ return netWaitIce(pc); })
+      .then(function(){
+        netPeers.push(peer);
+        netRole = 'host';
+        netRenderList();
+        return netPack({v:1, sdp:pc.localDescription.sdp, name:playerName});
+      });
+  }
+  // host: luo ryhmä palvelimelle ja ala kuunnella liittyjiä
+  function netStartHosting(roomName){
+    netRoomName = roomName || (playerName + 'n kylä');
+    return netApi('/api/host', {name:netRoomName, hostName:playerName, seed:worldSeed})
+      .then(function(j){
+        netRoomId = j.room;
+        netRoomToken = j.token;
+        netRole = 'host';
+        netRenderList();
+        netStartHostPolling();
+        return j;
+      });
+  }
+  function netStartHostPolling(){
+    netStopTimers();
+    // kysytään uudet liittymispyynnöt parin sekunnin välein; sama kutsu toimii
+    // sykäyksenä joka pitää ryhmän listalla
+    netPollTimer = setInterval(function(){
+      if(!netRoomId) return;
+      netApi('/api/requests', {room:netRoomId, token:netRoomToken, players:netPeers.length+1})
+        .then(function(j){
+          var reqs = j.requests || [];
+          reqs.forEach(function(rq){
+            netSetStatus((rq.name || 'Kaveri') + ' liittyy...');
+            netHostAnswerOffer(rq.offer, rq.name).then(function(answerCode){
+              return netApi('/api/answer', {room:netRoomId, token:netRoomToken, req:rq.req, answer:answerCode});
+            }).catch(function(e){
+              netSetStatus('Liittyjän yhdistäminen epäonnistui: ' + (e && e.message ? e.message : e), 'err');
+            });
+          });
+        })
+        .catch(function(e){
+          netSetStatus('Yhteys huonepalvelimeen katkesi: ' + (e && e.message ? e.message : e), 'err');
+        });
+    }, 2500);
+  }
+  // liittyjä: tee tarjous, lähetä se palvelimelle ja odota hostin vastausta
+  function netJoinRoom(roomId){
+    var pc = netNewPc();
+    netHostPc = pc;
+    var ch = pc.createDataChannel('jonne');
+    netHostCh = ch;
+    ch.addEventListener('open', function(){
+      netRole = 'client';
+      netSetStatus('Yhteys hostiin auki. Paina Pelaa.', 'ok');
+      netRenderList();
+    });
+    ch.addEventListener('close', function(){
+      netSetStatus('Yhteys hostiin katkesi.', 'err');
+      netLeave();
+    });
+    ch.addEventListener('message', function(e){ netOnMessage(null, e); });
+    return pc.createOffer()
+      .then(function(o){ return pc.setLocalDescription(o); })
+      .then(function(){ return netWaitIce(pc); })
+      .then(function(){ return netPack({v:1, sdp:pc.localDescription.sdp, name:playerName}); })
+      .then(function(offerCode){
+        return netApi('/api/join', {room:roomId, name:playerName, offer:offerCode});
+      })
+      .then(function(j){
+        netRoomId = roomId;
+        if(typeof j.seed === 'number' && (j.seed >>> 0) !== (worldSeed >>> 0)){
+          throw new Error('Ryhmässä on eri maailma. Liity launcherin listalta, niin peli käynnistyy oikealla maailmalla.');
+        }
+        netSetStatus('Odotetaan hostin vastausta...');
+        return netPollForAnswer(roomId, j.req, 0);
+      })
+      .then(function(answerCode){ return netUnpack(answerCode); })
+      .then(function(obj){
+        if(!obj || !obj.sdp) throw new Error('Hostin vastaus ei kelpaa.');
+        return pc.setRemoteDescription({type:'answer', sdp:obj.sdp});
+      })
+      .then(function(){
+        netSetStatus('Yhteys muodostuu...');
+        return true;
+      });
+  }
+  function netPollForAnswer(roomId, reqId, tries){
+    if(tries > 40) return Promise.reject(new Error('Host ei vastannut. Onko hän vielä pelissä?'));
+    return netApi('/api/answer?room=' + encodeURIComponent(roomId) + '&req=' + encodeURIComponent(reqId))
+      .then(function(j){
+        if(j.answer) return j.answer;
+        return new Promise(function(res){ setTimeout(res, 1500); })
+          .then(function(){ return netPollForAnswer(roomId, reqId, tries+1); });
+      });
+  }
+  function netStopTimers(){
+    if(netPollTimer){ clearInterval(netPollTimer); netPollTimer = null; }
+    if(netHeartTimer){ clearInterval(netHeartTimer); netHeartTimer = null; }
+  }
+  function netCloseRoom(){
+    netStopTimers();
+    if(netRoomId && netRoomToken && netServerUrl){
+      netApi('/api/close', {room:netRoomId, token:netRoomToken}).catch(function(){});
+    }
+    netRoomId = ''; netRoomToken = '';
+  }
+  // ---- käynnistysvalinnat launcherista ----
+  // #server=...   huonepalvelimen osoite
+  // #host=1       luo ryhmä heti kun peli aukeaa
+  // #room=<id>    liity valmiiseen ryhmään heti
+  function netAutoStart(){
+    if(!netServerUrl) return;
+    if(!netSupported()){ netSetStatus('Tämä selain ei tue vertaisyhteyttä.', 'err'); return; }
+    try{
+      var qs = (window.location.hash || '') + '&' + (window.location.search || '');
+      if(/[#&?]host=1/.test(qs)){
+        netSetStatus('Luodaan ryhmää palvelimelle... (ilmainen palvelin voi herätä hitaasti, odota hetki)');
+        netStartHosting('').then(function(){
+          netSetStatus('Ryhmä on auki listalla. Kaverit voivat liittyä launcherista. Paina Pelaa.', 'ok');
+        }).catch(function(e){
+          netSetStatus('Ryhmän luonti epäonnistui: ' + (e && e.message ? e.message : e), 'err');
+        });
+        return;
+      }
+      var rm = /[#&?]room=([A-Za-z0-9]+)/.exec(qs);
+      if(rm){
+        netSetStatus('Liitytään ryhmään... (ilmainen palvelin voi herätä hitaasti, odota hetki)');
+        netJoinRoom(rm[1]).catch(function(e){
+          netSetStatus('Liittyminen epäonnistui: ' + (e && e.message ? e.message : e), 'err');
+        });
+      }
+    }catch(e){ /* osoitteen luku ei saa kaataa peliä */ }
   }
 
   // ---- aloitusruutu: Pelaa / Asetukset / Credits ----
@@ -11950,6 +12169,7 @@
     showStartPane(null);
   });
 
+  netAutoStart();   // launcherista tullut ryhmän luonti tai liittyminen käyntiin heti
   endWorldRandom(); // maailma on rakennettu - peliaikainen satunnaisuus takaisin aidoksi
   loadGame();
   // ilman tallennusta hylly täytetään alkuperäisillä osilla; tallennuksesta ladattu hylly jää voimaan
