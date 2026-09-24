@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:70-->
-<!--JONNE-NAME:Jonnen ajokoe 70-->
+<!--JONNE-VERSION:71-->
+<!--JONNE-NAME:Jonnen ajokoe 71-->
 <!--JONNE-DATE:2026-09-24-->
-<!--JONNE-NOTES:Korjattu tien klippaus: risteyslaatat ja päällekkäiset tiet omille korkeuksilleen|Korjattu skootterin renkaan puuttuva tekstuuri|Poistettu näkymätön seinä tieltä: crossirata siirretty pois pääraitin päältä|Uutta: kunto- ja nälkämittari - keulakaato vie kuntoa, nälkä valuu ajan myötä|Ruoka täyttää vatsan, yön yli nukkuminen palauttaa kunnon|Paljon lisää maisemaa: metsiköitä, peltolohkoja, latoja, aitoja, kantoja ja halkopinoja|Näkyvyys kauemmas: sumu alkaa vasta 150 yksikön päästä-->
+<!--JONNE-NOTES:Korjattu kartan kääntymissuunta: minikartta ja iso kartta näyttivät peilikuvaa|Monkeylle omat viriosat: Daytona Anima 150cc ja 190cc, Keihin PWK 28, Takegawa-putki, Nissin-jarrut ym.|Viriosat näkyvät kaupassa vasta kun Monkey on ostettu|Pulttien kiristys nyt kaikessa: pakoputken vaihto, tarrasarja, maalipinta ja rekisterikilvet|Isot moottoriosat vaativat 4-6 pulttia, pikkuosat 2|Huonosti kiristetty pakoputki ei anna koko tehohyötyä-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -4484,7 +4484,7 @@
         if(ef.type === 'accel' || ef.type === 'topspeed') boost += ef.amount;
       }
     }
-    if(kilpaPipeOwned && exhaustMode === 'kilpa') boost += 0.08;
+    if(kilpaPipeOwned && exhaustMode === 'kilpa') boost += 0.08*(0.55 + 0.45*exhaustFitQuality);
     var mperf = mopedModelPerf();
     if(mperf) boost += (mperf.accel || 0) + (mperf.topspeed || 0);
     return Math.max(0, Math.min(1, boost/1.55));
@@ -4834,6 +4834,7 @@
   headlightGlow.scale.setScalar(0.55);
   var bodyMat = body.material;
   var exhaustMode = 'vakio';
+  var exhaustFitQuality = 1;   // 0..1, kuinka hyvin pakoputki on kiristetty (ks. startBoltJob)
   // kaupasta ostettavat koristeet: kukin oma pieni ryhmänsä, piilossa oletuksena, näkyy kun vastaava
   // tuote on ostettu kyläkaupasta (ks. storeItems/renderStoreItems). Essanssi on klassinen My Summer Car
   // -viittaus, loput ovat omia pieniä lisiä samalla periaatteella.
@@ -5706,41 +5707,79 @@
   // Sylinterillä on kaksi ostettavaa LMR-sarjaa (80cc ja 110cc) - muilla osilla yksi tuunattu versio, kuten ennenkin.
   // Jokaisella tiersin tasolla on "effects"-lista (voi olla useampi vaikutus per osa - esim. isompi
   // sylinteri nostaa sekä kiihtyvyyttä että huippunopeutta, kuten oikeassa moposssa).
+  // Osilla voi olla useampi peräkkäinen viritystaso. Tason `requires:'monkey'` tarkoittaa, että
+  // osa on Monkeyn moottoriin mitoitettu eikä sitä myydä ennen kuin Monkey on omistuksessa -
+  // kaupan hyllyllä ne näkyvät, mutta nappi on lukossa tekstillä "Vaatii Monkeyn".
+  // `bolts` kertoo montako pulttia tai ruuvia asennukseen tarvitaan (oletus 3). Isot moottoriosat
+  // vaativat enemmän kiristämistä kuin tulppa tai ketju.
   var parts = [
     {id:'sylinteri', name:'Sylinteri', condition:35, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'LMR 80cc', price:65, effects:[{type:'accel',amount:0.16},{type:'topspeed',amount:0.10}]},
-      {label:'LMR 110cc', price:150, effects:[{type:'accel',amount:0.34},{type:'topspeed',amount:0.22}]}
+      {label:'LMR 80cc', price:65, effects:[{type:'accel',amount:0.16},{type:'topspeed',amount:0.10}], bolts:4},
+      {label:'LMR 110cc', price:150, effects:[{type:'accel',amount:0.34},{type:'topspeed',amount:0.22}], bolts:4},
+      {label:'Daytona Anima 150cc', price:520, requires:'monkey', bolts:5,
+        effects:[{type:'accel',amount:0.46},{type:'topspeed',amount:0.34}]},
+      {label:'Daytona Anima 190cc', price:980, requires:'monkey', bolts:6,
+        effects:[{type:'accel',amount:0.62},{type:'topspeed',amount:0.48}]}
     ]},
     {id:'kaasutin', name:'Kaasutin', condition:30, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Kilpakaasutin', price:55, effects:[{type:'accel',amount:0.10},{type:'topspeed',amount:0.05}]}
+      {label:'Kilpakaasutin', price:55, effects:[{type:'accel',amount:0.10},{type:'topspeed',amount:0.05}]},
+      {label:'Keihin PWK 28', price:260, requires:'monkey', bolts:4,
+        effects:[{type:'accel',amount:0.22},{type:'topspeed',amount:0.12}]}
     ]},
     {id:'sytytystulppa', name:'Sytytystulppa', condition:20, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Kilpatulppa', price:15, effects:[{type:'durability',amount:0.5}]}
+      {label:'Kilpatulppa', price:15, effects:[{type:'durability',amount:0.5}], bolts:2},
+      {label:'Iridium-kilpatulppa', price:70, requires:'monkey', bolts:2,
+        effects:[{type:'durability',amount:0.9},{type:'accel',amount:0.05}]}
     ]},
     {id:'ketju', name:'Ketju + rattaat', condition:40, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Kevytketju', price:35, effects:[{type:'accel',amount:0.06}]}
+      {label:'Kevytketju', price:35, effects:[{type:'accel',amount:0.06}]},
+      {label:'Kilparatas 428', price:140, requires:'monkey', bolts:4,
+        effects:[{type:'accel',amount:0.18},{type:'topspeed',amount:0.04}]}
     ]},
     {id:'jarrut', name:'Jarrupalat', condition:45, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Kilpajarrut', price:30, effects:[{type:'brake',amount:0.25}]}
+      {label:'Kilpajarrut', price:30, effects:[{type:'brake',amount:0.25}]},
+      {label:'Nissin 4-mäntäinen', price:190, requires:'monkey', bolts:4,
+        effects:[{type:'brake',amount:0.55},{type:'grip',amount:0.05}]}
     ]},
     {id:'akku', name:'Akku', condition:25, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Tehoakku', price:20, effects:[{type:'durability',amount:0.5}]}
+      {label:'Tehoakku', price:20, effects:[{type:'durability',amount:0.5}], bolts:2},
+      {label:'Litiumakku', price:95, requires:'monkey', bolts:2,
+        effects:[{type:'durability',amount:0.9},{type:'accel',amount:0.04}]}
     ]},
     {id:'pakoputki', name:'Pakoputki', condition:50, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Kilpaputki', price:60, effects:[{type:'topspeed',amount:0.15}]}
+      {label:'Kilpaputki', price:60, effects:[{type:'topspeed',amount:0.15}]},
+      {label:'Takegawa-kilpaputki', price:310, requires:'monkey', bolts:5,
+        effects:[{type:'topspeed',amount:0.34},{type:'accel',amount:0.10}]}
     ]},
     {id:'renkaat', name:'Renkaat', condition:40, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
-      {label:'Kilparenkaat', price:45, effects:[{type:'grip',amount:0.15}]}
+      {label:'Kilparenkaat', price:45, effects:[{type:'grip',amount:0.15}]},
+      {label:'Kilparenkaat 120/80', price:170, requires:'monkey', bolts:4,
+        effects:[{type:'grip',amount:0.34},{type:'brake',amount:0.08}]}
     ]}
   ];
+  // Onko tietty mopomalli ostettu? Käytetään viritysosien `requires`-ehdon tarkistukseen.
+  // mopedModels määritellään vasta paljon alempana, joten tämä on funktio eikä vakio - kutsu
+  // tapahtuu aina vasta käyttöliittymästä, jolloin lista on jo olemassa.
+  function mopedOwnedById(id){
+    if(typeof mopedModels === 'undefined' || !mopedModels) return false;
+    for(var mo=0; mo<mopedModels.length; mo++){
+      if(mopedModels[mo].id === id) return !!mopedModels[mo].owned;
+    }
+    return false;
+  }
+  function tierAvailable(t){
+    if(!t) return false;
+    if(!t.requires) return true;
+    return mopedOwnedById(t.requires);
+  }
   // Puhdas alkutila talteen, jotta kaatumisen jälkeen peli voidaan palauttaa täysin alkuun.
   var initialMoney = money;
   // Mopo on pelin alussa OSINA: jokainen osa on irti ja odottaa autotallin hyllyllä. Mopolla ei voi
@@ -5839,7 +5878,9 @@
         '<div class="partBar"><i style="width:'+p.condition+'%"></i></div>' +
         '<div class="partActions">' +
           '<button class="repairBtn"'+(missing<=0 || kitOnShelf || money<cost ? ' disabled' : '')+'>'+repairLabel+'</button>' +
-          (next ? '<button class="tuneBtn"'+(tierOnShelf || money<next.price ? ' disabled' : '')+'>'+(tierOnShelf ? 'Hyllyllä' : next.label+' '+next.price+' €')+'</button>' : '') +
+          (next ? '<button class="tuneBtn"'+(tierOnShelf || money<next.price || !tierAvailable(next) ? ' disabled' : '')+'>'+
+                    (!tierAvailable(next) ? next.label+' · vaatii Monkeyn'
+                      : (tierOnShelf ? 'Hyllyllä' : next.label+' '+next.price+' €'))+'</button>' : '') +
         '</div>';
       var repairBtn = row.querySelector('.repairBtn');
       repairBtn.addEventListener('click', function(){
@@ -5855,7 +5896,7 @@
       if(tuneBtn){
         tuneBtn.addEventListener('click', function(){
           var nx = p.tiers[p.tierIndex+1];
-          if(!nx || money < nx.price || shelfHas(p.id, 'tier')) return;
+          if(!nx || money < nx.price || shelfHas(p.id, 'tier') || !tierAvailable(nx)) return;
           money -= nx.price;
           upgradesBought++; // lasketaan ostohetkellä, jotta tarinan "osta tuunausosa" etenee heti
           updateMoneyDisplay();
@@ -5888,7 +5929,8 @@
   var boltPipsEl = document.getElementById('boltPips');
   var boltMsgEl = document.getElementById('boltMsg');
   var bolt = {
-    active:false, item:null, pos:0, dir:1, speed:0.85,
+    active:false, item:null, job:null, panel:null, needed:3, word:'pulttia',
+    pos:0, dir:1, speed:0.85,
     zoneStart:0.34, zoneWidth:0.3, hits:0, quality:0, lockout:0, done:false, doneTimer:0
   };
   function shelfItemLabel(it){
@@ -5961,6 +6003,16 @@
   // Kilpien irrotus on riski-valinta: ilman kilpiä poliisi ei saa rekisterinumeroa eikä tule
   // aamulla kotiovelle, mutta kilvetön mopo herättää partion huomion ilman keulintaakin.
   function togglePlates(){
+    // kilvet ovat kahdella ruuvilla kiinni - sama kiristysminipeli kuin muillakin osilla
+    startBoltJob({
+      title: plateOn ? 'Rekisterikilpien irrotus' : 'Rekisterikilpien asennus',
+      bolts: 2,
+      word: 'ruuvia',
+      panel: garagePanelEl,
+      onDone: function(){ applyPlateToggle(); }
+    });
+  }
+  function applyPlateToggle(){
     plateOn = !plateOn;
     plateMesh.visible = plateOn;
     if(plateOn){
@@ -5988,28 +6040,65 @@
     cancelBoltGame();
   }
   function setBoltPips(){
+    // pistemerkit rakennetaan tarvittavan pulttimäärän mukaan - työssä voi olla 2-6 pulttia
+    var need = bolt.needed || 3;
+    while(boltPipsEl.children.length < need){
+      var np = document.createElement('i');
+      boltPipsEl.appendChild(np);
+    }
+    while(boltPipsEl.children.length > need){
+      boltPipsEl.removeChild(boltPipsEl.lastChild);
+    }
     var pips = boltPipsEl.children;
     for(var bp=0; bp<pips.length; bp++){
       if(bolt.hits > bp) pips[bp].classList.add('on'); else pips[bp].classList.remove('on');
     }
   }
-  function startBoltGame(idx){
-    var it = garageShelf[idx];
-    if(!it) return;
+  // ---- yleistetty kiristystyö ----
+  // Sama minipeli palvelee nyt kaikkea ruuvattavaa: hyllyltä asennettavat osat, pakoputken vaihto,
+  // rekisterikilvet ja tarrasarjan katteet. cfg: {title, bolts, word, panel, onDone(q01), doneMsg(q01)}
+  // - `bolts` on kiristettävien pulttien määrä, `word` niiden nimi ("pulttia"/"ruuvia"),
+  // - `panel` on se paneeli joka piilotetaan pelin ajaksi ja palautetaan lopuksi,
+  // - `onDone` saa laadun välillä 0..1 (0 = kaikki hutiloiden, 1 = jokainen täysi kireys).
+  function startBoltJob(cfg){
     bolt.active = true;
-    bolt.itemIndex = idx;
-    bolt.item = it;
+    bolt.job = cfg;
+    bolt.item = cfg.item || null;
+    bolt.needed = Math.max(1, cfg.bolts || 3);
+    bolt.word = cfg.word || 'pulttia';
+    bolt.panel = cfg.panel || null;
     bolt.pos = 0; bolt.dir = 1;
-    bolt.speed = 0.78;
+    // useampi pultti = hieman armollisempi alku, jottei kuuden pultin urakasta tule mahdotonta
+    bolt.speed = 0.78 - Math.min(0.18, (bolt.needed - 3)*0.06);
     bolt.hits = 0; bolt.quality = 0; bolt.lockout = 0; bolt.done = false; bolt.doneTimer = 0;
     bolt.zoneWidth = 0.30;
     bolt.zoneStart = 0.15 + Math.random()*(0.85 - bolt.zoneWidth - 0.15);
-    boltTitleEl.textContent = shelfItemLabel(it);
-    boltMsgEl.textContent = 'Kiristä kolme pulttia.';
+    boltTitleEl.textContent = cfg.title;
+    boltMsgEl.textContent = 'Kiristä ' + boltCountWord(bolt.needed) + ' ' + bolt.word + '.';
     setBoltPips();
     layoutBoltZone();
     boltGameEl.hidden = false;
-    garagePanelEl.hidden = true;
+    if(bolt.panel) bolt.panel.hidden = true;
+  }
+  function boltCountWord(n){
+    var w = ['nolla','yksi','kaksi','kolme','neljä','viisi','kuusi','seitsemän','kahdeksan'];
+    return w[n] || String(n);
+  }
+  function startBoltGame(idx){
+    var it = garageShelf[idx];
+    if(!it) return;
+    var pp = partById(it.partId);
+    var boltCount = 3;
+    if(it.kind === 'tier' && pp && pp.tiers[it.tierIndex] && pp.tiers[it.tierIndex].bolts){
+      boltCount = pp.tiers[it.tierIndex].bolts;
+    }
+    startBoltJob({
+      title: shelfItemLabel(it),
+      bolts: boltCount,
+      item: it,
+      panel: garagePanelEl,
+      onDone: function(q01){ applyShelfInstall(it, q01); }
+    });
   }
   function layoutBoltZone(){
     boltZoneEl.style.left = (bolt.zoneStart*100) + '%';
@@ -6018,11 +6107,20 @@
     boltSweetEl.style.left = ((bolt.zoneStart + bolt.zoneWidth/2 - sweetW/2)*100) + '%';
     boltSweetEl.style.width = (sweetW*100) + '%';
   }
-  function cancelBoltGame(){
-    if(!bolt.active) return;
+  function closeBoltOverlay(){
     bolt.active = false;
     boltGameEl.hidden = true;
-    if(garageOpen){ garagePanelEl.hidden = false; renderShelf(); }
+    if(bolt.panel === garagePanelEl){
+      if(garageOpen){ garagePanelEl.hidden = false; renderShelf(); }
+    } else if(bolt.panel){
+      bolt.panel.hidden = false;
+    }
+    bolt.panel = null;
+    bolt.job = null;
+  }
+  function cancelBoltGame(){
+    if(!bolt.active) return;
+    closeBoltOverlay();
   }
   function boltStrike(){
     if(!bolt.active || bolt.done || bolt.lockout > 0) return;
@@ -6040,7 +6138,7 @@
       boltMsgEl.textContent = perfect ? 'Täysi kireys!' : 'Kiinni.';
       playBoltSound(perfect);
       setBoltPips();
-      if(bolt.hits >= 3) finishBoltGame();
+      if(bolt.hits >= (bolt.needed || 3)) finishBoltGame();
     } else {
       bolt.lockout = 0.45;                // luiskahti - pieni tauko
       bolt.quality -= 0.25;
@@ -6049,20 +6147,25 @@
     }
   }
   function finishBoltGame(){
-    var it = bolt.item;
-    var p = partById(it.partId);
     bolt.done = true;
     bolt.doneTimer = 1.3;
-    // laatu 0..3 -> asennuksen lopputulos 78-100 % kuntoa
-    var q = Math.max(0, Math.min(3, bolt.quality));
-    var resultCondition = Math.round(78 + (q/3)*22);
+    var need = bolt.needed || 3;
+    // laatu 0..need -> 0..1
+    var q01 = Math.max(0, Math.min(1, bolt.quality / need));
+    if(bolt.job && bolt.job.onDone) bolt.job.onDone(q01);
+    saveGame();
+  }
+  // hyllyltä asennettavan osan lopputulos - kutsutaan kiristyksen jälkeen
+  function applyShelfInstall(it, q01){
+    var p = partById(it.partId);
+    var resultCondition = Math.round(78 + q01*22);
     if(p){
       if(it.kind === 'tier') p.tierIndex = Math.max(p.tierIndex, it.tierIndex);
       if(it.kind === 'orig'){
         // Alkuperäinen osa on jo valmiiksi kulunut: kasaaminen ei tee siitä uutta, vaan huolellinen
         // kiristys antaa korkeintaan pienen bonuksen. Uudet osat tallilta ovat se oikea korjaus.
         p.installed = true;
-        p.condition = Math.min(100, p.condition + q*4);
+        p.condition = Math.min(100, p.condition + q01*12);
       } else {
         p.installed = true;
         p.condition = resultCondition;
@@ -6080,17 +6183,12 @@
     }
     if(inventoryOpen) renderInventory();
     if(repairOpen) renderParts();
-    saveGame();
   }
   function updateBoltGame(dt){
     if(!bolt.active) return;
     if(bolt.done){
       bolt.doneTimer -= dt;
-      if(bolt.doneTimer <= 0){
-        bolt.active = false;
-        boltGameEl.hidden = true;
-        if(garageOpen){ garagePanelEl.hidden = false; renderShelf(); }
-      }
+      if(bolt.doneTimer <= 0) closeBoltOverlay();
       return;
     }
     if(bolt.lockout > 0){ bolt.lockout -= dt; return; }
@@ -6759,24 +6857,44 @@
           tarraBtn.textContent = 'Tarrasarja';
           updateMoneyDisplay();
         }
-        bodyMat.map = decalTex;
-        bodyMat.color.set('#ffffff');
-      } else {
-        bodyMat.map = null;
-        var activeSwatch = document.querySelector('.swatch.active');
-        bodyMat.color.set(activeSwatch ? activeSwatch.getAttribute('data-color') : '#e2572b');
       }
-      bodyMat.needsUpdate = true;
-      Array.prototype.forEach.call(document.querySelectorAll('.finishBtn'), function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
+      // Katteet on ruuvattu runkoon kiinni, joten sekä tarrasarjan liimaus että maalipinnan
+      // palautus vaatii katteiden irrotuksen ja takaisin ruuvaamisen.
+      startBoltJob({
+        title: (wantsFinish === 'tarrat' ? 'Tarrasarja katteisiin' : 'Maalipinta takaisin'),
+        bolts: 2,
+        word: 'ruuvia',
+        panel: tunePanel,
+        onDone: function(q01){
+          if(wantsFinish === 'tarrat'){
+            bodyMat.map = decalTex;
+            bodyMat.color.set('#ffffff');
+          } else {
+            bodyMat.map = null;
+            var activeSwatch = document.querySelector('.swatch.active');
+            bodyMat.color.set(activeSwatch ? activeSwatch.getAttribute('data-color') : '#e2572b');
+          }
+          bodyMat.needsUpdate = true;
+          Array.prototype.forEach.call(document.querySelectorAll('.finishBtn'), function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          boltMsgEl.textContent = q01 > 0.75 ? 'Katteet napakasti paikallaan.' : 'Katteet kiinni - hieman löysällä.';
+        }
+      });
     });
   });
   var kilpaPipeOwned = false;
   var kilpaPipePrice = 60;
   var kilpaPipeBtn = document.getElementById('kilpaPipeBtn');
+  function applyExhaustMode(mode){
+    exhaustMode = mode;
+    exhaustStock.visible = exhaustMode==='vakio' && !usingScooterModel;
+    exhaustRace.visible = exhaustMode==='kilpa' && !usingScooterModel;
+    exhaustFlame.position.set(exhaustMode==='kilpa' ? 0.28 : 0.27, exhaustMode==='kilpa' ? 0.50 : 0.52, exhaustMode==='kilpa' ? -1.42 : -1.2);
+  }
   Array.prototype.forEach.call(document.querySelectorAll('.pipeBtn'), function(btn){
     btn.addEventListener('click', function(){
       var wantsPipe = btn.getAttribute('data-pipe');
+      if(wantsPipe === exhaustMode) return;
       if(wantsPipe === 'kilpa' && !kilpaPipeOwned){
         if(money < kilpaPipePrice) return;
         money -= kilpaPipePrice;
@@ -6784,12 +6902,22 @@
         kilpaPipeBtn.textContent = 'Kilpa';
         updateMoneyDisplay();
       }
-      Array.prototype.forEach.call(document.querySelectorAll('.pipeBtn'), function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      exhaustMode = wantsPipe;
-      exhaustStock.visible = exhaustMode==='vakio' && !usingScooterModel;
-      exhaustRace.visible = exhaustMode==='kilpa' && !usingScooterModel;
-      exhaustFlame.position.set(exhaustMode==='kilpa' ? 0.28 : 0.27, exhaustMode==='kilpa' ? 0.50 : 0.52, exhaustMode==='kilpa' ? -1.42 : -1.2);
+      // Pakoputki on pultattu kiinni kuten mikä tahansa muukin osa: vaihto käy saman
+      // kiristysminipelin läpi. Huonosti kiristetty putki vuotaa, jolloin kilpaputken tehohyöty
+      // jää osittain saamatta (ks. exhaustFitQuality mopedTuneLevelissä).
+      startBoltJob({
+        title: (wantsPipe === 'kilpa' ? 'Kilpaputken asennus' : 'Vakioputken asennus'),
+        bolts: 3,
+        word: 'pulttia',
+        panel: tunePanel,
+        onDone: function(q01){
+          exhaustFitQuality = q01;
+          Array.prototype.forEach.call(document.querySelectorAll('.pipeBtn'), function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          applyExhaustMode(wantsPipe);
+          boltMsgEl.textContent = 'Putki kiinni. Kiristys ' + Math.round(70 + q01*30) + ' %.';
+        }
+      });
     });
   });
 
@@ -8597,10 +8725,11 @@
   }
   // piirtää maastokartasta sen palan joka vastaa maailman suorakulmiota [wx0..wx1] x [wz0..wz1]
   // kanvaasin alueelle [dx,dy,dw,dh]. Reunan yli menevä osa jää pois, joten tausta täytetään ensin.
-  function drawTerrainBackdrop(ctx, wx0, wz0, wx1, wz1, dx, dy, dw, dh){
+  function drawTerrainBackdrop(ctx, wx0, wz0, wx1, wz1, dx, dy, dw, dh, flipX){
     ctx.fillStyle = MAP_GRASS;
     ctx.fillRect(dx, dy, dw, dh);
     if(!terrainMapCanvas) return;
+    var mirrorAbout = dx + dw/2;   // peilausakseli otetaan talteen ENNEN reunaleikkauksia
     var B = terrainMapBounds;
     var spanX = B.maxX-B.minX, spanZ = B.maxZ-B.minZ;
     var sx = (wx0 - B.minX)/spanX * B.w;
@@ -8615,7 +8744,20 @@
     if(sx + sw > B.w){ var ex = sx+sw-B.w; dw -= ex*kx; sw -= ex; }
     if(sy + sh > B.h){ var ey = sy+sh-B.h; dh -= ey*ky; sh -= ey; }
     if(sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) return;
-    ctx.drawImage(terrainMapCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
+    if(flipX){
+      // Kartta piirretään peilattuna x-akselin suhteen (ks. selitys drawMapPlayerin yhteydessä).
+      // Peilaus tehdään kanvaasin muunnoksella vasta piirtohetkellä, jolloin esirenderöityä
+      // maastokuvaa ei tarvitse rakentaa uusiksi. Akseli on alkuperäisen kohdealueen keskiviiva,
+      // joten leikattu osa-alue päätyy oikeaan kohtaan.
+      ctx.save();
+      ctx.translate(mirrorAbout, 0);
+      ctx.scale(-1, 1);
+      ctx.translate(-mirrorAbout, 0);
+      ctx.drawImage(terrainMapCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
+      ctx.restore();
+    } else {
+      ctx.drawImage(terrainMapCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
   }
   buildTerrainMap();
 
@@ -8624,16 +8766,22 @@
   // kallistuu ja heiluu kaarteissa, joten rotation.y ei vastaa tarkasti ajosuuntaa.
   function mapHeading(){ return (mode === 'riding') ? heading : playerHeading; }
 
-  // pelaajanuoli: kolmio joka osoittaa katselusuuntaan. Kartalla +Z on ylös, joten suunta (sin,cos)
-  // piirtyy ruudulle muotoon (sin, -cos).
+  // Pelaajanuoli: kolmio joka osoittaa katselusuuntaan.
+  //
+  // TÄRKEÄ KÄSIENSUUNTA: maailma on oikeakätinen ja kamera katsoo kulkusuuntaan, joten kun pelaaja
+  // kulkee +Z:n suuntaan, maailman +X näkyy ruudulla VASEMMALLA (mitattu: NDC x = -1.78 kohdassa
+  // world x = +10). Kartat piirsivät +X:n oikealle, eli koko kartta oli peilikuva siitä mitä pelaaja
+  // näkee - siksi pelissä oikealle kääntyminen näytti kartalla käännökseltä vasemmalle. Nyt kartan
+  // x-akseli on käännetty: ruudun x = keskipiste - (maailman x - vertailupiste) * mittakaava.
+  // Pohjoinen (+Z) pysyy ylhäällä.
+  //
+  // Peilatulla kartalla maailman suunta (sin h, cos h) piirtyy ruudulle vektoriksi (-sin h, -cos h).
+  // Canvasin rotate(a) vie ylöspäin osoittavan kolmion suuntaan (sin a, -cos a), joten oikea kulma
+  // on -h.
   function drawMapPlayer(ctx, px, py, heading, size){
     ctx.save();
     ctx.translate(px, py);
-    // Kartalla +Z on ylös ja +X oikealle, joten maailman suunta (sin h, cos h) piirtyy ruudulle
-    // vektoriksi (sin h, -cos h). Canvasin rotate(a) vie ylöspäin osoittavan kolmion suuntaan
-    // (sin a, -cos a), joten oikea kulma on suoraan h - EI -h, joka peilasi nuolen ja sai sen
-    // osoittamaan väärään suuntaan aina kun ajoi muualle kuin suoraan pohjoiseen tai etelään.
-    ctx.rotate(heading);
+    ctx.rotate(-heading);
     ctx.beginPath();
     ctx.moveTo(0, -size);
     ctx.lineTo(size*0.68, size*0.8);
@@ -8662,7 +8810,7 @@
     miniCtx.clip();
     drawTerrainBackdrop(miniCtx,
       ref.x - (W/2)/s, ref.z - (H/2)/s, ref.x + (W/2)/s, ref.z + (H/2)/s,
-      0, 0, W, H);
+      0, 0, W, H, true);
 
     // Tiet piirretään kahteen kertaan: ensin tumma reunus, sitten vaalea ydin. Maastopohjaa vasten
     // yksivärinen viiva hukkuisi vihreään - reunustettu tie erottuu kuin oikeassa kartassa.
@@ -8675,7 +8823,7 @@
         var path = roadPaths[ri];
         miniCtx.beginPath();
         for(var pi=0; pi<path.length; pi++){
-          var rpx = cx + (path[pi].x - ref.x)*s;
+          var rpx = cx - (path[pi].x - ref.x)*s;   // x-akseli peilattu, ks. drawMapPlayer
           var rpy = cy - (path[pi].z - ref.z)*s;
           if(pi === 0) miniCtx.moveTo(rpx, rpy); else miniCtx.lineTo(rpx, rpy);
         }
@@ -8695,7 +8843,7 @@
       var inside = dist*s < R - 13;
       marks.push({
         L: L, dist: dist, inside: inside,
-        x: inside ? cx + ldx*s : cx + Math.sin(Math.atan2(ldx, ldz))*(R-9),
+        x: inside ? cx - ldx*s : cx - Math.sin(Math.atan2(ldx, ldz))*(R-9),
         y: inside ? cy - ldz*s : cy - Math.cos(Math.atan2(ldx, ldz))*(R-9)
       });
     }
@@ -8769,13 +8917,14 @@
     var pad = 55;
     minX -= pad; maxX += pad; minZ -= pad; maxZ += pad;
     var s2 = Math.min((W-20)/(maxX-minX), (H-20)/(maxZ-minZ));
-    var ox = W/2 - ((minX+maxX)/2)*s2;
+    var ox = W/2 + ((minX+maxX)/2)*s2;   // x-akseli peilattu, ks. drawMapPlayer
     var oy = H/2 + ((minZ+maxZ)/2)*s2;
-    function bx(x){ return ox + x*s2; }
+    function bx(x){ return ox - x*s2; }
     function by(z){ return oy - z*s2; }
 
-    // maastopohja koko kanvaasin alueelle (käänteismuunnos bx/by:stä)
-    drawTerrainBackdrop(bigCtx, (0-ox)/s2, (oy-H)/s2, (W-ox)/s2, (oy-0)/s2, 0, 0, W, H);
+    // maastopohja koko kanvaasin alueelle (käänteismuunnos bx/by:stä: x = (ox - ruutuX)/s2, joten
+    // ruudun vasen reuna vastaa suurinta maailman x:ää ja oikea reuna pienintä)
+    drawTerrainBackdrop(bigCtx, (ox-W)/s2, (oy-H)/s2, (ox-0)/s2, (oy-0)/s2, 0, 0, W, H, true);
 
     bigCtx.lineJoin = 'round';
     bigCtx.lineCap = 'round';
@@ -9244,6 +9393,7 @@
         parts: partsData,
         kilpaPipeOwned: kilpaPipeOwned,
         exhaustMode: exhaustMode,
+        exhaustFitQuality: exhaustFitQuality,
         tarraOwned: tarraOwned,
         paintColor: '#' + bodyMat.color.getHexString(),
         policeCatchCount: policeCatchCount,
@@ -9305,6 +9455,7 @@
       }
       if(typeof save.kilpaPipeOwned === 'boolean') kilpaPipeOwned = save.kilpaPipeOwned;
       if(typeof save.exhaustMode === 'string') exhaustMode = save.exhaustMode;
+      if(typeof save.exhaustFitQuality === 'number') exhaustFitQuality = Math.max(0, Math.min(1, save.exhaustFitQuality));
       if(typeof save.tarraOwned === 'boolean') tarraOwned = save.tarraOwned;
       if(typeof save.policeCatchCount === 'number') policeCatchCount = save.policeCatchCount;
       if(typeof save.plateOn === 'boolean'){ plateOn = save.plateOn; plateMesh.visible = plateOn; }
@@ -10344,7 +10495,9 @@
         if(nearest && nearestDist <= poiRange){
           waypointEl.style.opacity = '1';
           var bearing = Math.atan2(nearestTo.x, nearestTo.z);
-          var rel = bearing - activeHeading;
+          // sama käsiensuunta-asia kuin kartoilla: maailman +X on pelaajan VASEMMALLA, joten
+          // ruudulle (jossa positiivinen kierto on myötäpäivään) mennään vastakkaisella merkillä
+          var rel = activeHeading - bearing;
           wpArrow.style.transform = 'rotate(' + rel + 'rad)';
           wpLabel.innerHTML = nearest.name + ' · <b>' + Math.round(nearestDist) + '</b> m';
         } else {
