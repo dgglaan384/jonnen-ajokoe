@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:68-->
-<!--JONNE-NAME:Jonnen ajokoe 68-->
-<!--JONNE-DATE:2026-09-23-->
-<!--JONNE-NOTES:Jarrulevyt, akselin päät ja ketjuratas eivät enää pyöri renkaan mukana|Renkaan rajaus kapenee navan tuntumassa, jossa kiinteät osat pistävät sivulle-->
+<!--JONNE-VERSION:69-->
+<!--JONNE-NAME:Jonnen ajokoe 69-->
+<!--JONNE-DATE:2026-09-24-->
+<!--JONNE-NOTES:Valot ja varjot: aurinko seuraa pelaajaa, varjot näkyvät koko kartalla|Uusi metsä: kuusi, mänty, koivu ja pensas, jokainen omana lajinaan|Maasto: notkot, rinteet ja mäkien laet erivärisiä, tekstuurin toisto rikottu|Talot: pystylaudoitus, sokkeli, nurkkalaudat, räystäät ja syvennetyt ikkunat|Tiet: soraiset pientareet, ajourat ja pehmeä reuna nurmeen|Jälkikäsittely: hehku, värisävytys ja vinjetti (pois kevyellä asetuksella)-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -739,10 +739,174 @@
     return mesh;
   }
 
+  // ---- jälkikäsittely: bloom + värisävytys + vinjetti ----
+  // Upotetussa three.js r128 -buildissa EI ole EffectComposeria eikä valmiita passeja (ne ovat
+  // examples/-kansiossa, jota ei ole mukana), joten koko ketju on kirjoitettu käsin kolmella
+  // omalla varjostimella ja muutamalla render targetilla:
+  //   1) koko näkymä piirretään tekstuuriin
+  //   2) siitä poimitaan kirkkaat kohdat (kynnys) puoleen tarkkuuteen
+  //   3) kirkkaat kohdat sumennetaan kahdella erillisellä (vaaka + pysty) gaussin suodatuksella
+  //   4) lopuksi alkuperäinen kuva + hehku yhdistetään, ja päälle ajetaan kontrasti, kylläisyys,
+  //      sävytys (varjot viileiksi, valot lämpimiksi) ja vinjetti.
+  // Kevyellä grafiikka-asetuksella koko ketju ohitetaan (ks. applyQuality), jolloin peli piirtyy
+  // suoraan ruudulle kuten ennenkin.
+  var postOn = true;
+  var postRT = null, postBrightA = null, postBrightB = null;
+  var postW = 0, postH = 0;
+  var postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  var postScene = new THREE.Scene();
+  var postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
+  postQuad.frustumCulled = false;
+  postScene.add(postQuad);
+  var postVert = [
+    'varying vec2 vUv;',
+    'void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }'
+  ].join('\n');
+  var postBrightMat = new THREE.ShaderMaterial({
+    uniforms: {tDiffuse:{value:null}, threshold:{value:0.82}, softness:{value:0.20}},
+    vertexShader: postVert,
+    fragmentShader: [
+      'uniform sampler2D tDiffuse;',
+      'uniform float threshold;',
+      'uniform float softness;',
+      'varying vec2 vUv;',
+      'void main(){',
+      '  vec3 c = texture2D(tDiffuse, vUv).rgb;',
+      '  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));',
+      '  float k = smoothstep(threshold, threshold + softness, l);',
+      '  gl_FragColor = vec4(c * k, 1.0);',
+      '}'
+    ].join('\n'),
+    depthTest: false, depthWrite: false
+  });
+  var postBlurMat = new THREE.ShaderMaterial({
+    uniforms: {tDiffuse:{value:null}, dir:{value:new THREE.Vector2(0,0)}},
+    vertexShader: postVert,
+    fragmentShader: [
+      'uniform sampler2D tDiffuse;',
+      'uniform vec2 dir;',
+      'varying vec2 vUv;',
+      'void main(){',
+      '  vec3 s = texture2D(tDiffuse, vUv).rgb * 0.227027;',
+      '  s += (texture2D(tDiffuse, vUv + dir*1.3846).rgb + texture2D(tDiffuse, vUv - dir*1.3846).rgb) * 0.316216;',
+      '  s += (texture2D(tDiffuse, vUv + dir*3.2308).rgb + texture2D(tDiffuse, vUv - dir*3.2308).rgb) * 0.070270;',
+      '  gl_FragColor = vec4(s, 1.0);',
+      '}'
+    ].join('\n'),
+    depthTest: false, depthWrite: false
+  });
+  var postFinalMat = new THREE.ShaderMaterial({
+    uniforms: {
+      tScene:{value:null}, tBloom:{value:null},
+      bloomStrength:{value:0.30},
+      contrast:{value:1.07},
+      saturation:{value:1.14},
+      vignette:{value:0.45},
+      lift:{value:new THREE.Vector3(0.000, 0.010, 0.030)},
+      gain:{value:new THREE.Vector3(1.030, 1.000, 0.962)}
+    },
+    vertexShader: postVert,
+    fragmentShader: [
+      'uniform sampler2D tScene;',
+      'uniform sampler2D tBloom;',
+      'uniform float bloomStrength;',
+      'uniform float contrast;',
+      'uniform float saturation;',
+      'uniform float vignette;',
+      'uniform vec3 lift;',
+      'uniform vec3 gain;',
+      'varying vec2 vUv;',
+      'void main(){',
+      '  vec3 c = texture2D(tScene, vUv).rgb;',
+      '  c += texture2D(tBloom, vUv).rgb * bloomStrength;',
+      '  c = (c - 0.5) * contrast + 0.5;',
+      '  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));',
+      '  c = mix(vec3(l), c, saturation);',
+      '  c = c * gain + lift * (1.0 - clamp(c, 0.0, 1.0));',
+      '  vec2 p = vUv - 0.5;',
+      '  float v = 1.0 - dot(p, p) * vignette;',
+      '  c *= clamp(v, 0.0, 1.0);',
+      '  gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);',
+      '}'
+    ].join('\n'),
+    depthTest: false, depthWrite: false
+  });
+  var postSizeTmp = new THREE.Vector2();
+  function makePostTarget(w, h, withDepth){
+    var opts = {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: !!withDepth,
+      stencilBuffer: false
+    };
+    var rt;
+    // WebGL2:ssa päänäkymä piirretään moniotantaiseen targetiin, jottei reunanpehmennys (antialias)
+    // katoa kun kuva ohjataan tekstuuriin - ilman tätä jälkikäsittely tekisi kuvasta rosoisemman.
+    if(withDepth && renderer.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget){
+      rt = new THREE.WebGLMultisampleRenderTarget(w, h, opts);
+      rt.samples = 4;
+    } else {
+      rt = new THREE.WebGLRenderTarget(w, h, opts);
+    }
+    // targetin tekstuuri sRGB:nä: näin piirtoketju kirjoittaa siihen täsmälleen samat arvot kuin
+    // se kirjoittaisi suoraan ruudulle, eikä värejä tarvitse muuntaa edestakaisin.
+    if(rt.texture.encoding !== undefined) rt.texture.encoding = THREE.sRGBEncoding;
+    return rt;
+  }
+  function resizePostTargets(){
+    renderer.getDrawingBufferSize(postSizeTmp);
+    var w = Math.max(2, Math.floor(postSizeTmp.x));
+    var h = Math.max(2, Math.floor(postSizeTmp.y));
+    if(w === postW && h === postH && postRT) return;
+    postW = w; postH = h;
+    if(postRT) postRT.dispose();
+    if(postBrightA) postBrightA.dispose();
+    if(postBrightB) postBrightB.dispose();
+    postRT = makePostTarget(w, h, true);
+    var bw = Math.max(2, Math.floor(w/2)), bh = Math.max(2, Math.floor(h/2));
+    postBrightA = makePostTarget(bw, bh, false);
+    postBrightB = makePostTarget(bw, bh, false);
+  }
+  function renderWithPost(){
+    if(!postOn){
+      renderer.setRenderTarget(null);
+      renderer.render(scene, camera);
+      return;
+    }
+    resizePostTargets();
+    renderer.setRenderTarget(postRT);
+    renderer.render(scene, camera);
+    var bw = postBrightA.width, bh = postBrightA.height;
+    postQuad.material = postBrightMat;
+    postBrightMat.uniforms.tDiffuse.value = postRT.texture;
+    renderer.setRenderTarget(postBrightA);
+    renderer.render(postScene, postCam);
+    postQuad.material = postBlurMat;
+    // kaksi kierrosta: ensin tiukka, sitten leveämpi sumennus -> pehmeämpi hehku kuin yhdellä
+    var radii = [1.0, 2.4];
+    for(var r=0; r<radii.length; r++){
+      postBlurMat.uniforms.tDiffuse.value = postBrightA.texture;
+      postBlurMat.uniforms.dir.value.set(radii[r]/bw, 0);
+      renderer.setRenderTarget(postBrightB);
+      renderer.render(postScene, postCam);
+      postBlurMat.uniforms.tDiffuse.value = postBrightB.texture;
+      postBlurMat.uniforms.dir.value.set(0, radii[r]/bh);
+      renderer.setRenderTarget(postBrightA);
+      renderer.render(postScene, postCam);
+    }
+    postQuad.material = postFinalMat;
+    postFinalMat.uniforms.tScene.value = postRT.texture;
+    postFinalMat.uniforms.tBloom.value = postBrightA.texture;
+    renderer.setRenderTarget(null);
+    renderer.render(postScene, postCam);
+  }
+
   function onResize(){
     camera.aspect = app.clientWidth/app.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(app.clientWidth, app.clientHeight);
+    resizePostTargets();
   }
   window.addEventListener('resize', onResize);
 
@@ -870,11 +1034,22 @@
   sun.position.set(-30, 22, 18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048,2048);
-  sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
-  sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
-  sun.shadow.camera.far = 120;
-  sun.shadow.bias = -0.0015;
+  // Varjokamera oli 120 x 120 yksikön laatikko kartan ORIGOSSA, eikä aurinko seurannut pelaajaa.
+  // Maailma on ±1600 yksikköä laaja, joten varjoja syntyi vain aivan kartan keskellä - kaikkialla
+  // muualla puut, talot ja mopo leijuivat ilman varjoa. Nyt aurinko ja sen kohdepiste kulkevat
+  // pelaajan mukana (ks. updateDayNight) ja laatikko on tiiviimpi, jolloin sama varjokartta antaa
+  // selvästi tarkemmat varjot.
+  sun.shadow.camera.left = -52; sun.shadow.camera.right = 52;
+  sun.shadow.camera.top = 52; sun.shadow.camera.bottom = -52;
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 200;
+  sun.shadow.bias = -0.0007;
+  sun.shadow.normalBias = 0.035;
+  sun.shadow.camera.updateProjectionMatrix();
   scene.add(sun);
+  var sunTarget = new THREE.Object3D();
+  scene.add(sunTarget);
+  sun.target = sunTarget;
 
   // maastotekstuuri: kohinainen ruoho kankaalle piirrettynä, toistetaan laajalti
   function makeGrassTexture(){
@@ -896,6 +1071,19 @@
       var x = Math.random()*512, y = Math.random()*512;
       ctx.fillRect(x, y, 1.6, 1.6);
     }
+    // ruohonkorret: lyhyitä vinoja viivoja, jotka antavat pinnalle suunnan ja karvaisen ilmeen.
+    // Ilman näitä nurmi oli pelkkää pistekohinaa ja näytti lähietäisyydeltä hiekkapaperilta.
+    ctx.lineWidth = 1;
+    for(var bl=0; bl<2600; bl++){
+      var gx = Math.random()*512, gy = Math.random()*512;
+      var ga = (Math.random()-0.5)*0.9 - Math.PI/2;
+      var glen = 3 + Math.random()*5;
+      ctx.strokeStyle = Math.random()<0.45 ? 'rgba(86,126,58,0.45)' : 'rgba(150,190,104,0.40)';
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.lineTo(gx + Math.cos(ga)*glen, gy + Math.sin(ga)*glen);
+      ctx.stroke();
+    }
     // muutama pieni apila/kukkapilkku tuomaan eloa nurmikkoon
     for(var f=0; f<70; f++){
       ctx.fillStyle = Math.random()<0.6 ? 'rgba(255,255,255,0.55)' : 'rgba(230,210,80,0.55)';
@@ -908,32 +1096,104 @@
     if(tex.encoding !== undefined) tex.encoding = THREE.sRGBEncoding;
     return tex;
   }
+  // Sorati. Tekstuurin u-akseli kulkee tien POIKKI (0 = vasen piennar, 1 = oikea) ja v-akseli tien
+  // SUUNTAAN. Näin samaan tekstuuriin saadaan piirrettyä pientareet, ajourat ja tien keskiharja
+  // omille kohdilleen - aiemmin tekstuuri toistui 3 kertaa poikkisuunnassa, jolloin urat olivat vain
+  // satunnaisia raitoja eikä pientareita voinut olla lainkaan. Tienpätkien UV:t lasketaan uusiksi
+  // setRoadUV():ssä, joten sama tekstuuri istuu oikein jokaisen levyiselle tielle.
+  var roadTexCache = null;
+  var roadTileLength = 8; // montako metriä yksi tekstuuriruutu kattaa tien suunnassa
   function makeDirtTexture(){
+    if(roadTexCache) return roadTexCache;
+    var W = 256, H = 512;
     var c = document.createElement('canvas');
-    c.width = c.height = 256; // aiempi 128 - terävämpi tie lähietäisyydeltä
+    c.width = W; c.height = H;
     var ctx = c.getContext('2d');
-    ctx.fillStyle = '#b08968';
-    ctx.fillRect(0,0,256,256);
-    // rengasjäljet: kaksi tummempaa raitaa ajolinjan kohdalla, toistuu koko tien matkalla
-    ctx.fillStyle = 'rgba(120,90,64,0.35)';
-    ctx.fillRect(256*0.28, 0, 256*0.10, 256);
-    ctx.fillRect(256*0.62, 0, 256*0.10, 256);
-    for(var i=0; i<2400; i++){
-      var shade = Math.random();
-      ctx.fillStyle = shade < 0.5 ? 'rgba(140,108,80,0.5)' : 'rgba(190,158,120,0.35)';
-      ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+    ctx.fillStyle = '#ab8160';
+    ctx.fillRect(0,0,W,H);
+    function band(u0, u1, style){
+      ctx.fillStyle = style;
+      ctx.fillRect(u0*W, 0, (u1-u0)*W, H);
     }
-    // pieniä kivimurskan/soran sirpaleita
-    for(var p=0; p<90; p++){
-      ctx.fillStyle = Math.random()<0.5 ? 'rgba(80,80,78,0.5)' : 'rgba(210,205,190,0.45)';
-      ctx.fillRect(Math.random()*256, Math.random()*256, 1.4, 1.4);
+    // pientareet: karkeampaa ja hieman harmaampaa soraa. Raja ajorataan on liukuva, koska terävä
+    // värikaista näytti maalatulta viivalta - oikeasti sora vaihettuu vähitellen tiivistyneeksi tieksi.
+    var gL = ctx.createLinearGradient(0, 0, W*0.16, 0);
+    gL.addColorStop(0, 'rgba(146,142,126,0.92)');
+    gL.addColorStop(0.55, 'rgba(158,150,128,0.55)');
+    gL.addColorStop(1, 'rgba(171,129,96,0)');
+    ctx.fillStyle = gL; ctx.fillRect(0, 0, W*0.16, H);
+    var gR = ctx.createLinearGradient(W, 0, W*0.84, 0);
+    gR.addColorStop(0, 'rgba(146,142,126,0.92)');
+    gR.addColorStop(0.55, 'rgba(158,150,128,0.55)');
+    gR.addColorStop(1, 'rgba(171,129,96,0)');
+    ctx.fillStyle = gR; ctx.fillRect(W*0.84, 0, W*0.16, H);
+    // aivan uloin reuna tummenee: siinä sora menee jo nurmen sekaan
+    var eL = ctx.createLinearGradient(0, 0, W*0.05, 0);
+    eL.addColorStop(0, 'rgba(88,96,64,0.70)');
+    eL.addColorStop(1, 'rgba(88,96,64,0)');
+    ctx.fillStyle = eL; ctx.fillRect(0, 0, W*0.05, H);
+    var eR = ctx.createLinearGradient(W, 0, W*0.95, 0);
+    eR.addColorStop(0, 'rgba(88,96,64,0.70)');
+    eR.addColorStop(1, 'rgba(88,96,64,0)');
+    ctx.fillStyle = eR; ctx.fillRect(W*0.95, 0, W*0.05, H);
+    // keskiharja: vaaleampi, kuivempi pölykaista
+    band(0.455, 0.545, 'rgba(226,200,166,0.30)');
+    // ajourat: kaksi tummaa, tiivistynyttä kaistaa
+    band(0.245, 0.375, 'rgba(112,84,58,0.42)');
+    band(0.625, 0.755, 'rgba(112,84,58,0.42)');
+    band(0.285, 0.335, 'rgba(96,71,49,0.35)');
+    band(0.665, 0.715, 'rgba(96,71,49,0.35)');
+    // uran reunapenkka: ohut vaalea harjanne kummankin uran ulkoreunaan
+    band(0.225, 0.245, 'rgba(232,208,176,0.35)');
+    band(0.755, 0.775, 'rgba(232,208,176,0.35)');
+    // sorarae: tiheä pistekohina koko leveydelle, pientareilla karkeampi
+    for(var i=0; i<9000; i++){
+      var gx = Math.random()*W, gy = Math.random()*H;
+      var edge = (gx < W*0.10 || gx > W*0.90);
+      var sz = edge ? 1.4 + Math.random()*2.2 : 1 + Math.random()*1.4;
+      var r = Math.random();
+      if(edge) ctx.fillStyle = r<0.4 ? 'rgba(70,70,66,0.45)' : (r<0.75 ? 'rgba(206,202,188,0.45)' : 'rgba(140,132,110,0.40)');
+      else ctx.fillStyle = r<0.45 ? 'rgba(134,102,74,0.45)' : (r<0.8 ? 'rgba(196,164,126,0.40)' : 'rgba(92,92,86,0.30)');
+      ctx.fillRect(gx, gy, sz, sz);
+    }
+    // pitkittäiset raapaisut ajourien suunnassa: antaa tielle liikkeen tunnun
+    ctx.lineWidth = 1;
+    for(var k=0; k<260; k++){
+      var kx = W*(0.10 + Math.random()*0.80);
+      var ky = Math.random()*H;
+      var klen = 12 + Math.random()*60;
+      ctx.strokeStyle = Math.random()<0.5 ? 'rgba(120,92,66,0.28)' : 'rgba(208,180,142,0.24)';
+      ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(kx + (Math.random()-0.5)*3, ky+klen); ctx.stroke();
+    }
+    // pientareen ruohotupsut: pieniä vihreitä töyhtöjä sulattamassa tien reunan nurmeen
+    for(var t=0; t<220; t++){
+      var side = Math.random()<0.5;
+      var tx = side ? Math.random()*W*0.075 : W - Math.random()*W*0.075;
+      var ty = Math.random()*H;
+      ctx.fillStyle = Math.random()<0.5 ? 'rgba(96,128,64,0.55)' : 'rgba(126,158,86,0.45)';
+      ctx.fillRect(tx, ty, 1.4, 3 + Math.random()*4);
     }
     var tex = new THREE.CanvasTexture(c);
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(3, 500);
+    tex.wrapS = THREE.ClampToEdgeWrapping; // poikkisuunnassa EI toistoa: pientareet pysyvät reunoilla
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1, 1);
     tex.anisotropy = maxAniso;
     if(tex.encoding !== undefined) tex.encoding = THREE.sRGBEncoding;
+    roadTexCache = tex;
     return tex;
+  }
+  // Kirjoittaa tienpätkän UV:t uusiksi: u aina tien poikki (0..1) ja v tien suunnassa metreinä
+  // jaettuna ruutupituudella. acrossIsU kertoo, onko geometrian u-akseli jo poikkisuuntainen.
+  function setRoadUV(geom, acrossIsU, lengthMeters){
+    var uv = geom.attributes.uv;
+    var reps = Math.max(1, Math.round(lengthMeters / roadTileLength));
+    for(var i=0; i<uv.count; i++){
+      var a = uv.getX(i), b = uv.getY(i);
+      if(acrossIsU) uv.setXY(i, a, b*reps);
+      else uv.setXY(i, b, a*reps);
+    }
+    uv.needsUpdate = true;
+    return geom;
   }
 
   // ground field
@@ -962,7 +1222,7 @@
     roadCorridors.push({x1:x1, z1:z1, x2:x2, z2:z2, hw:halfWidth});
   }
   var road = new THREE.Mesh(
-    new THREE.PlaneGeometry(12, 3200),
+    setRoadUV(new THREE.PlaneGeometry(12, 3200), true, 3200),
     new THREE.MeshStandardMaterial({map:makeDirtTexture(), roughness:0.95, metalness:0})
   );
   road.rotation.x = -Math.PI/2;
@@ -996,14 +1256,14 @@
   addRoadCorridor(-loopHalfWidth, loopZMax, loopHalfWidth, loopZMax, 5);
   addRoadCorridor(-loopHalfWidth, loopZMin, loopHalfWidth, loopZMin, 5);
   [-loopHalfWidth, loopHalfWidth].forEach(function(lx){
-    var sideRoad = new THREE.Mesh(new THREE.PlaneGeometry(10, 3200), loopRoadMat);
+    var sideRoad = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(10, 3200), true, 3200), loopRoadMat);
     sideRoad.rotation.x = -Math.PI/2;
     sideRoad.position.set(lx, roadSurfaceY, 0);
     sideRoad.receiveShadow = true;
     scene.add(sideRoad);
   });
   [loopZMax, loopZMin].forEach(function(lz){
-    var crossRoad = new THREE.Mesh(new THREE.PlaneGeometry(loopHalfWidth*2+10, 10), loopRoadMat);
+    var crossRoad = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(loopHalfWidth*2+10, 10), false, loopHalfWidth*2+10), loopRoadMat);
     crossRoad.rotation.x = -Math.PI/2;
     crossRoad.position.set(0, roadSurfaceY, lz);
     crossRoad.receiveShadow = true;
@@ -1017,39 +1277,140 @@
     new THREE.Vector3(loopHalfWidth, 0, loopZMax)
   ];
 
-  // trees scattered off-road
-  function makeTree(x,z,scale){
-    var g = new THREE.Group();
-    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.16,1.1,6), new THREE.MeshStandardMaterial({color:0x6b4f3b}));
-    trunk.position.y = 0.55; trunk.castShadow = true;
-    var foliage = new THREE.Mesh(new THREE.ConeGeometry(1.1,2.2,7), new THREE.MeshStandardMaterial({color:0x3e6644}));
-    foliage.position.y = 1.9; foliage.castShadow = true;
-    g.add(trunk, foliage);
-    g.position.set(x,0,z);
-    g.scale.setScalar(scale);
-    return g;
+  // ---- puut ----
+  // Aiemmin kaikki 440 puuta olivat sama kartio saman sylinterin päällä, jokainen omana
+  // Group-oliona kahdella meshillä - eli lähes 900 piirtokutsua pelkkiin puihin, ja metsä näytti
+  // monistetulta. Nyt lajeja on neljä (kuusi, mänty, koivu, pensas), jokainen yhtenä geometriana
+  // kärkiväreineen, ja ne piirretään InstancedMesheinä: koko metsä on neljä piirtokutsua.
+
+  // yhdistää useamman geometrian yhdeksi (kirjaston BufferGeometryUtils ei ole mukana upotetussa
+  // three.js-buildissa, joten yhdistely tehdään itse)
+  function mergeGeoms(list){
+    var i, total = 0, prepared = [];
+    for(i=0; i<list.length; i++){
+      var g = list[i].index ? list[i].toNonIndexed() : list[i];
+      if(!g.attributes.normal) g.computeVertexNormals();
+      prepared.push(g);
+      total += g.attributes.position.count;
+    }
+    var pos = new Float32Array(total*3), nor = new Float32Array(total*3), col = new Float32Array(total*3);
+    var o = 0;
+    for(i=0; i<prepared.length; i++){
+      var sp = prepared[i].attributes.position, sn = prepared[i].attributes.normal, sc = prepared[i].attributes.color;
+      for(var v=0; v<sp.count; v++){
+        pos[o*3] = sp.getX(v); pos[o*3+1] = sp.getY(v); pos[o*3+2] = sp.getZ(v);
+        if(sn){ nor[o*3] = sn.getX(v); nor[o*3+1] = sn.getY(v); nor[o*3+2] = sn.getZ(v); }
+        if(sc){ col[o*3] = sc.getX(v); col[o*3+1] = sc.getY(v); col[o*3+2] = sc.getZ(v); }
+        else { col[o*3] = col[o*3+1] = col[o*3+2] = 1; }
+        o++;
+      }
+    }
+    var out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    out.setAttribute('normal', new THREE.BufferAttribute(nor,3));
+    out.setAttribute('color', new THREE.BufferAttribute(col,3));
+    return out;
+  }
+  // värjää geometrian kärkivärit, pienellä satunnaisvaihtelulla jotta pinta ei ole tasainen
+  function paintGeom(geom, hex, jitter){
+    var c = new THREE.Color(hex);
+    var n = geom.attributes.position.count;
+    var arr = new Float32Array(n*3);
+    for(var i=0; i<n; i++){
+      var j = 1 + (Math.random()-0.5)*(jitter === undefined ? 0.14 : jitter);
+      arr[i*3] = c.r*j; arr[i*3+1] = c.g*j; arr[i*3+2] = c.b*j;
+    }
+    geom.setAttribute('color', new THREE.BufferAttribute(arr,3));
+    return geom;
+  }
+  function coneAt(r, h, y, seg, hex, jitter){
+    var g = new THREE.ConeGeometry(r, h, seg || 7);
+    g.translate(0, y, 0);
+    return paintGeom(g, hex, jitter);
+  }
+  function trunkAt(rTop, rBot, h, hex){
+    var g = new THREE.CylinderGeometry(rTop, rBot, h, 6);
+    g.translate(0, h/2, 0);
+    return paintGeom(g, hex, 0.10);
+  }
+  function blobAt(r, y, hex, sy){
+    var g = new THREE.IcosahedronGeometry(r, 0);
+    g.scale(1, sy || 0.85, 1);
+    g.translate(0, y, 0);
+    return paintGeom(g, hex, 0.16);
+  }
+  function makeTreeGeometry(kind){
+    if(kind === 'kuusi'){
+      // tiheä kuusi: kolme päällekkäistä kartiota, alin levein
+      return mergeGeoms([
+        trunkAt(0.09, 0.14, 1.0, 0x4a3524),
+        coneAt(1.15, 1.55, 1.55, 8, 0x2f5233, 0.16),
+        coneAt(0.92, 1.30, 2.30, 8, 0x35603a, 0.16),
+        coneAt(0.58, 1.05, 2.95, 8, 0x3b6b3f, 0.16)
+      ]);
+    }
+    if(kind === 'manty'){
+      // mänty: pitkä paljas runko, latvus korkealla
+      return mergeGeoms([
+        trunkAt(0.11, 0.17, 2.15, 0x6b4526),
+        coneAt(1.00, 0.95, 2.55, 8, 0x46703c, 0.15),
+        coneAt(0.74, 0.85, 3.10, 8, 0x4d7a40, 0.15)
+      ]);
+    }
+    if(kind === 'koivu'){
+      // koivu: vaalea runko ja pyöreä, vaaleanvihreä latva
+      return mergeGeoms([
+        trunkAt(0.07, 0.10, 1.75, 0xd6cfbe),
+        blobAt(1.00, 2.45, 0x6e9b45, 0.95),
+        blobAt(0.62, 3.05, 0x77a54c, 0.8)
+      ]);
+    }
+    // pensas: pelkkä matala lehvästö ilman runkoa
+    return mergeGeoms([
+      blobAt(0.62, 0.48, 0x406b33, 0.8),
+      blobAt(0.46, 0.80, 0x497539, 0.8),
+      blobAt(0.38, 0.42, 0x3a6330, 0.9).translate(0.45, 0, 0.2)
+    ]);
   }
   // Puut sijoitetaan tien varteen kulkusuuntaan (negatiivinen z) koko pidennetyn matkan varrelle -
   // aiemmin suurin osa puista oli vahingossa lähtöpisteen takana, väärällä puolella.
   // Puiden y-korkeus säädetään myöhemmin maaston mäkien mukaiseksi (ks. sculptTerrain), koska
   // korkeusfunktio tarvitsee vielä myöhemmin määriteltäviä rakennusten/teiden sijainteja.
-  var scatteredTrees = [];
+  // Puiden paikat arvotaan tässä, mutta itse meshit rakennetaan vasta kun tiestö ja maasto ovat
+  // valmiit (ks. instansointi sculptTerrainin jälkeen) - silloin tiedetään mitkä puut osuvat tielle.
+  var treeKinds = ['kuusi', 'kuusi', 'kuusi', 'manty', 'manty', 'koivu', 'koivu', 'pensas'];
+  var treeSpots = [];
   for(var i=0;i<240;i++){ // aiempi 160 - tiheämpi metsä tuo täyteläisemmän kartan ("mapista 1000x parempi" -toive)
     var side = Math.random()<0.5?-1:1;
-    var x = side*(10 + Math.random()*48); // leveämmän pääraitin reunan ulkopuolelle
-    var z = -30 - Math.random()*1550;
-    var tree = makeTree(x,z, 0.8+Math.random()*0.9);
-    scene.add(tree);
-    scatteredTrees.push(tree);
+    treeSpots.push({
+      x: side*(10 + Math.random()*48), // leveämmän pääraitin reunan ulkopuolelle
+      z: -30 - Math.random()*1550,
+      s: 0.8 + Math.random()*0.9,
+      rot: Math.random()*Math.PI*2,
+      kind: treeKinds[Math.floor(Math.random()*treeKinds.length)]
+    });
   }
   // puita myös toiseen suuntaan (positiivinen z) - se puoli kartasta oli aiemmin täysin tyhjä pelto
   for(var i2=0;i2<200;i2++){ // aiempi 130
     var side2 = Math.random()<0.5?-1:1;
-    var x2 = side2*(10 + Math.random()*48);
-    var z2 = 30 + Math.random()*1520;
-    var tree2 = makeTree(x2,z2, 0.8+Math.random()*0.9);
-    scene.add(tree2);
-    scatteredTrees.push(tree2);
+    treeSpots.push({
+      x: side2*(10 + Math.random()*48),
+      z: 30 + Math.random()*1520,
+      s: 0.8 + Math.random()*0.9,
+      rot: Math.random()*Math.PI*2,
+      kind: treeKinds[Math.floor(Math.random()*treeKinds.length)]
+    });
+  }
+  // pensaita myös lähemmäs teitä, ne ovat matalia eivätkä haittaa näkyvyyttä
+  for(var i3=0;i3<120;i3++){
+    var side3 = Math.random()<0.5?-1:1;
+    treeSpots.push({
+      x: side3*(8 + Math.random()*40),
+      z: (Math.random()<0.5?-1:1) * (25 + Math.random()*1400),
+      s: 0.7 + Math.random()*0.8,
+      rot: Math.random()*Math.PI*2,
+      kind: 'pensas'
+    });
   }
 
   // Hajanaisia maalaistaloja pitkien tieosuuksien varrelle (koko positiivinen z-suunta ja
@@ -1560,58 +1921,244 @@
 
   // naapurikylä (neighbouring village): oikeannäköinen omakotitalo - harjakatto kahdesta kallistetusta
   // laatikosta + kolmiopäätyseinät, ikkunat, ovi ja savupiippu (ei enää pelkkä laatikko+kartiokatto)
-  function makeHouse(x,z,rotY,wallColor,roofColor,scale){
+  // ---- talojen rakennusosat ----
+  // Talot olivat aiemmin sileitä värillisiä laatikoita: yksi tasainen seinäväri, ohut katto ilman
+  // räystästä, ikkunat tasan seinän pinnassa. Nyt jokaisella talolla on pystylaudoitus, sokkeli,
+  // nurkkalaudat, ulkoneva räystäs otsalautoineen, harjapelti ja syvennetyt ikkunat. Materiaalit ja
+  // tekstuurit tehdään VAIN KERRAN väriä kohden ja jaetaan kaikille taloille (cache), joten n. 40
+  // talon lisädetaljit eivät kasvata materiaali- tai tekstuurimäärää käytännössä lainkaan.
+  // KAIKKI jaetut tekstuurit, materiaalit ja geometriat luodaan LAISKASTI funktion sisällä, ei
+  // ylätason var-lauseina. Syy: makeHouse()ia kutsutaan (scatterHouses, homeHouse) satoja rivejä
+  // AIEMMIN kuin tämä kohta tiedostossa. Funktiomäärittely nousee ylös (hoisting) ja toimii, mutta
+  // ylätason var:in ARVO ei - ne olisivat kutsuhetkellä undefined ja peli kaatuisi käynnistyessään.
+  function houseParts(){
+    if(houseParts.cache) return houseParts.cache;
+    function boardTexture(vertical){
+      var c = document.createElement('canvas');
+      c.width = c.height = 256;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,256,256);
+      // laudan sauma joka 16. pikseli + hento puunsyy, harmaasävyisenä jotta materiaalin väri
+      // pääsee läpi sellaisenaan (map kertoo värin)
+      for(var i=0; i<16; i++){
+        var pp = i*16;
+        ctx.fillStyle = 'rgba(0,0,0,0.20)';
+        if(vertical) ctx.fillRect(pp, 0, 1.4, 256); else ctx.fillRect(0, pp, 256, 1.4);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        if(vertical) ctx.fillRect(pp+1.6, 0, 1.2, 256); else ctx.fillRect(0, pp+1.6, 256, 1.2);
+        // lautakohtainen sävyero: vierekkäiset laudat eivät ole ikinä täysin samanvärisiä
+        var sh = (Math.random()-0.5)*0.10;
+        ctx.fillStyle = (sh<0 ? 'rgba(0,0,0,' : 'rgba(255,255,255,') + Math.abs(sh).toFixed(3) + ')';
+        if(vertical) ctx.fillRect(pp+2, 0, 14, 256); else ctx.fillRect(0, pp+2, 256, 14);
+      }
+      for(var n=0; n<1500; n++){
+        ctx.fillStyle = Math.random()<0.5 ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+        var nx = Math.random()*256, ny = Math.random()*256;
+        if(vertical) ctx.fillRect(nx, ny, 1, 4+Math.random()*10);
+        else ctx.fillRect(nx, ny, 4+Math.random()*10, 1);
+      }
+      var tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(1.4, 1.4);
+      tex.anisotropy = maxAniso;
+      return tex;
+    }
+    var p = {
+      vBoard: boardTexture(true),
+      hBoard: boardTexture(false),
+      mats: {},
+      winFrameH: new THREE.BoxGeometry(0.76,0.10,0.09),
+      winFrameV: new THREE.BoxGeometry(0.10,0.76,0.09),
+      winRecess: new THREE.BoxGeometry(0.60,0.60,0.06),
+      winGlass:  new THREE.BoxGeometry(0.60,0.60,0.02),
+      winBarV:   new THREE.BoxGeometry(0.045,0.60,0.05),
+      winBarH:   new THREE.BoxGeometry(0.60,0.045,0.05),
+      winSill:   new THREE.BoxGeometry(0.88,0.07,0.18),
+      glassMat:   new THREE.MeshStandardMaterial({color:0x35576b, roughness:0.12, metalness:0.35}),
+      recessMat:  new THREE.MeshStandardMaterial({color:0x14181c, roughness:1, metalness:0}),
+      trimMat:    new THREE.MeshStandardMaterial({color:0xf3eede, roughness:0.85, metalness:0}),
+      doorMat:    new THREE.MeshStandardMaterial({color:0x4a2f1c, roughness:0.85, metalness:0}),
+      stoneMat:   new THREE.MeshStandardMaterial({color:0x8e8a82, roughness:1, metalness:0}),
+      chimneyMat: new THREE.MeshStandardMaterial({color:0x7d5f52, roughness:1, metalness:0})
+    };
+    houseParts.cache = p;
+    return p;
+  }
+  function houseMat(color, kind){
+    var p = houseParts();
+    var key = kind + '_' + color;
+    if(p.mats[key]) return p.mats[key];
+    var m;
+    if(kind === 'wall'){
+      m = new THREE.MeshStandardMaterial({color:color, map:p.vBoard, roughness:0.92, metalness:0});
+    } else if(kind === 'roof'){
+      m = new THREE.MeshStandardMaterial({color:color, map:p.hBoard, roughness:0.72, metalness:0.06});
+    } else {
+      m = new THREE.MeshStandardMaterial({color:color, roughness:0.9, metalness:0});
+    }
+    p.mats[key] = m;
+    return m;
+  }
+  // Ikkunaryhmä: valkoinen karmi, sen takana musta syvennys (näyttää siltä että sisään näkee
+  // pimeään huoneeseen) ja edessä lasi + ristikkopuitteet. Pelkkä yksivärinen lasilaatta seinän
+  // pinnassa näytti tarralta - syvennys tekee siitä aidon oloisen reiän seinässä.
+  function makeHouseWindow(){
+    var p = houseParts();
+    var w = new THREE.Group();
+    // ryhmän z=0 on tasan seinän pinta: syvennys ja lasi jäävät seinän SISÄÄN, karmi tulee ulos
+    var recess = new THREE.Mesh(p.winRecess, p.recessMat);
+    recess.position.z = -0.055;
+    var glass = new THREE.Mesh(p.winGlass, p.glassMat);
+    glass.position.z = -0.012;
+    var barV = new THREE.Mesh(p.winBarV, p.trimMat);
+    barV.position.z = 0.012;
+    var barH = new THREE.Mesh(p.winBarH, p.trimMat);
+    barH.position.z = 0.012;
+    // karmi neljästä laudasta: keskelle jää oikea aukko, ei umpinaista levyä lasin päälle
+    var fT = new THREE.Mesh(p.winFrameH, p.trimMat); fT.position.set(0, 0.33, 0.035);
+    var fB = new THREE.Mesh(p.winFrameH, p.trimMat); fB.position.set(0, -0.33, 0.035);
+    var fL = new THREE.Mesh(p.winFrameV, p.trimMat); fL.position.set(-0.33, 0, 0.035);
+    var fR = new THREE.Mesh(p.winFrameV, p.trimMat); fR.position.set(0.33, 0, 0.035);
+    var sill = new THREE.Mesh(p.winSill, p.trimMat);
+    sill.position.set(0, -0.41, 0.055);
+    w.add(recess, glass, barV, barH, fT, fB, fL, fR, sill);
+    return w;
+  }
+  function makeHouse(x,z,rotY,wallColor,roofColor,scale,variant){
     var g = new THREE.Group();
-    var wallMat = new THREE.MeshStandardMaterial({color:wallColor});
-    var wall = new THREE.Mesh(new THREE.BoxGeometry(3.4,2.3,3.8), wallMat);
-    wall.position.y=1.15; wall.castShadow=true; wall.receiveShadow=true;
-    g.add(wall);
+    var hp = houseParts();
+    var wallMat = houseMat(wallColor, 'wall');
+    var roofMat = houseMat(roofColor, 'roof');
+    // variantti: 0 = matala mökki, 1 = hieman korkeampi ja jyrkempikattoinen. Jos varianttia ei
+    // anneta, se johdetaan paikasta, jolloin sama talo saa aina saman muodon (ei välkkymistä).
+    var vr = (variant === undefined) ? (Math.abs(Math.floor(x*7.3 + z*3.1)) % 2) : variant;
+    var wallH = vr ? 2.75 : 2.3;
+    var peak  = vr ? 1.35 : 0.95;
+    var hw = 1.75, hd = 1.9;          // seinän puolileveys / puolisyvyys (ulkopinta)
+    var ridgeY = wallH + peak;
 
-    var roofMat = new THREE.MeshStandardMaterial({color:roofColor});
-    var slopeLen = Math.sqrt(1.85*1.85 + 0.95*0.95);
-    var slopeAngle = Math.atan2(0.95, 1.85);
-    var slopeL = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.12, 4.1), roofMat);
-    slopeL.position.set(-0.925, 2.3+0.48, 0);
+    // sokkeli: kapea betonireunus, jonka päällä laudoitus alkaa
+    var plinth = new THREE.Mesh(new THREE.BoxGeometry(hw*2+0.18, 0.34, hd*2+0.18), hp.stoneMat);
+    plinth.position.y = 0.17; plinth.castShadow = true; plinth.receiveShadow = true;
+    g.add(plinth);
+
+    var wall = new THREE.Mesh(new THREE.BoxGeometry(hw*2, wallH, hd*2), wallMat);
+    wall.position.y = 0.30 + wallH/2;
+    wall.castShadow=true; wall.receiveShadow=true;
+    g.add(wall);
+    var wallTop = 0.30 + wallH;
+
+    // nurkkalaudat: neljä valkoista pystylautaa, taittavat talon muodon esiin varjossakin
+    [[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]].forEach(function(cn){
+      var cb = new THREE.Mesh(new THREE.BoxGeometry(0.19, wallH, 0.19), hp.trimMat);
+      cb.position.set(cn[0], 0.30 + wallH/2, cn[1]);
+      cb.castShadow = true;
+      g.add(cb);
+    });
+
+    // ---- katto räystäineen ----
+    var slopeAngle = Math.atan2(peak, hw);
+    var over = 0.40;                       // räystään vaakaulottuma seinän ulkopuolelle
+    var run = hw + over;
+    var slopeLen = run / Math.cos(slopeAngle);
+    var roofDepth = hd*2 + 0.84;           // päätyräystäät
+    var mid = run/2;
+    var slopeY = wallTop + peak - mid*Math.tan(slopeAngle) + 0.075;
+    var slopeL = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.13, roofDepth), roofMat);
+    slopeL.position.set(-mid, slopeY, 0);
     slopeL.rotation.z = slopeAngle;
-    slopeL.castShadow = true;
+    slopeL.castShadow = true; slopeL.receiveShadow = true;
     var slopeR = slopeL.clone();
-    slopeR.position.x = 0.925;
+    slopeR.position.x = mid;
     slopeR.rotation.z = -slopeAngle;
     g.add(slopeL, slopeR);
+    // otsalaudat räystään alareunaan
+    var eaveY = wallTop + peak - run*Math.tan(slopeAngle);
+    [-1, 1].forEach(function(sgn){
+      var fascia = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.20, roofDepth), hp.trimMat);
+      fascia.position.set(sgn*(run+0.03), eaveY - 0.03, 0);
+      fascia.castShadow = true;
+      g.add(fascia);
+    });
+    // harjapelti
+    var ridge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.10, roofDepth+0.04), hp.trimMat);
+    ridge.position.set(0, ridgeY + 0.10, 0);
+    ridge.castShadow = true;
+    g.add(ridge);
 
     var gableShape = new THREE.Shape();
-    gableShape.moveTo(-1.75, 0);
-    gableShape.lineTo(1.75, 0);
-    gableShape.lineTo(0, 0.95);
+    gableShape.moveTo(-hw, 0);
+    gableShape.lineTo(hw, 0);
+    gableShape.lineTo(0, peak);
     gableShape.closePath();
     var gableGeom = new THREE.ShapeGeometry(gableShape);
     var gableFront = new THREE.Mesh(gableGeom, wallMat);
-    gableFront.position.set(0, 2.3, 1.9);
+    gableFront.position.set(0, wallTop, hd);
     gableFront.castShadow = true;
     var gableBack = gableFront.clone();
-    gableBack.position.z = -1.9;
+    gableBack.position.z = -hd;
     gableBack.rotation.y = Math.PI;
     g.add(gableFront, gableBack);
-
-    // ovi ja ikkunat
-    var door = new THREE.Mesh(new THREE.BoxGeometry(0.75,1.5,0.08), new THREE.MeshStandardMaterial({color:0x5b3d24}));
-    door.position.set(0, 0.75, 1.91);
-    g.add(door);
-    var winMat = new THREE.MeshStandardMaterial({color:0x9fd0ea, transparent:true, opacity:0.78, roughness:0.2});
-    var winFrameMat = new THREE.MeshStandardMaterial({color:0xfaf6e9});
-    [[-1.05,1.3,1.91,0],[1.05,1.3,1.91,0],[1.71,1.3,0.6,Math.PI/2],[1.71,1.3,-0.6,Math.PI/2]].forEach(function(w){
-      var frame = new THREE.Mesh(new THREE.BoxGeometry(0.62,0.62,0.1), winFrameMat);
-      frame.position.set(w[0],w[1],w[2]); frame.rotation.y = w[3];
-      var glass = new THREE.Mesh(new THREE.BoxGeometry(0.46,0.46,0.11), winMat);
-      glass.position.copy(frame.position); glass.rotation.y = w[3];
-      g.add(frame, glass);
+    // päätykolmion räystäslaudat
+    [[-1, hd+0.01],[1, hd+0.01],[-1, -hd-0.01],[1, -hd-0.01]].forEach(function(bv){
+      var bl = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.13, 0.06), hp.trimMat);
+      bl.position.set(bv[0]*mid, slopeY - 0.10, bv[1]);
+      bl.rotation.z = -bv[0]*slopeAngle;
+      g.add(bl);
     });
 
-    // savupiippu katolla
-    var chimney = new THREE.Mesh(new THREE.BoxGeometry(0.32,0.9,0.32), new THREE.MeshStandardMaterial({color:0x8a6a5a}));
-    chimney.position.set(0.7, 3.05, -0.6);
+    // ---- ovi, portaat ja katos ----
+    var doorH = 1.6;
+    var doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.92, doorH+0.12, 0.07), hp.trimMat);
+    doorFrame.position.set(0, 0.30 + (doorH+0.12)/2, hd+0.015);
+    var door = new THREE.Mesh(new THREE.BoxGeometry(0.78, doorH, 0.07), hp.doorMat);
+    door.position.set(0, 0.30 + doorH/2, hd+0.035);
+    var doorWin = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.30,0.03), hp.glassMat);
+    doorWin.position.set(0, 0.30 + doorH - 0.34, hd+0.075);
+    var step = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.16, 0.55), hp.stoneMat);
+    step.position.set(0, 0.10, hd + 0.32);
+    step.receiveShadow = true; step.castShadow = true;
+    var canopy = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.09, 0.62), roofMat);
+    canopy.position.set(0, 0.30 + doorH + 0.34, hd + 0.26);
+    canopy.rotation.x = -0.20;
+    canopy.castShadow = true;
+    g.add(doorFrame, door, doorWin, step, canopy);
+
+    // ---- ikkunat ----
+    var winY = 0.30 + wallH*0.55;
+    var winSpots = [
+      [-1.06, winY, hd+0.005, 0],
+      [ 1.06, winY, hd+0.005, 0],
+      [ hw+0.005, winY,  0.62, Math.PI/2],
+      [ hw+0.005, winY, -0.62, Math.PI/2],
+      [-hw-0.005, winY,  0.62, -Math.PI/2],
+      [ 0, winY, -hd-0.005, Math.PI]
+    ];
+    for(var wi=0; wi<winSpots.length; wi++){
+      var ws = winSpots[wi];
+      var wgroup = makeHouseWindow();
+      wgroup.position.set(ws[0], ws[1], ws[2]);
+      wgroup.rotation.y = ws[3];
+      g.add(wgroup);
+    }
+    // korkeassa variantissa lisäksi päätykolmion pikkuikkuna
+    if(vr){
+      var atticWin = new THREE.Mesh(new THREE.BoxGeometry(0.44,0.44,0.08), hp.trimMat);
+      atticWin.position.set(0, wallTop + peak*0.42, hd+0.03);
+      var atticGlass = new THREE.Mesh(new THREE.BoxGeometry(0.30,0.30,0.04), hp.recessMat);
+      atticGlass.position.set(0, wallTop + peak*0.42, hd+0.07);
+      g.add(atticWin, atticGlass);
+    }
+
+    // savupiippu katolla - tiilipiippu ja sen päällä peltihattu
+    var chimney = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.95 + peak*0.3, 0.38), hp.chimneyMat);
+    chimney.position.set(0.62, ridgeY - 0.25, -0.6);
     chimney.castShadow = true;
-    g.add(chimney);
+    var chimCap = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.08, 0.50), hp.trimMat);
+    chimCap.position.set(0.62, ridgeY + (0.95 + peak*0.3)/2 - 0.25 + 0.04, -0.6);
+    chimCap.castShadow = true;
+    g.add(chimney, chimCap);
 
     g.position.set(x,0,z); g.rotation.y=rotY; g.scale.setScalar(scale||1);
     return g;
@@ -1782,7 +2329,10 @@
   // ---- lähialueen tieverkko: risteys kodin luona haarautuu kauppaan/romuttamolle ja
   // huoltoasemalle/Mac Donaldsille, jottei koko kartta ole enää yksi iso suora ----
   function makeStraightRoad(cx, cz, lenX, lenZ){
-    var m = new THREE.Mesh(new THREE.PlaneGeometry(lenX, lenZ), loopRoadMat);
+    var m = new THREE.Mesh(
+      (lenZ >= lenX) ? setRoadUV(new THREE.PlaneGeometry(lenX, lenZ), true, lenZ)
+                     : setRoadUV(new THREE.PlaneGeometry(lenX, lenZ), false, lenX),
+      loopRoadMat);
     m.rotation.x = -Math.PI/2;
     m.position.set(cx, roadSurfaceY, cz);
     m.receiveShadow = true;
@@ -1805,7 +2355,7 @@
   // mihin tahansa kulmaan osoittavia pätkiä (ei vain akselinsuuntaisia) - näistä koostetaan mutkat.
   function makeAngledRoad(cx, cz, length, width, angleRad){
     var g = new THREE.Group();
-    var m = new THREE.Mesh(new THREE.PlaneGeometry(length, width), loopRoadMat);
+    var m = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(length, width), false, length), loopRoadMat);
     m.rotation.x = -Math.PI/2;
     m.position.y = roadSurfaceY;
     m.receiveShadow = true;
@@ -3424,6 +3974,16 @@
   // mäki voi "aliasoitua" näkyviin kahden pisteen välissä juuri tien kohdalla vaikka matemaattinen
   // korkeusfunktio olisikin siellä nolla - tämä oli edellisen version bugi (170 -> 400 korjaa sen,
   // ruutukoko 3400/400 = 8.5 yksikköä, reilusti alle pienimmänkin marginaalin).
+  // Maaston pintavaihtelu: yksi ruohotekstuuri 240 kertaa toistettuna näytti kaukaa selvältä
+  // ruudukolta, ja koko maailma oli täsmälleen samaa vihreää notkosta mäen laelle. Kärkiväreillä
+  // (vertexColors) saadaan sama tekstuuri näyttämään monelta eri maapohjalta ilman yhtään uutta
+  // piirtokutsua: notkot ovat kosteaa tummaa vihreää, mäkien laet kuivaa kellertävää heinää ja
+  // jyrkät rinteet kivistä maata. Matalataajuinen kohina päälle rikkoo tekstuurin toiston.
+  function terrainPatchNoise(x, z){
+    return 0.55*Math.sin(x*0.0062 + 1.9)*Math.cos(z*0.0071 - 0.6)
+         + 0.30*Math.sin(x*0.0165 - z*0.0139 + 2.7)
+         + 0.15*Math.sin(x*0.0410 + z*0.0367 - 1.1);
+  }
   (function sculptTerrain(){
     var newGeom = new THREE.PlaneGeometry(3400, 3400, 400, 400);
     var pos = newGeom.attributes.position;
@@ -3433,6 +3993,39 @@
     }
     pos.needsUpdate = true;
     newGeom.computeVertexNormals();
+    // kärkivärit: lasketaan korkeus, rinteen jyrkkyys ja kohina jokaiselle kärjelle
+    var cols = new Float32Array(pos.count * 3);
+    var nrm = newGeom.attributes.normal;
+    for(var ci=0; ci<pos.count; ci++){
+      var wx = pos.getX(ci), wz = -pos.getY(ci), wy = pos.getZ(ci);
+      // rinteen jyrkkyys suoraan normaalista: pystysuora normaali (ny=1) = tasamaa
+      var slope = 1 - Math.min(1, Math.abs(nrm.getY(ci)));
+      var noise = terrainPatchNoise(wx, wz); // n. -1 .. 1
+      // perussävy: selvästi tummempi ja kylläisempi vihreä kuin pelkkä tekstuuri
+      var r = 0.80, g = 0.90, b = 0.66;
+      // notkot kosteampaa, tummempaa ja sinisempää vihreää
+      var wet = Math.max(0, Math.min(1, (-wy - 1.2) / 5.5));
+      r += wet * -0.16; g += wet * -0.08; b += wet * 0.05;
+      // mäkien laet hieman kuivempaa, kellertävämpää heinää (varovasti - liian voimakkaana
+      // koko kaukomaasto muuttui aavikonkellertäväksi)
+      var dry = Math.max(0, Math.min(1, (wy - 4.2) / 6.0));
+      r += dry * 0.15; g += dry * 0.07; b += dry * -0.05;
+      // jyrkät rinteet: ruoho ei pysy, näkyy kivistä maata
+      var rock = Math.max(0, Math.min(1, (slope - 0.26) / 0.34));
+      r = r*(1-rock) + 0.62*rock; g = g*(1-rock) + 0.58*rock; b = b*(1-rock) + 0.50*rock;
+      // matalataajuinen laikutus rikkoo tekstuurin toiston isossa mittakaavassa
+      var n2 = noise * 0.095 * (1 - rock*0.6);
+      r += n2 * 0.85; g += n2 * 0.72; b += n2 * 0.50;
+      // hyvin hienojakoinen kärkikohtainen rae, ettei laikkujen reuna ole liian sileä
+      var grain = (Math.sin(wx*0.93 + wz*1.37) * 0.5 + Math.sin(wx*2.11 - wz*1.73) * 0.5) * 0.022;
+      r += grain; g += grain; b += grain;
+      cols[ci*3]   = Math.max(0, Math.min(1.6, r));
+      cols[ci*3+1] = Math.max(0, Math.min(1.6, g));
+      cols[ci*3+2] = Math.max(0, Math.min(1.6, b));
+    }
+    newGeom.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    field.material.vertexColors = true;
+    field.material.needsUpdate = true;
     field.geometry.dispose();
     field.geometry = newGeom;
   })();
@@ -3440,22 +4033,64 @@
   // siirretään tielle osuneet puut sivuun: puut arvotaan ennen kuin tiestö on rakennettu, joten osa
   // niistä osui teiden päälle - pelaaja näki latvuksen keskellä ajorataa, päällekkäin katuvalon kanssa.
   // Se joka ei mahdu minnekään poistetaan kokonaan.
-  for(var tIdx = scatteredTrees.length - 1; tIdx >= 0; tIdx--){
-    var treeN = scatteredTrees[tIdx];
-    var treeClear = 1.4 + treeN.scale.x*1.1;
-    if(onRoadway(treeN.position.x, treeN.position.z, treeClear)){
-      var treeSpot = pushOffRoad(treeN.position.x, treeN.position.z, treeClear);
-      if(treeSpot){
-        treeN.position.x = treeSpot.x;
-        treeN.position.z = treeSpot.z;
+  for(var tIdx = treeSpots.length - 1; tIdx >= 0; tIdx--){
+    var tSpot = treeSpots[tIdx];
+    var treeClear = (tSpot.kind === 'pensas' ? 0.9 : 1.4) + tSpot.s*1.1;
+    if(onRoadway(tSpot.x, tSpot.z, treeClear)){
+      var moved = pushOffRoad(tSpot.x, tSpot.z, treeClear);
+      if(moved){
+        tSpot.x = moved.x;
+        tSpot.z = moved.z;
       } else {
-        scene.remove(treeN);
-        scatteredTrees.splice(tIdx, 1);
+        treeSpots.splice(tIdx, 1);
         continue;
       }
     }
-    treeN.position.y = terrainHeight(treeN.position.x, treeN.position.z);
+    tSpot.y = terrainHeight(tSpot.x, tSpot.z);
   }
+  // ---- metsän instansointi ----
+  // Jokainen laji on yksi InstancedMesh: 560 puuta piirtyy neljällä piirtokutsulla aiemman
+  // lähes 900:n sijaan. Per-instanssin väri (setColorAt) antaa jokaiselle puulle oman sävynsä,
+  // jolloin metsä ei näytä monistetulta vaikka geometria toistuukin.
+  var treeInstances = [];
+  var treeSwayDummy = new THREE.Object3D();   // uudelleenkäytettävä apuolio tuulen heilutukseen
+  var treeSwayActive = false;
+  (function buildForest(){
+    var byKind = {};
+    for(var ki=0; ki<treeSpots.length; ki++){
+      var k = treeSpots[ki].kind;
+      if(!byKind[k]) byKind[k] = [];
+      byKind[k].push(treeSpots[ki]);
+    }
+    var dummy = new THREE.Object3D();
+    var tint = new THREE.Color();
+    Object.keys(byKind).forEach(function(kind){
+      var list = byKind[kind];
+      var geom = makeTreeGeometry(kind);
+      var mat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:0.95, metalness:0, flatShading:true});
+      var mesh = new THREE.InstancedMesh(geom, mat, list.length);
+      for(var n=0; n<list.length; n++){
+        var t = list[n];
+        dummy.position.set(t.x, t.y || 0, t.z);
+        dummy.rotation.set(0, t.rot, 0);
+        var sy = t.s*(0.9 + Math.random()*0.3);
+        dummy.scale.set(t.s, sy, t.s);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(n, dummy.matrix);
+        // sävyvaihtelu: osa puista kellertävämpiä, osa sinisempiä ja tummempia
+        var warm = 0.88 + Math.random()*0.26;
+        tint.setRGB(warm, 0.88 + Math.random()*0.24, 0.84 + Math.random()*0.24);
+        mesh.setColorAt(n, tint);
+        t.instance = {mesh:mesh, index:n, baseRot:t.rot, sx:t.s, sy:sy};
+      }
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.frustumCulled = false;
+      if(mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      scene.add(mesh);
+      treeInstances.push(mesh);
+    });
+  })();
   // samoin hajanaiset maalaistalot - korkeus mäen mukaan ja pieni törmäysympyrä kullekin, jottei
   // niiden läpi voi ajaa (samat säteet kuin kotitalolla/kylän taloilla)
   for(var hIdx = scatteredHouses.length - 1; hIdx >= 0; hIdx--){
@@ -6163,17 +6798,26 @@
     paintSky(d.sky);
     scene.fog.color.set(d.fog);
     sun.color.set(d.sunColor);
-    sun.intensity = d.sunI;
+    // Kontrastia lisää: aurinko voimakkaammaksi ja hajavalo hillitymmäksi. Aiemmin kirkas hemi
+    // + korkea altistus pesivät kaikki värit vaaleiksi (Monkeyn sininen näytti vaaleansiniseltä)
+    // ja varjopuoli jäi lähes yhtä kirkkaaksi kuin valopuoli.
+    sun.intensity = d.sunI * 1.22;
     hemi.color.set(d.hemiSky);
     hemi.groundColor.set(d.hemiGround);
-    hemi.intensity = d.hemiI;
-    if(renderer.toneMapping !== undefined) renderer.toneMappingExposure = d.exposure;
+    hemi.intensity = d.hemiI * 0.72;
+    if(renderer.toneMapping !== undefined) renderer.toneMappingExposure = d.exposure * 0.86;
     starMat.opacity = d.stars;
     starField.position.copy(camera.position);
 
     // aurinko kiertää taivaalla vuorokauden mukana, joten myös varjot liikkuvat
     var sunAngle = dayTime*Math.PI*2;
-    sun.position.set(Math.cos(sunAngle)*45, Math.max(6, -Math.cos(sunAngle)*40+8), 18);
+    // aurinko ja varjokamera pelaajan mukana - muuten varjot olisivat vain kartan origon ympärillä
+    var focusX, focusY, focusZ;
+    if(mode === 'riding'){ focusX = moped.position.x; focusY = moped.position.y; focusZ = moped.position.z; }
+    else { focusX = player.position.x; focusY = player.position.y; focusZ = player.position.z; }
+    sunTarget.position.set(focusX, focusY, focusZ);
+    sunTarget.updateMatrixWorld();
+    sun.position.set(focusX + Math.cos(sunAngle)*45, focusY + Math.max(6, -Math.cos(sunAngle)*40+8), focusZ + 18);
 
     // ajovalot syttyvät hämärän/yön aikaan
     var nightFactor = d.stars;
@@ -6336,10 +6980,36 @@
     ensureRainNoise();
     if(rainNoiseGain) rainNoiseGain.gain.setTargetAtTime(muted?0:rainBlend*0.14, audioCtx.currentTime, 0.6);
 
-    // tuuli heiluttaa puita kevyesti breeze-tilan aikana
+    // Tuuli heiluttaa puita kevyesti breeze-tilan aikana. Instansoiduilla puilla heilutus
+    // tarkoittaa matriisin uudelleenlaskentaa, joten se tehdään vain kun tuulta oikeasti on
+    // (swayAmt > 0) eikä lainkaan kevyellä grafiikka-asetuksella.
     var swayAmt = breezeBlend*0.05;
-    for(var ti3=0; ti3<scatteredTrees.length; ti3++){
-      scatteredTrees[ti3].rotation.z = Math.sin(dayTime*900 + ti3*1.7)*swayAmt;
+    if(swayAmt > 0.001 && qualityLevel !== 'low'){
+      var swayDummy = treeSwayDummy;
+      for(var ti3=0; ti3<treeSpots.length; ti3++){
+        var ts = treeSpots[ti3];
+        if(!ts.instance) continue;
+        swayDummy.position.set(ts.x, ts.y || 0, ts.z);
+        swayDummy.rotation.set(0, ts.instance.baseRot, Math.sin(dayTime*900 + ti3*1.7)*swayAmt);
+        swayDummy.scale.set(ts.instance.sx, ts.instance.sy, ts.instance.sx);
+        swayDummy.updateMatrix();
+        ts.instance.mesh.setMatrixAt(ts.instance.index, swayDummy.matrix);
+      }
+      for(var tim=0; tim<treeInstances.length; tim++) treeInstances[tim].instanceMatrix.needsUpdate = true;
+      treeSwayActive = true;
+    } else if(treeSwayActive){
+      // tuuli loppui: palautetaan puut suoraan kertaalleen
+      for(var tr=0; tr<treeSpots.length; tr++){
+        var tr2 = treeSpots[tr];
+        if(!tr2.instance) continue;
+        treeSwayDummy.position.set(tr2.x, tr2.y || 0, tr2.z);
+        treeSwayDummy.rotation.set(0, tr2.instance.baseRot, 0);
+        treeSwayDummy.scale.set(tr2.instance.sx, tr2.instance.sy, tr2.instance.sx);
+        treeSwayDummy.updateMatrix();
+        tr2.instance.mesh.setMatrixAt(tr2.instance.index, treeSwayDummy.matrix);
+      }
+      for(var tim2=0; tim2<treeInstances.length; tim2++) treeInstances[tim2].instanceMatrix.needsUpdate = true;
+      treeSwayActive = false;
     }
   }
 
@@ -9255,7 +9925,7 @@
       }
     }
 
-    renderer.render(scene, camera);
+    renderWithPost();
   }
   // ---- aloitusruutu: Pelaa / Asetukset / Credits ----
   // Valikko piirtyy pelin päälle ja pelimaailma pyörii sen takana himmeänä. HUD piilotetaan
@@ -9352,6 +10022,10 @@
     var dpr = window.devicePixelRatio || 1;
     renderer.setPixelRatio(level === 'low' ? Math.min(dpr, 0.7) : (level === 'med' ? Math.min(dpr, 1) : Math.min(dpr, 3)));
     renderer.setSize(app.clientWidth, app.clientHeight);
+    // jälkikäsittely (bloom/sävytys/vinjetti) maksaa muutaman lisäpiirron koko ruudun yli, joten
+    // se jää pois kevyeltä tasolta - siellä kuva menee suoraan ruudulle kuten ennen.
+    postOn = (level !== 'low');
+    if(postOn) resizePostTargets();
     if(fromUser || !qualityShadowsOverride){
       var wantShadows = (level !== 'low');
       if(renderer.shadowMap.enabled !== wantShadows){
