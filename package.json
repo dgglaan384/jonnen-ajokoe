@@ -1,0 +1,13 @@
+{
+  "name": "jonnen-ajokoe-huonepalvelin",
+  "version": "1.0.0",
+  "description": "Pieni huonepalvelin (lobby) Jonnen ajokoe -pelin moninpelille",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
