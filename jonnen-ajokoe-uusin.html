@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:71-->
-<!--JONNE-NAME:Jonnen ajokoe 71-->
+<!--JONNE-VERSION:72-->
+<!--JONNE-NAME:Jonnen ajokoe 72-->
 <!--JONNE-DATE:2026-09-24-->
-<!--JONNE-NOTES:Korjattu kartan kääntymissuunta: minikartta ja iso kartta näyttivät peilikuvaa|Monkeylle omat viriosat: Daytona Anima 150cc ja 190cc, Keihin PWK 28, Takegawa-putki, Nissin-jarrut ym.|Viriosat näkyvät kaupassa vasta kun Monkey on ostettu|Pulttien kiristys nyt kaikessa: pakoputken vaihto, tarrasarja, maalipinta ja rekisterikilvet|Isot moottoriosat vaativat 4-6 pulttia, pikkuosat 2|Huonosti kiristetty pakoputki ei anna koko tehohyötyä-->
+<!--JONNE-NOTES:Tankkaus vain huoltoasemalla: aja pumpulle ja pidä välilyöntiä pohjassa, päästä irti vihreällä|Uusi minipeli: hitsaussauma romuttamolla - pidä lämpö vihreällä, palkka laadun mukaan|Uusi minipeli: kaasuttimen säätö autotallissa - väliaikainen tehonlisä|Uusi minipeli: renkaan paikkaus tallilla - työvaiheet oikeaan järjestykseen|Neljä uutta tarinavaihetta näille minipeleille|Bensa kuluu yli puolet hitaammin ja nälkä yli kaksi kertaa hitaammin-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -243,6 +243,38 @@
   .boltPips i{width:22px;height:6px;border-radius:3px;background:rgba(251,246,233,0.2);}
   .boltPips i.on{background:var(--accent);}
   .boltMsg{font:600 12px/1.4 'Karla',sans-serif;opacity:.8;min-height:17px;}
+  /* ---- yleinen minipelipaneeli ---- */
+  .miniGame{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:14px;
+    padding:18px 20px;width:360px;pointer-events:auto;text-align:center;
+  }
+  .miniGame[hidden]{display:none;}
+  /* pystymittari (tankkaus, hitsauksen lämpö) */
+  .miniGauge{position:relative;height:130px;width:64px;margin:12px auto 10px;border-radius:9px;
+             background:rgba(10,12,10,0.55);border:1px solid rgba(251,246,233,0.18);overflow:hidden;}
+  .miniGauge .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#e8a33f,#c8752a);}
+  .miniGauge .band{position:absolute;left:0;right:0;background:rgba(122,196,96,0.40);
+                   border-top:1px solid rgba(180,240,150,0.9);border-bottom:1px solid rgba(180,240,150,0.9);}
+  .miniGauge .over{position:absolute;left:0;right:0;top:0;background:rgba(216,64,44,0.35);}
+  .miniGauge .mark{position:absolute;left:-4px;right:-4px;height:2px;background:#fbf6e9;box-shadow:0 0 5px rgba(0,0,0,0.7);}
+  .miniBig{font:600 30px/1 'Teko',sans-serif;margin:2px 0 6px;}
+  .miniSub{font:600 11.5px/1.4 'Karla',sans-serif;opacity:.7;margin-bottom:4px;}
+  /* vaakaraita (kaasuttimen säätö) */
+  .miniTrack{position:relative;height:30px;margin:14px 0 8px;border-radius:8px;background:rgba(251,246,233,0.14);overflow:hidden;}
+  .miniTrack .target{position:absolute;top:0;bottom:0;width:16px;background:rgba(122,196,96,0.55);
+                     border-left:1px solid rgba(180,240,150,0.85);border-right:1px solid rgba(180,240,150,0.85);}
+  .miniTrack .needle{position:absolute;top:-3px;bottom:-3px;width:3px;background:#fbf6e9;box-shadow:0 0 6px rgba(0,0,0,0.6);}
+  /* vaiheluettelo (renkaan paikkaus) */
+  .miniSteps{display:flex;flex-direction:column;gap:6px;margin:12px 0 8px;}
+  .miniSteps button{background:rgba(251,246,233,0.10);border:1px solid var(--panel-line);border-radius:8px;
+                    color:var(--cream);font:600 12px/1.35 'Karla',sans-serif;padding:8px 10px;cursor:pointer;text-align:left;}
+  .miniSteps button:hover{background:rgba(251,246,233,0.18);}
+  .miniSteps button.done{background:rgba(122,196,96,0.28);border-color:rgba(122,196,96,0.55);opacity:.75;cursor:default;}
+  .miniSteps button.bad{background:rgba(216,64,44,0.30);border-color:rgba(216,64,44,0.6);}
+  .miniStrikes{display:flex;gap:6px;justify-content:center;margin-bottom:4px;}
+  .miniStrikes i{width:16px;height:6px;border-radius:3px;background:rgba(251,246,233,0.2);}
+  .miniStrikes i.on{background:#d8402c;}
   .boltHint{font:400 11.5px/1.45 'Karla',sans-serif;opacity:.6;margin-top:6px;}
   .partActions button{flex:1;background:rgba(251,246,233,0.12);border:1px solid var(--panel-line);border-radius:8px;color:var(--cream);font:700 12px 'Karla',sans-serif;padding:6px 8px;cursor:pointer;white-space:nowrap;}
   .partActions .tuneBtn{background:rgba(226,87,43,0.28);border-color:rgba(226,87,43,0.5);}
@@ -486,6 +518,12 @@
       <div class="tuneLabel">Autotalli — asenna osat mopoon</div>
       <div id="shelfList"></div>
       <div class="repairFoot">Osat ostetaan kylän tallilta. Ne odottavat täällä hyllyllä.</div>
+    </div>
+    <div class="miniGame" id="miniGame" hidden>
+      <div class="tuneLabel" id="miniTitle">Minipeli</div>
+      <div id="miniBody"></div>
+      <div class="boltMsg" id="miniMsg"></div>
+      <div class="boltHint" id="miniHint">Esc keskeyttää.</div>
     </div>
     <div class="boltGame" id="boltGame" hidden>
       <div class="tuneLabel" id="boltTitle">Asennus</div>
@@ -1971,6 +2009,60 @@
   romuttamo.rotation.y = 0.5;
   scene.add(romuttamo);
   registerColliders(romuttamo, romuttamoColl);
+
+  // ---- hitsauspiste romuttamon nurkassa ----
+  // Oma työpiste omalle minipelilleen: penkki, kaasupullo, hitsausmaski ja levynpala pukeilla.
+  // Maasto on romuttamon tasoitusympyrän (r 38) sisällä eli täysin tasainen, joten y-korkeudeksi
+  // käy 0 - terrainHeight() ei olisi tässä kohtaa tiedostoa vielä edes käytettävissä.
+  var weldSpot = {x: romuPos.x + 9.5, z: romuPos.z - 6.0};
+  var weldRadius = 3.4;
+  (function buildWeldStation(){
+    var g = new THREE.Group();
+    var steelMat = new THREE.MeshStandardMaterial({color:0x6a6f74, roughness:0.75, metalness:0.35});
+    var woodMat = new THREE.MeshStandardMaterial({color:0x7a5c3c, roughness:0.95});
+    var bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.14, 1.1), steelMat);
+    bench.position.y = 0.82; bench.castShadow = true; bench.receiveShadow = true;
+    g.add(bench);
+    [[-1.05,-0.42],[1.05,-0.42],[-1.05,0.42],[1.05,0.42]].forEach(function(lp){
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.82, 0.1), steelMat);
+      leg.position.set(lp[0], 0.41, lp[1]); leg.castShadow = true;
+      g.add(leg);
+    });
+    // kaasupullo ja sen kärry
+    var bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 1.25, 10),
+      new THREE.MeshStandardMaterial({color:0x2f6e4a, roughness:0.6, metalness:0.3}));
+    bottle.position.set(-1.55, 0.62, 0.15); bottle.castShadow = true;
+    var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.24, 8),
+      new THREE.MeshStandardMaterial({color:0xc9c4b4, roughness:0.5, metalness:0.4}));
+    cap.position.set(-1.55, 1.34, 0.15);
+    g.add(bottle, cap);
+    // hitsausmaski penkillä
+    var mask = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.42, 0.26),
+      new THREE.MeshStandardMaterial({color:0xb03a24, roughness:0.7}));
+    mask.position.set(0.72, 1.10, 0); mask.castShadow = true;
+    var visor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.10, 0.03),
+      new THREE.MeshStandardMaterial({color:0x14171a, roughness:0.3}));
+    visor.position.set(0.72, 1.16, 0.15);
+    g.add(mask, visor);
+    // hitsattava levy ja puukiilat
+    var plate = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 0.55), steelMat);
+    plate.position.set(-0.35, 0.92, 0); plate.castShadow = true;
+    var wedge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.5), woodMat);
+    wedge.position.set(-0.35, 0.97, 0.36);
+    g.add(plate, wedge);
+    // kyltti
+    var signTex = makeSignTexture('HITSAUS', '#2b2b2b', '#f3c623');
+    var sign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.42), new THREE.MeshStandardMaterial({map:signTex, side:THREE.DoubleSide}));
+    sign.position.set(0, 1.85, -0.55);
+    var signPost = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.9, 6), steelMat);
+    signPost.position.set(0, 0.95, -0.58); signPost.castShadow = true;
+    g.add(sign, signPost);
+    g.position.set(weldSpot.x, 0, weldSpot.z);
+    g.rotation.y = 0.5;
+    scene.add(g);
+    registerCollider(g, -1.55, 0.15, 0.3);
+    registerCollider(g, 0, 0, 1.1);
+  })();
 
   // uimaranta (beach)
   function makeUimaranta(collOut){
@@ -4485,6 +4577,7 @@
       }
     }
     if(kilpaPipeOwned && exhaustMode === 'kilpa') boost += 0.08*(0.55 + 0.45*exhaustFitQuality);
+    if(carbTuneLeft > 0) boost += 0.09*carbTune;
     var mperf = mopedModelPerf();
     if(mperf) boost += (mperf.accel || 0) + (mperf.topspeed || 0);
     return Math.max(0, Math.min(1, boost/1.55));
@@ -5809,23 +5902,49 @@
   // tankkimäärän mukaan, ja jos rahat eivät riitä täyteen tankkiin, tankki täyttyy vain sen verran
   // kuin rahalla saa (ei koskaan pakkovelkaa). ----
   var fuelPricePerPercent = 0.6; // täysi tankki tyhjästä maksaisi 60 €
+  // uusien minipelien laskurit (tarina seuraa näitä)
+  var refuelCount = 0;    // montako kertaa on tankattu pumpulla
+  var weldsDone = 0;      // hitsattuja saumoja romuttamolla
+  var tyrePatched = 0;    // paikattuja renkaita
+  var carbTuneCount = 0;  // kaasuttimen säätöjä
+  // Kaasuttimen säätö antaa väliaikaisen tehonlisän: 0..1 laatu, joka valuu pois carbTuneLeft
+  // sekunnissa. Ei siis pysyvä osto vaan taito, joka pitää uusia välillä.
+  var carbTune = 0;
+  var carbTuneLeft = 0;
+  // Tankkaus ei enää tapahdu missä tahansa: bensaa saa VAIN huoltoaseman pumpulta, ja sen
+  // käyttäminen on oma minipelinsä (pidä pohjassa, päästä ajoissa). Pumpun maailmansijainti
+  // lasketaan vasta kutsuttaessa, koska huoltoaseman ryhmä rakennetaan myöhemmin tiedostossa.
+  var fuelPumpRadius = 7.5;
+  function fuelPumpWorldPos(){
+    // pumppu on huoltoaseman ryhmän paikallisessa kohdassa (-2.8, -1), ryhmä käännetty -0.2 rad
+    var ry = -0.2, lx = -2.8, lz = -1;
+    return {
+      x: meetSpot.x + (lx*Math.cos(ry) + lz*Math.sin(ry)),
+      z: meetSpot.z + (-lx*Math.sin(ry) + lz*Math.cos(ry))
+    };
+  }
+  function atFuelPump(){
+    var pp = fuelPumpWorldPos();
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = ref.x - pp.x, dz = ref.z - pp.z;
+    return Math.sqrt(dx*dx + dz*dz) <= fuelPumpRadius;
+  }
   function refuel(){
-    if(fuel >= 100){ stalled = false; stallEl.classList.remove('show'); return; }
-    var missing = 100 - fuel;
-    var fullCost = Math.ceil(missing * fuelPricePerPercent);
-    if(money >= fullCost){
-      money -= fullCost;
-      fuel = 100;
-      showToast(false, 'Tankattu täyteen', '-'+fullCost+' €', 1600);
-    } else {
-      var boughtPercent = money / fuelPricePerPercent;
-      fuel = Math.min(100, fuel + boughtPercent);
-      money = 0;
-      showToast(true, 'Rahat loppui kesken', 'Tankki jäi vajaaksi - hanki lisää rahaa', 2000);
+    if(inStore || mini.active || bolt.active) return;
+    if(!atFuelPump()){
+      showToast(true, 'Ei bensaa mukana', 'Tankata voi vain huoltoaseman pumpulla. Aja huoltoasemalle (Miitti) ja paina R pumpun vieressä.', 4200);
+      return;
     }
-    updateMoneyDisplay();
-    if(inventoryOpen) renderInventory();
-    if(fuel > 0){ stalled = false; stallEl.classList.remove('show'); }
+    if(fuel >= 99.5){
+      stalled = false; stallEl.classList.remove('show');
+      showToast(false, 'Tankki on jo täynnä', 'Ei tarvetta tankata.', 1800);
+      return;
+    }
+    if(money < 1){
+      showToast(true, 'Ei rahaa', 'Pumppu ei anna velaksi. Käy tienaamassa ensin.', 3000);
+      return;
+    }
+    openMini('tankkaus', null, null);
   }
   function repairCostFor(p){
     var rate = p.tierIndex > 0 ? 1.8 : 1.2;
@@ -5907,6 +6026,20 @@
       }
       partsListEl.appendChild(row);
     });
+    // Renkaan paikkaus: ilmainen vaihtoehto renkaiden korjaussarjalle, mutta vaatii osaamista -
+    // työvaiheet pitää tehdä oikeassa järjestyksessä.
+    var tyre = partById('renkaat');
+    var patchRow = document.createElement('button');
+    patchRow.className = 'wideBtn';
+    patchRow.type = 'button';
+    patchRow.style.marginTop = '12px';
+    patchRow.textContent = '🛞 Paikkaa rengas itse (ilmainen)';
+    patchRow.disabled = !tyre || tyre.condition >= 96;
+    patchRow.addEventListener('click', function(){
+      if(!tyre || tyre.condition >= 96) return;
+      openMini('paikkaus', repairPanel, function(){ tyrePatched++; });
+    });
+    partsListEl.appendChild(patchRow);
   }
   function closeRepair(){
     repairOpen = false;
@@ -5999,6 +6132,18 @@
     tuneRow.textContent = '🎨 Maalaa ja tuunaa mopo';
     tuneRow.addEventListener('click', function(){ toggleTunePanel(); });
     shelfListEl.appendChild(tuneRow);
+
+    var carbRow = document.createElement('button');
+    carbRow.className = 'wideBtn';
+    carbRow.type = 'button';
+    carbRow.style.marginTop = '8px';
+    carbRow.textContent = carbTuneLeft > 0
+      ? '🎚️ Kaasutin säädetty (' + Math.round(carbTune*100) + ' %, ' + Math.ceil(carbTuneLeft/60) + ' min)'
+      : '🎚️ Säädä kaasutin';
+    carbRow.addEventListener('click', function(){
+      openMini('kaasutin', garagePanelEl, function(){ carbTuneCount++; });
+    });
+    shelfListEl.appendChild(carbRow);
   }
   // Kilpien irrotus on riski-valinta: ilman kilpiä poliisi ei saa rekisterinumeroa eikä tule
   // aamulla kotiovelle, mutta kilvetön mopo herättää partion huomion ilman keulintaakin.
@@ -6184,6 +6329,357 @@
     if(inventoryOpen) renderInventory();
     if(repairOpen) renderParts();
   }
+  // ============================================================================
+  // ---- minipelikone: neljä erityyppistä minipeliä yhdellä paneelilla ----
+  // Aiemmin kaikki pelin "tekeminen" oli joko välilyönnin painamista oikeassa kohdassa tai
+  // paikallaan seisomista. Nämä neljä käyttävät kukin eri syötetapaa, joten ne tuntuvat
+  // oikeasti eri peleiltä:
+  //   'tankkaus'  - pidä välilyöntiä pohjassa, päästä irti oikeaan aikaan (ylitäyttö roiskuu)
+  //   'kaasutin'  - kaksi eri nopeudella liikkuvaa osoitinta, napauta kun ne ovat kohdakkain
+  //   'paikkaus'  - viisi työvaihetta sekoitetussa järjestyksessä, klikkaa oikeassa järjestyksessä
+  //   'hitsaus'   - pidä ja päästä vuorotellen, jotta lämpö pysyy vihreällä koko sauman ajan
+  // Kaikki käyttävät samaa #miniGame-paneelia ja samaa elinkaarta (openMini/updateMini/closeMini).
+  var miniEl = document.getElementById('miniGame');
+  var miniTitleEl = document.getElementById('miniTitle');
+  var miniBodyEl = document.getElementById('miniBody');
+  var miniMsgEl = document.getElementById('miniMsg');
+  var miniHintEl = document.getElementById('miniHint');
+  var mini = {active:false, kind:null, panel:null, done:false, doneTimer:0, onDone:null, s:null};
+
+  function closeMiniOverlay(){
+    mini.active = false;
+    mini.kind = null;
+    miniEl.hidden = true;
+    if(mini.panel === garagePanelEl){
+      if(garageOpen){ garagePanelEl.hidden = false; renderShelf(); }
+    } else if(mini.panel === repairPanel){
+      if(repairOpen){ repairPanel.hidden = false; renderParts(); }
+    } else if(mini.panel){
+      mini.panel.hidden = false;
+    }
+    mini.panel = null;
+  }
+  function cancelMini(){
+    if(!mini.active) return;
+    closeMiniOverlay();
+  }
+  function miniFinish(msg, result){
+    mini.done = true;
+    mini.doneTimer = 1.8;
+    miniMsgEl.textContent = msg;
+    if(mini.onDone) mini.onDone(result);
+    saveGame();
+  }
+
+  // ---- 1. TANKKAUS: pidä pohjassa, päästä ajoissa ----
+  function openTankkaus(){
+    var startFuel = fuel;
+    mini.s = {level:startFuel, start:startFuel, rate:0, holding:false, released:false, spill:0};
+    miniTitleEl.textContent = 'Tankkaus';
+    miniHintEl.textContent = 'Pidä VÄLILYÖNTIÄ pohjassa. Päästä irti vihreällä. Yli menevä bensa roiskuu maahan ja maksaa silti. Esc peruu.';
+    miniBodyEl.innerHTML =
+      '<div class="miniGauge">' +
+        '<i class="over" id="miniOver" style="height:0%"></i>' +
+        '<i class="band" id="miniBand"></i>' +
+        '<i class="fill" id="miniFill"></i>' +
+        '<i class="mark" id="miniMark"></i>' +
+      '</div>' +
+      '<div class="miniBig" id="miniBig">0 %</div>' +
+      '<div class="miniSub" id="miniSub">Hinta 0 €</div>';
+    // vihreä alue 93-100 %, sen yläpuolella punainen yliläikkyminen
+    var band = document.getElementById('miniBand');
+    band.style.bottom = '93%';
+    band.style.height = '7%';
+    document.getElementById('miniOver').style.height = '0%';
+    miniMsgEl.textContent = 'Tankissa ' + Math.round(startFuel) + ' %.';
+    renderTankkaus();
+  }
+  function renderTankkaus(){
+    var st = mini.s;
+    var shown = Math.min(100, st.level);
+    var fillEl = document.getElementById('miniFill');
+    if(fillEl) fillEl.style.height = shown + '%';
+    var markEl = document.getElementById('miniMark');
+    if(markEl) markEl.style.bottom = shown + '%';
+    var bigEl = document.getElementById('miniBig');
+    if(bigEl) bigEl.textContent = Math.round(st.level) + ' %';
+    var pumped = Math.max(0, st.level - st.start);
+    var subEl = document.getElementById('miniSub');
+    if(subEl) subEl.textContent = 'Hinta ' + Math.ceil(pumped*fuelPricePerPercent) + ' € · pumpattu ' + Math.round(pumped) + ' %';
+  }
+  function tankkausHold(down){
+    if(!mini.active || mini.kind !== 'tankkaus' || mini.done) return;
+    var st = mini.s;
+    if(down){
+      if(st.released) return;
+      st.holding = true;
+    } else if(st.holding){
+      st.holding = false;
+      st.released = true;
+      finishTankkaus();
+    }
+  }
+  function finishTankkaus(){
+    var st = mini.s;
+    var pumped = Math.max(0, Math.min(100, st.level) - st.start);
+    var spilled = Math.max(0, st.level - 100);
+    var totalPercent = pumped + spilled;
+    var cost = Math.ceil(totalPercent * fuelPricePerPercent);
+    // rahat eivät riitä -> maksetaan mitä on ja tankkiin jää vain se osuus
+    if(cost > money){
+      var afford = money / fuelPricePerPercent;
+      fuel = Math.min(100, st.start + afford);
+      money = 0;
+      miniFinish('Rahat loppui kesken - tankkiin jäi ' + Math.round(fuel) + ' %.', 0);
+    } else {
+      money -= cost;
+      fuel = Math.min(100, st.level);
+      if(spilled > 0.5){
+        miniFinish('Läikkyi yli! ' + Math.round(spilled) + ' % maahan, silti -' + cost + ' €.', 0.3);
+      } else if(fuel >= 93){
+        miniFinish('Tankki täynnä ' + Math.round(fuel) + ' %. -' + cost + ' €', 1);
+      } else {
+        miniFinish('Tankissa ' + Math.round(fuel) + ' %. -' + cost + ' €', 0.6);
+      }
+    }
+    updateMoneyDisplay();
+    if(fuel > 0){ stalled = false; stallEl.classList.remove('show'); }
+    if(inventoryOpen) renderInventory();
+    refuelCount++;
+  }
+  function updateTankkaus(dt){
+    var st = mini.s;
+    if(st.holding){
+      // virtaus kiihtyy mitä pidempään pidetään - loppua kohti on vaikeampi pysäyttää ajoissa
+      st.rate = Math.min(46, st.rate + 38*dt);
+      st.level += st.rate*dt;
+      if(st.level > 118){ st.holding = false; st.released = true; finishTankkaus(); return; }
+      var overEl = document.getElementById('miniOver');
+      if(overEl) overEl.style.height = Math.max(0, Math.min(100, st.level - 100)) + '%';
+      renderTankkaus();
+    }
+  }
+
+  // ---- 2. KAASUTTIMEN SÄÄTÖ: napauta kun osoittimet ovat kohdakkain ----
+  function openKaasutin(){
+    mini.s = {pos:0, dir:1, speed:0.62, target:0.5, tdir:-1, tspeed:0.22, round:0, rounds:3, score:0, lock:0};
+    miniTitleEl.textContent = 'Kaasuttimen säätö';
+    miniHintEl.textContent = 'Napauta VÄLILYÖNTIÄ kun valkoinen viisari on vihreän ikkunan kohdalla. Kolme säätöä. Esc peruu.';
+    miniBodyEl.innerHTML =
+      '<div class="miniSub">Neulan korkeus ja ilmaruuvi kohdalleen kuulolta.</div>' +
+      '<div class="miniTrack"><i class="target" id="miniTarget"></i><i class="needle" id="miniNeedle"></i></div>' +
+      '<div class="boltPips" id="miniPips"><i></i><i></i><i></i></div>';
+    miniMsgEl.textContent = 'Säätö 1/3';
+    renderKaasutin();
+  }
+  function renderKaasutin(){
+    var st = mini.s;
+    var t = document.getElementById('miniTarget');
+    var n = document.getElementById('miniNeedle');
+    if(t) t.style.left = 'calc(' + (st.target*100) + '% - 8px)';
+    if(n) n.style.left = (st.pos*100) + '%';
+    var pips = document.getElementById('miniPips');
+    if(pips){
+      for(var i=0; i<pips.children.length; i++){
+        if(st.round > i) pips.children[i].classList.add('on'); else pips.children[i].classList.remove('on');
+      }
+    }
+  }
+  function kaasutinTap(){
+    if(!mini.active || mini.kind !== 'kaasutin' || mini.done || mini.s.lock > 0) return;
+    var st = mini.s;
+    var d = Math.abs(st.pos - st.target);
+    // ikkuna on 16 px 100 %:n levyisellä raidalla -> n. 0.045 yksikköä puolelleen
+    if(d <= 0.045){
+      st.score += (d <= 0.018) ? 1 : 0.65;
+      st.round++;
+      miniMsgEl.textContent = (d <= 0.018) ? 'Napakka!' : 'Melkein kohdallaan.';
+      playBoltSound(d <= 0.018);
+      st.speed += 0.22;
+      st.tspeed += 0.10;
+      renderKaasutin();
+      if(st.round >= st.rounds){
+        var q = st.score / st.rounds;
+        carbTune = q;
+        carbTuneLeft = 600;   // kestää kymmenen minuuttia pelin aikaa
+        miniFinish('Kaasutin säädetty ' + Math.round(q*100) + ' %. Moottori vetää paremmin hetken aikaa.', q);
+      }
+    } else {
+      st.lock = 0.4;
+      st.score = Math.max(0, st.score - 0.3);
+      miniMsgEl.textContent = 'Ohi - moottori yskii.';
+      playBoltSound(false, true);
+    }
+  }
+  function updateKaasutin(dt){
+    var st = mini.s;
+    if(st.lock > 0){ st.lock -= dt; return; }
+    st.pos += st.dir*st.speed*dt;
+    if(st.pos >= 1){ st.pos = 1; st.dir = -1; }
+    else if(st.pos <= 0){ st.pos = 0; st.dir = 1; }
+    // maalikin liikkuu, hitaammin ja omaan tahtiinsa
+    st.target += st.tdir*st.tspeed*dt;
+    if(st.target >= 0.88){ st.target = 0.88; st.tdir = -1; }
+    else if(st.target <= 0.12){ st.target = 0.12; st.tdir = 1; }
+    renderKaasutin();
+  }
+
+  // ---- 3. RENKAAN PAIKKAUS: työvaiheet oikeaan järjestykseen ----
+  var paikkausSteps = [
+    'Nosta pyörä tunkille ja irrota akseli',
+    'Vedä rengas irti vanteelta kammilla',
+    'Etsi reikä ja karhenna kohta hiomapaperilla',
+    'Levitä liima ja paina paikka päälle',
+    'Kasaa rengas ja täytä oikeaan paineeseen'
+  ];
+  function openPaikkaus(){
+    var order = [0,1,2,3,4];
+    for(var i=order.length-1; i>0; i--){   // Fisher-Yates
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+    mini.s = {order:order, next:0, strikes:0};
+    miniTitleEl.textContent = 'Renkaan paikkaus';
+    miniHintEl.textContent = 'Klikkaa työvaiheet oikeassa järjestyksessä. Kolme virhettä ja paikka jää huonoksi. Esc peruu.';
+    var html = '<div class="miniStrikes" id="miniStrikes"><i></i><i></i><i></i></div><div class="miniSteps" id="miniStepList">';
+    for(var k=0; k<order.length; k++){
+      html += '<button type="button" data-step="' + order[k] + '">' + paikkausSteps[order[k]] + '</button>';
+    }
+    html += '</div>';
+    miniBodyEl.innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('#miniStepList button'), function(btn){
+      btn.addEventListener('click', function(){ paikkausClick(btn); });
+    });
+    miniMsgEl.textContent = 'Mikä on ensimmäinen vaihe?';
+  }
+  function paikkausClick(btn){
+    if(!mini.active || mini.kind !== 'paikkaus' || mini.done) return;
+    var st = mini.s;
+    var idx = parseInt(btn.getAttribute('data-step'), 10);
+    if(btn.classList.contains('done')) return;
+    if(idx === st.next){
+      btn.classList.add('done');
+      btn.classList.remove('bad');
+      st.next++;
+      playBoltSound(true);
+      if(st.next >= paikkausSteps.length){
+        var q = Math.max(0, 1 - st.strikes*0.3);
+        var tyre = partById('renkaat');
+        if(tyre) tyre.condition = Math.min(100, tyre.condition + 30 + q*25);
+        miniFinish('Rengas paikattu. Kunto nyt ' + Math.round(tyre ? tyre.condition : 0) + ' %.', q);
+      } else {
+        miniMsgEl.textContent = 'Vaihe ' + (st.next+1) + '/' + paikkausSteps.length;
+      }
+    } else {
+      st.strikes++;
+      btn.classList.add('bad');
+      playBoltSound(false, true);
+      var sEl = document.getElementById('miniStrikes');
+      if(sEl){
+        for(var i=0; i<sEl.children.length; i++){
+          if(st.strikes > i) sEl.children[i].classList.add('on');
+        }
+      }
+      miniMsgEl.textContent = st.strikes >= 3 ? 'Kolmas moka - paikasta tuli ruma.' : 'Ei vielä tämä vaihe.';
+      if(st.strikes >= 3){
+        var tyre2 = partById('renkaat');
+        if(tyre2) tyre2.condition = Math.min(100, tyre2.condition + 12);
+        miniFinish('Rengas pitää ilmaa, mutta huonosti. Kunto ' + Math.round(tyre2 ? tyre2.condition : 0) + ' %.', 0);
+      }
+    }
+  }
+
+  // ---- 4. HITSAUS: pidä lämpö vihreällä koko sauman ajan ----
+  function openHitsaus(){
+    mini.s = {heat:0.25, holding:false, seam:0, seamLen:9, good:0, burn:0};
+    miniTitleEl.textContent = 'Hitsaussauma (romuttamo)';
+    miniHintEl.textContent = 'Pidä VÄLILYÖNTIÄ pohjassa niin kaari kuumenee, päästä irti niin se jäähtyy. Pidä lämpö vihreällä koko sauman ajan. Esc peruu.';
+    miniBodyEl.innerHTML =
+      '<div class="miniGauge">' +
+        '<i class="band" id="miniBand" style="bottom:52%;height:26%"></i>' +
+        '<i class="fill" id="miniFill"></i>' +
+        '<i class="mark" id="miniMark"></i>' +
+      '</div>' +
+      '<div class="miniBig" id="miniBig">0 %</div>' +
+      '<div class="miniSub" id="miniSub">Sauma 0 / 9</div>';
+    miniMsgEl.textContent = 'Aloita hitsaus.';
+  }
+  function hitsausHold(down){
+    if(!mini.active || mini.kind !== 'hitsaus' || mini.done) return;
+    mini.s.holding = down;
+  }
+  function updateHitsaus(dt){
+    var st = mini.s;
+    st.heat += (st.holding ? 0.62 : -0.48)*dt;
+    if(st.heat < 0) st.heat = 0;
+    if(st.heat > 1.15) st.heat = 1.15;
+    var inBand = st.heat >= 0.52 && st.heat <= 0.78;
+    if(inBand){
+      st.seam += dt;
+      st.good += dt;
+    } else if(st.heat > 0.92){
+      st.burn += dt;     // liian kuuma polttaa levyn puhki
+      st.seam += dt*0.25;
+    } else {
+      st.seam += dt*0.25;  // liian kylmä: sauma ei tartu kunnolla
+    }
+    var fillEl = document.getElementById('miniFill');
+    if(fillEl) fillEl.style.height = Math.min(100, st.heat*100) + '%';
+    var markEl = document.getElementById('miniMark');
+    if(markEl) markEl.style.bottom = Math.min(100, st.heat*100) + '%';
+    var bigEl = document.getElementById('miniBig');
+    if(bigEl) bigEl.textContent = Math.round(st.heat*100) + ' %';
+    var subEl = document.getElementById('miniSub');
+    if(subEl) subEl.textContent = 'Sauma ' + Math.min(st.seamLen, st.seam).toFixed(1) + ' / ' + st.seamLen;
+    if(!mini.done) miniMsgEl.textContent = st.burn > 0.4 ? 'Liian kuuma - levy palaa puhki!' : (inBand ? 'Hyvää jälkeä.' : 'Lämpö hakusessa.');
+    if(st.seam >= st.seamLen){
+      var q = Math.max(0, Math.min(1, st.good/st.seamLen - st.burn*0.25));
+      var pay = Math.round(28 + q*62);
+      money += pay;
+      updateMoneyDisplay();
+      weldsDone++;
+      jobsCompletedCount++;
+      miniFinish('Sauma valmis. Laatu ' + Math.round(q*100) + ' % · +' + pay + ' €', q);
+    }
+  }
+
+  // ---- yhteinen käynnistys ja päivitys ----
+  function openMini(kind, panel, onDone){
+    if(bolt.active) cancelBoltGame();
+    mini.active = true;
+    mini.kind = kind;
+    mini.panel = panel || null;
+    mini.done = false;
+    mini.doneTimer = 0;
+    mini.onDone = onDone || null;
+    input.fwd = false; input.back = false; input.left = false; input.right = false; input.wheelie = false;
+    if(kind === 'tankkaus') openTankkaus();
+    else if(kind === 'kaasutin') openKaasutin();
+    else if(kind === 'paikkaus') openPaikkaus();
+    else if(kind === 'hitsaus') openHitsaus();
+    miniEl.hidden = false;
+    if(mini.panel) mini.panel.hidden = true;
+  }
+  function updateMini(dt){
+    if(!mini.active) return;
+    if(mini.done){
+      mini.doneTimer -= dt;
+      if(mini.doneTimer <= 0) closeMiniOverlay();
+      return;
+    }
+    if(mini.kind === 'tankkaus') updateTankkaus(dt);
+    else if(mini.kind === 'kaasutin') updateKaasutin(dt);
+    else if(mini.kind === 'hitsaus') updateHitsaus(dt);
+  }
+  // välilyönnin paino/nosto ohjautuu oikealle minipelille
+  function miniSpace(down){
+    if(!mini.active || mini.done) return true;   // true = tapahtuma käsiteltiin
+    if(mini.kind === 'tankkaus'){ tankkausHold(down); return true; }
+    if(mini.kind === 'hitsaus'){ hitsausHold(down); return true; }
+    if(mini.kind === 'kaasutin'){ if(down) kaasutinTap(); return true; }
+    return true;
+  }
+
   function updateBoltGame(dt){
     if(!bolt.active) return;
     if(bolt.done){
@@ -6483,6 +6979,16 @@
     if(Math.sqrt(dxg*dxg+dzg*dzg) <= grilliRadius){ eatFood('Grilli', grilliCost, 180); return; }
     var dxm = macdonaldsPos.x - player.position.x, dzm = macdonaldsPos.z - player.position.z;
     if(Math.sqrt(dxm*dxm+dzm*dzm) <= mcFoodRadius){ eatFood('Mac Donalds', mcFoodCost, 180); return; }
+    // hitsauspiste romuttamolla: oma minipeli ja oma palkkio, erillään "seiso paikallaan" -työstä
+    var dxw = weldSpot.x - player.position.x, dzw = weldSpot.z - player.position.z;
+    if(Math.sqrt(dxw*dxw+dzw*dzw) <= weldRadius){
+      if(activeJob){ showToast(false, 'Homma kesken', 'Lopeta ensin aloittamasi homma.', 2200); return; }
+      openMini('hitsaus', null, null);
+      return;
+    }
+    // huoltoaseman pumppu: E tankkaa samalla tavalla kuin R. Täydellä tankilla E menee läpi
+    // normaalisti, jotta huoltoaseman oma työ (tankkauspalvelu) on yhä aloitettavissa samalta paikalta.
+    if(atFuelPump() && fuel < 99.5){ refuel(); return; }
     tryStartJob(); // ei mopoa/tallia/kauppaa/npc:tä/onkipaikkaa lähellä - tarkista onko lähellä työpaikka
   }
   // aloitusruutu estää pelin ohjauksen kunnes Pelaa on painettu (ks. aloitusruudun koodi tiedoston
@@ -6499,6 +7005,12 @@
     if(bolt.active){
       if(k===' '){ e.preventDefault(); if(!e.repeat) boltStrike(); return; }
       if(k==='escape'){ cancelBoltGame(); return; }
+    }
+    // uudet minipelit (tankkaus/kaasutin/paikkaus/hitsaus) vievät välilyönnin samalla tavalla
+    if(mini.active){
+      if(k===' '){ e.preventDefault(); if(!e.repeat) miniSpace(true); return; }
+      if(k==='escape'){ cancelMini(); return; }
+      return;   // minipelin aikana muut näppäimet eivät ohjaa hahmoa tai avaa paneeleita
     }
     if(k===' ') input.back = true;
     if(k==='control') input.wheelie = true;
@@ -6518,7 +7030,10 @@
     if(k==='arrowdown'||k==='s') input.back = false;
     if(k==='arrowleft'||k==='a') input.left = false;
     if(k==='arrowright'||k==='d') input.right = false;
-    if(k===' ') input.back = false;
+    if(k===' '){
+      if(mini.active){ miniSpace(false); }
+      input.back = false;
+    }
     if(k==='control') input.wheelie = false;
   });
 
@@ -8321,9 +8836,9 @@
   // herääminen kotipihalla, ei etenemän menetystä.
   var health = 100;
   var hunger = 100;
-  var hungerDrainIdle = 0.115;   // yksikköä sekunnissa kävellessä (n. 14 min tyhjäksi)
-  var hungerDrainRide = 0.19;    // mopolla ajaessa
-  var hungerDrainStunt = 0.42;   // keulinnan/stoppien aikana
+  var hungerDrainIdle = 0.048;   // yksikköä sekunnissa kävellessä (n. 35 min tyhjäksi)
+  var hungerDrainRide = 0.078;   // mopolla ajaessa
+  var hungerDrainStunt = 0.17;   // keulinnan/stoppien aikana
   var healthRegenRate = 0.45;    // yksikköä sekunnissa kun vatsassa on ruokaa
   var starveDamageRate = 1.15;   // yksikköä sekunnissa kun nälkä on nollassa
   var hungerWarned = false, healthWarned = false;
@@ -9005,6 +9520,13 @@
       wheelieSafeLeft = Math.max(0, wheelieSafeLeft - dt);
       if(wheelieSafeLeft === 0) showToast(false, 'Energiajuoma loppui', 'Kädet väsyy taas - varo keulaa.', 2400);
     }
+    if(carbTuneLeft > 0){
+      carbTuneLeft = Math.max(0, carbTuneLeft - dt);
+      if(carbTuneLeft === 0){
+        carbTune = 0;
+        showToast(false, 'Kaasutin meni sekaisin', 'Tärinä siirsi neulaa - käy säätämässä se uudestaan autotallissa.', 3200);
+      }
+    }
   }
   function updateMaps(dt){
     // Sisätiloissa kartta on hyödytön: huoneet on rakennettu tuhansien yksiköiden päähän varsinaisesta
@@ -9271,6 +9793,11 @@
       check: function(){ return upgradesBought > 0; }
     },
     {
+      short: 'Aja tankkaamaan',
+      text: 'Bensaa ei enää ilmesty tyhjästä: tankata voi vain huoltoaseman pumpulla. Aja Miitin kohdalle, pysähdy pumpun viereen ja paina R. Pidä välilyöntiä pohjassa ja päästä irti kun mittari on vihreällä - yli menevä bensa roiskuu maahan mutta maksaa silti.',
+      check: function(){ return refuelCount > 0; }
+    },
+    {
       short: 'Jutustele kylällä',
       text: 'Kesäloma ei ole pelkkää rassaamista. Käy juttelemassa jonkun kyläläisen kanssa - moni tietää juttuja.',
       check: function(){ return npcChatCount > 0; }
@@ -9279,6 +9806,21 @@
       short: 'Aja miittiin',
       text: 'Huoltoaseman pihalla on miitti käynnissä. Aja sinne ja näytä mopo muille kesäporukoille.',
       check: function(){ return poiIsVisited('Miitti'); }
+    },
+    {
+      short: 'Hitsaa sauma romuttamolla',
+      text: 'Romuttamon nurkkaan ilmestyi hitsauspenkki. Reiska maksaa saumasta laadun mukaan: pidä välilyöntiä pohjassa niin kaari kuumenee, päästä irti niin se jäähtyy - lämpö pitää pysyä vihreällä koko sauman ajan.',
+      check: function(){ return weldsDone > 0; }
+    },
+    {
+      short: 'Säädä kaasutin autotallissa',
+      text: 'Mopo käy laiskasti. Mene autotallin työpöydälle ja valitse "Säädä kaasutin": napauta välilyöntiä kun viisari osuu vihreään ikkunaan. Hyvä säätö antaa lisätehoa, mutta tärinä siirtää neulaa ajan myötä.',
+      check: function(){ return carbTuneCount > 0; }
+    },
+    {
+      short: 'Paikkaa rengas tallilla',
+      text: 'Renkaassa on reikä. Tallilla voi paikata sen itse ilmaiseksi - työvaiheet pitää vain tehdä oikeassa järjestyksessä. Kolme mokaa ja paikasta tulee ruma.',
+      check: function(){ return tyrePatched > 0; }
     },
     {
       short: 'Aja kolme keikkaa',
@@ -9415,6 +9957,10 @@
         fishCaught: fishCaught,
         biggestFish: biggestFish,
         foodEaten: foodEaten,
+        refuelCount: refuelCount,
+        weldsDone: weldsDone,
+        tyrePatched: tyrePatched,
+        carbTuneCount: carbTuneCount,
         health: health,
         hunger: hunger,
         arcadePlayCount: arcadePlayCount,
@@ -9493,6 +10039,10 @@
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
       if(typeof save.biggestFish === 'number') biggestFish = save.biggestFish;
       if(typeof save.foodEaten === 'number') foodEaten = save.foodEaten;
+      if(typeof save.refuelCount === 'number') refuelCount = save.refuelCount;
+      if(typeof save.weldsDone === 'number') weldsDone = save.weldsDone;
+      if(typeof save.tyrePatched === 'number') tyrePatched = save.tyrePatched;
+      if(typeof save.carbTuneCount === 'number') carbTuneCount = save.carbTuneCount;
       if(typeof save.health === 'number') health = Math.max(5, Math.min(100, save.health));
       if(typeof save.hunger === 'number') hunger = Math.max(0, Math.min(100, save.hunger));
       if(typeof save.arcadePlayCount === 'number') arcadePlayCount = save.arcadePlayCount;
@@ -9696,6 +10246,8 @@
     biggestFish = 0;
     stopFishing();
     foodEaten = 0;
+    refuelCount = 0; weldsDone = 0; tyrePatched = 0; carbTuneCount = 0;
+    carbTune = 0; carbTuneLeft = 0;
     health = 100; hunger = 100; healthWarned = false; hungerWarned = false;
     arcadePlayCount = 0;
     foodBoostLeft = 0;
@@ -9931,7 +10483,7 @@
 
       if(throttle){
         speed += accel*perfFactor*accelMult*dt;
-        fuel -= dt*1.05; // kulutus kevennetty reilusti: tankilla pitää jaksaa ajella ympäri kylää
+        fuel -= dt*0.46; // kulutus kevennetty uudestaan (1.05 -> 0.46): tankkaus vaatii nyt ajon huoltoasemalle, joten tankin pitää riittää pitkälle
         for(var wi=0; wi<parts.length; wi++){
           var wp = parts[wi];
           var wpTier = wp.tiers[wp.tierIndex];
@@ -10237,15 +10789,32 @@
         nearGarageBench = Math.sqrt(dgbx*dgbx+dgbz*dgbz) <= autotalliRadius;
       }
 
+      // hitsauspiste ja bensapumppu: omat vihjeensä, tarkistetaan ennen työpaikkoja koska
+      // molemmat sijaitsevat saman työpaikan (romuttamo / huoltoasema) alueen sisällä
+      var nearWeld = false, nearPump = false;
+      if(!inStore && !nearMoped){
+        var dwx = weldSpot.x - player.position.x, dwz = weldSpot.z - player.position.z;
+        nearWeld = Math.sqrt(dwx*dwx+dwz*dwz) <= weldRadius;
+        nearPump = atFuelPump();
+      }
+
       var nearJob = null;
-      if(!nearMoped && !nearTalli && !nearMopedShop && !nearKauppaIsoDoor && !nearNpc && !nearDarts && !nearFishing && !activeJob){
+      if(!nearMoped && !nearTalli && !nearMopedShop && !nearKauppaIsoDoor && !nearNpc && !nearDarts && !nearFishing && !nearWeld && !nearPump && !activeJob){
         for(var jhi=0; jhi<jobs.length; jhi++){
           var jhx = jobs[jhi].pos.x - player.position.x, jhz = jobs[jhi].pos.z - player.position.z;
           if(Math.sqrt(jhx*jhx+jhz*jhz) <= jobs[jhi].radius){ nearJob = jobs[jhi]; break; }
         }
       }
 
-      if(nearGarageBench){
+      if(nearWeld && !inStore){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = 'Paina <b>E</b>: hitsaa sauma (palkka laadun mukaan)';
+      } else if(nearPump && !inStore){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = fuel >= 99.5
+          ? 'Tankki on täynnä'
+          : 'Paina <b>R</b> tai <b>E</b> tankataksesi · tankissa <b>' + Math.round(fuel) + ' %</b>';
+      } else if(nearGarageBench){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = garageShelf.length
           ? 'Paina <b>E</b>: asenna osat hyllyltä (' + garageShelf.length + ')'
@@ -10340,6 +10909,7 @@
     updateFishing(dt);
     updateBoosts(dt);
     updateVitals(dt);
+    updateMini(dt);
     updateBoltGame(dt);
     if(kickCooldown > 0) kickCooldown = Math.max(0, kickCooldown - dt);
     blinkPhase += dt;
