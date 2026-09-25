@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:80-->
-<!--JONNE-NAME:Jonnen ajokoe 80-->
+<!--JONNE-VERSION:81-->
+<!--JONNE-NAME:Jonnen ajokoe 81-->
 <!--JONNE-DATE:2026-09-25-->
-<!--JONNE-NOTES:Kaverin Monkeyn tarakalle voi nousta kyytiin: kaksi pelaajaa samalla mopolla|Muut pelaajat näkyvät minimapissa ja isossa kartassa nimellä ja omalla värillä|Osat kuluvat kahdeksan kertaa hitaammin kuin ennen|Huippunopeus ei enää riipu osien kunnosta - vauhti ei heittele kesken ajon|Pelaajalista kertoo jos joltakulta ei ole kuulunut hetkeen-->
+<!--JONNE-NOTES:Korjaus: yhteys ei enää jää hiljaa kuolleeksi - peli huomaa katkoksen ja liittyy itse uudestaan|Hostin päässä hiljennyt kaveri pudotetaan, jotta hän pääsee liittymään puhtaalta pöydältä|Sisältää myös V80:n: tarakkakyyti, pelaajat kartalla, osien kuluminen ja vakaa huippunopeus-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -11670,6 +11670,17 @@
   var netRemotes = {};             // id -> {name, avatar, cur, tgt, moped, color}
   var netSendTimer = 0;
   var netListTimer = 0;   // pelaajalistan virkistysrytmi
+  // ---- yhteyden vahtiminen ----
+  // WebRTC-datakanava voi kuolla hiljaa: reitti katkeaa (reitittimen NAT-merkintä vanhenee,
+  // wifi nikottelee), mutta kanavan readyState jää 'open' eikä close-tapahtumaa tule. Silloin
+  // kaikki kaverit vain jäätyvät paikoilleen eikä mikään kerro miksi. Siksi hiljaisuutta
+  // mitataan itse, ja liian pitkä hiljaisuus tulkitaan katkenneeksi yhteydeksi.
+  var netLastRecv = 0;
+  var netReconnecting = false;
+  var netReconnectTries = 0;
+  var NET_SILENCE_LIMIT = 7000;        // liittyjä: näin pitkä hiljaisuus = yhteys poikki
+  var NET_PEER_DROP = 12000;           // host: jo auennut yhteys joka menee hiljaiseksi
+  var NET_RECONNECT_MAX = 12;          // monta uudelleenyritystä ennen luovuttamista
   var netClockTimer = 0;
   var netNextId = 1;
   var netSelfId = 0;
@@ -12017,6 +12028,11 @@
     if(netSendTimer > 0) return;
     netSendTimer = NET_TICK;
     if(netRole === 'client'){
+      // ei ole kuulunut mitään pitkään aikaan -> yhteys on käytännössä poikki, liitytään uudestaan
+      if(!netReconnecting && netRoomId && netLastRecv && (netNow() - netLastRecv) > NET_SILENCE_LIMIT){
+        netClientReconnect();
+        return;
+      }
       netSendRaw(netHostCh, {t:'s', s:netSelfState(), m:netSelfMeta()});
       return;
     }
@@ -12031,6 +12047,24 @@
       // pelaajille haamu seisomaan ikuisesti viimeiseen tunnettuun paikkaansa
       if(r.tgt && (nowMs - (r.last || 0)) < NET_STALE_RELAY){
         all[id] = {s:r.tgt, m:{name:r.name, moped:r.moped, color:r.color}};
+      }
+    }
+    // Hiljaiset kaverit pudotetaan, jotta he pääsevät liittymään puhtaalta pöydältä. Ilman
+    // tätä kuollut yhteys jäisi roikkumaan netPeersiin ja hahmo seisomaan muiden ruudulle.
+    for(var pi2 = netPeers.length - 1; pi2 >= 0; pi2--){
+      var pp = netPeers[pi2];
+      // Kesken kättelyn olevaan yhteyteen ei kosketa: se voi kestää hitaalla koneella pitkään,
+      // ja aikakatkaisu tässä katkaisisi liittymisen kokonaan. Epäonnistuneen kättelyn hoitaa
+      // pc:n oma connectionstatechange. Vain jo auennut ja sitten hiljennyt yhteys pudotetaan.
+      if(!pp.open) continue;
+      var rr2 = netRemotes[pp.id];
+      var seenAt = (rr2 && rr2.last) ? rr2.last : (pp.openedAt || nowMs);
+      if((nowMs - seenAt) > NET_PEER_DROP){
+        try{ pp.pc.close(); }catch(e){}
+        netRemoveRemote(pp.id);
+        netPeers.splice(pi2, 1);
+        netSetStatus((pp.name || 'Kaverin') + ' yhteys katkesi - hän voi liittyä uudestaan.', 'err');
+        netRenderList();
       }
     }
     netClockTimer -= dt;
@@ -12050,6 +12084,7 @@
   }
   // ---- viestien vastaanotto ----
   function netOnMessage(fromPeer, ev){
+    netLastRecv = netNow();
     var msg;
     try{ msg = JSON.parse(ev.data); }catch(e){ return; }
     if(netRole === 'host'){
@@ -12086,6 +12121,7 @@
   function netWirePeer(peer){
     peer.ch.addEventListener('open', function(){
       peer.open = true;
+      peer.openedAt = netNow();
       netSetStatus(peer.name ? (peer.name + ' liittyi peliin.') : 'Kaveri liittyi peliin.', 'ok');
       netRenderList();
     });
@@ -12108,7 +12144,7 @@
   function netHostCreateInvite(){
     var pc = netNewPc();
     var oid = String(Math.floor(Math.random()*1e9));
-    var peer = {pc:pc, ch:null, id:netNextId++, name:'', open:false, oid:oid};
+    var peer = {pc:pc, ch:null, id:netNextId++, name:'', open:false, oid:oid, since:netNow()};
     peer.ch = pc.createDataChannel('jonne');
     netWirePeer(peer);
     // vanhat, kättelemättä jääneet kutsut siivotaan pois kun niitä kertyy liikaa
@@ -12247,7 +12283,7 @@
   // host: vastaa yhteen liittymispyyntöön
   function netHostAnswerOffer(offerCode, joinerName){
     var pc = netNewPc();
-    var peer = {pc:pc, ch:null, id:netNextId++, name:joinerName || 'Jonne', open:false, oid:''};
+    var peer = {pc:pc, ch:null, id:netNextId++, name:joinerName || 'Jonne', open:false, oid:'', since:netNow()};
     pc.addEventListener('datachannel', function(ev){
       peer.ch = ev.channel;
       netWirePeer(peer);
@@ -12318,10 +12354,20 @@
     netHostCh = ch;
     ch.addEventListener('open', function(){
       netRole = 'client';
+      netReconnectTries = 0;     // yhteys saatiin, laskuri nollille
+      netLastRecv = netNow();
       netSetStatus('Yhteys hostiin auki. Paina Pelaa.', 'ok');
       netRenderList();
     });
     ch.addEventListener('close', function(){
+      // vanhan, jo korvatun kanavan sulkeutuminen ei koske meitä
+      if(ch !== netHostCh) return;
+      if(netReconnecting) return;
+      if(netRoomId && netRole === 'client'){
+        netSetStatus('Yhteys hostiin katkesi - liitytään uudestaan.', 'err');
+        netClientReconnect();
+        return;
+      }
       netSetStatus('Yhteys hostiin katkesi.', 'err');
       netLeave();
     });
@@ -12350,6 +12396,36 @@
         netSetStatus('Yhteys muodostuu...');
         return true;
       });
+  }
+  // Liittyjän automaattinen uudelleenkytkentä. Huone on yhä olemassa niin kauan kuin host
+  // pitää sitä auki, joten riittää että tehdään koko liittyminen uudestaan: uusi tarjous,
+  // uusi vastaus, uusi datakanava. Vanhat hahmot poistetaan, koska host antaa uudet
+  // tunnisteet - muuten ruudulle jäisi haamuja vanhoilla numeroilla.
+  function netClientReconnect(){
+    if(netReconnecting || !netRoomId) return;
+    if(netReconnectTries >= NET_RECONNECT_MAX){
+      netSetStatus('Yhteyttä ei saatu takaisin. Liity ryhmään uudestaan launcherista.', 'err');
+      netLeave();
+      return;
+    }
+    netReconnecting = true;
+    netReconnectTries++;
+    netSetStatus('Yhteys katkesi - liitytään uudestaan (' + netReconnectTries + '. yritys)...', 'err');
+    if(netHostPc){ try{ netHostPc.close(); }catch(e){} }
+    netHostPc = null;
+    netHostCh = null;
+    for(var rid2 in netRemotes){
+      if(Object.prototype.hasOwnProperty.call(netRemotes, rid2)) netRemoveRemote(rid2);
+    }
+    netJoinRoom(netRoomId).then(function(){
+      netReconnecting = false;
+      netLastRecv = netNow();
+    }).catch(function(e){
+      netReconnecting = false;
+      // seuraava yritys noin neljän sekunnin päästä: siirretään hiljaisuuslaskuria taaksepäin
+      netLastRecv = netNow() - NET_SILENCE_LIMIT + 4000;
+      netSetStatus('Uudelleenliittyminen ei onnistunut: ' + (e && e.message ? e.message : e), 'err');
+    });
   }
   function netPollForAnswer(roomId, reqId, tries){
     if(tries > 40) return Promise.reject(new Error('Host ei vastannut. Onko hän vielä pelissä?'));
