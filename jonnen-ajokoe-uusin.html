@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="fi">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:85-->
-<!--JONNE-NAME:Jonnen ajokoe 85-->
-<!--JONNE-DATE:2026-09-25-->
-<!--JONNE-NOTES:Uusi mopo: Derbi 50cc mopokaupassa - vakiona 120 km/h, tehoputkella + 88-sarjalla + ilmansuodattimella 210 km/h|Ilmansuodatin uutena osana kaupassa|Viikonpäivä Ma-Su näkyy kellon vieressä ja puhelimessa|Moninpelissä päivä vaihtuu vasta kun kaikki ovat nukkumassa|Katuvalot valaisevat oikeasti: kantama yli kaksinkertainen ja selvästi kirkkaammat|Mopoa ei voi korjata eikä virittää ellei se ole tallissa-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -316,6 +306,42 @@
   .miniStrikes i{width:16px;height:6px;border-radius:3px;background:rgba(251,246,233,0.2);}
   .miniStrikes i.on{background:#d8402c;}
   .boltHint{font:400 11.5px/1.45 'Karla',sans-serif;opacity:.6;margin-top:6px;}
+  /* ---- ruuvitila: ensimmäisen persoonan pulttien kiristys ---- */
+  .wrenchHud{position:absolute;inset:0;pointer-events:none;}
+  .wrenchHud[hidden]{display:none;}
+  .wrenchCross{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;
+    border-radius:50%;border:1.5px solid rgba(251,246,233,0.55);box-shadow:0 0 6px rgba(0,0,0,0.65);}
+  .wrenchCross:before,.wrenchCross:after{content:'';position:absolute;background:rgba(251,246,233,0.75);}
+  .wrenchCross:before{left:50%;top:-6px;width:1.5px;height:5px;margin-left:-0.75px;}
+  .wrenchCross:after{left:50%;bottom:-6px;width:1.5px;height:5px;margin-left:-0.75px;}
+  .wrenchCross.on{border-color:#ffd166;width:26px;height:26px;margin:-13px 0 0 -13px;box-shadow:0 0 12px rgba(255,209,102,0.6);}
+  .wrenchCard{position:absolute;left:50%;top:50%;transform:translate(-50%,0);margin-top:34px;
+    background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:12px;
+    padding:10px 14px 12px;text-align:center;min-width:186px;}
+  .wrenchCard[hidden]{display:none;}
+  .wrenchName{font:700 11.5px/1.3 'Karla',sans-serif;letter-spacing:.03em;margin-bottom:6px;}
+  .wrenchDial{position:relative;width:76px;height:76px;margin:0 auto;}
+  .wrenchDial svg{width:76px;height:76px;transform:rotate(-90deg);}
+  .wrenchDial circle{fill:none;stroke-width:6;stroke-linecap:round;}
+  .wrenchDial .wd-bg{stroke:rgba(251,246,233,0.16);}
+  .wrenchDial .wd-ok{stroke:rgba(122,196,96,0.30);stroke-dasharray:29.2 194.8;stroke-dashoffset:-165.6;}
+  .wrenchDial .wd-val{stroke:#fbf6e9;transition:stroke .15s;}
+  .wrenchDial b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font:700 15px/1 'Karla',sans-serif;}
+  .wrenchTool{font:600 10.5px/1.3 'Karla',sans-serif;margin-top:7px;letter-spacing:.04em;}
+  .wrenchTool.ok{color:#8fd071;}
+  .wrenchTool.bad{color:#e08a72;}
+  .wrenchBar{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;gap:16px;
+    align-items:center;background:rgba(14,16,14,0.72);border:1px solid var(--panel-line);
+    border-radius:20px;padding:8px 18px;font:600 12px/1.3 'Karla',sans-serif;max-width:86vw;}
+  .wrenchBar span:last-child{opacity:.72;font-weight:400;}
+  .wrenchList{position:absolute;right:16px;top:96px;width:176px;background:rgba(14,16,14,0.7);
+    border:1px solid var(--panel-line);border-radius:12px;padding:8px 10px;}
+  .wrenchList .wl{display:flex;justify-content:space-between;gap:8px;
+    font:600 11px/1.7 'Karla',sans-serif;}
+  .wrenchList .wl.off{opacity:.38;}
+  .wrenchList .wl.ok b{color:#8fd071;}
+  .wrenchList .wl.warn b{color:#e2bb2b;}
   .partActions button{flex:1;background:rgba(251,246,233,0.12);border:1px solid var(--panel-line);border-radius:8px;color:var(--cream);font:700 12px 'Karla',sans-serif;padding:6px 8px;cursor:pointer;white-space:nowrap;}
   .partActions .tuneBtn{background:rgba(226,87,43,0.28);border-color:rgba(226,87,43,0.5);}
   .partActions button:disabled{opacity:.4;cursor:default;}
@@ -645,6 +671,26 @@
       <div class="boltPips" id="boltPips"><i></i><i></i><i></i></div>
       <div class="boltMsg" id="boltMsg">Kiristä kolme pulttia.</div>
       <div class="boltHint">Välilyönti kun osoitin on vihreällä. Keltainen keskikohta = täysi kireys. Esc keskeyttää.</div>
+    </div>
+    <div class="wrenchHud" id="wrenchHud" hidden>
+      <div class="wrenchCross" id="wrenchCross"></div>
+      <div class="wrenchCard" id="wrenchCard" hidden>
+        <div class="wrenchName" id="wrenchName">Pultti</div>
+        <div class="wrenchDial">
+          <svg viewBox="0 0 76 76">
+            <circle class="wd-bg" cx="38" cy="38" r="31"></circle>
+            <circle class="wd-ok" cx="38" cy="38" r="31"></circle>
+            <circle class="wd-val" cx="38" cy="38" r="31" id="wrenchArc"></circle>
+          </svg>
+          <b id="wrenchPct">0%</b>
+        </div>
+        <div class="wrenchTool" id="wrenchToolNeed">Kiintoavain</div>
+      </div>
+      <div class="wrenchList" id="wrenchList"></div>
+      <div class="wrenchBar">
+        <span id="wrenchTool">🔧 Kiintoavain 12 mm</span>
+        <span id="wrenchTip">Hiiri pohjaan pultin kohdalla ja pyöritä.</span>
+      </div>
     </div>
     <div class="mopedPanel" id="mopedPanel" hidden>
       <div class="tuneLabel">Mopokauppa — osta &amp; vaihda mopo</div>
@@ -6869,17 +6915,30 @@
           '<small>'+shelfItemHint(it)+'</small>' +
         '</div>' +
         '<button class="tuneBtn">'+(it.kind === 'orig' ? 'Kasaa' : 'Asenna')+'</button>';
-      row.querySelector('button').addEventListener('click', function(){ startBoltGame(idx); });
+      row.querySelector('button').addEventListener('click', function(){ wrenchInstallFromShelf(idx); });
       shelfListEl.appendChild(row);
     });
     addTuneShortcut();
   }
   // maalaus/pakoputki avataan nyt täältä, koska oma HUD-nappi poistettiin
   function addTuneShortcut(){
+    // oma nappi ruuvitilaan: sinne pääsee myös ilman että on asentamassa uutta osaa,
+    // esimerkiksi kiristämään ajon aikana löystyneitä pultteja
+    var wrenchRow = document.createElement('button');
+    wrenchRow.className = 'wideBtn';
+    wrenchRow.type = 'button';
+    wrenchRow.style.marginTop = '12px';
+    var looseNames = boltLooseSummary();
+    wrenchRow.textContent = looseNames.length
+      ? ('🔧 Ruuvitila — löysällä: ' + looseNames.join(', '))
+      : '🔧 Ruuvitila — kiristä pultit itse';
+    wrenchRow.addEventListener('click', function(){ enterWrenchMode(null); });
+    shelfListEl.appendChild(wrenchRow);
+
     var plateRow = document.createElement('button');
     plateRow.className = 'wideBtn';
     plateRow.type = 'button';
-    plateRow.style.marginTop = '12px';
+    plateRow.style.marginTop = '8px';
     plateRow.textContent = plateOn ? '🔩 Irrota rekisterikilvet' : '🔩 Asenna rekisterikilvet';
     plateRow.addEventListener('click', function(){ togglePlates(); });
     shelfListEl.appendChild(plateRow);
@@ -7805,6 +7864,19 @@
     if(k==='arrowdown'||k==='s') input.back = true;
     if(k==='arrowleft'||k==='a') input.left = true;
     if(k==='arrowright'||k==='d') input.right = true;
+    // ruuvitila ottaa näppäimet itselleen: E asettaa osan, Q vaihtaa työkalua, G korjaa kierteen
+    if(wrenchMode){
+      if(k==='escape'){ exitWrenchMode(); return; }
+      if(k==='e' && !e.repeat){ wrenchSeatPart(); return; }
+      if(k==='q' && !e.repeat){ wrenchCycleTool(); return; }
+      if(k==='g' && !e.repeat){ wrenchFixThread(); return; }
+      if(k==='1'){ wrenchSelectTool('kiintoavain'); return; }
+      if(k==='2'){ wrenchSelectTool('ruuvimeisseli'); return; }
+      if(k==='3'){ wrenchSelectTool('tulppa-avain'); return; }
+      if(k===' '||k==='f'||k==='r'||k==='m'||k==='tab'){ e.preventDefault(); return; }
+      setFirstInput();
+      return;
+    }
     // pulttien kiristys vie välilyönnin itselleen niin kauan kuin minipeli on auki
     if(bolt.active){
       if(k===' '){ e.preventDefault(); if(!e.repeat) boltStrike(); return; }
@@ -11261,7 +11333,11 @@
   function saveGame(){
     try{
       var partsData = {};
-      parts.forEach(function(p){ partsData[p.id] = {condition:p.condition, tierIndex:p.tierIndex, installed:!!p.installed}; });
+      parts.forEach(function(p){
+        var bs = null;
+        if(p.boltState) bs = p.boltState.map(function(b){ return [Math.round(b.turn*1000)/1000, b.stripped?1:0]; });
+        partsData[p.id] = {condition:p.condition, tierIndex:p.tierIndex, installed:!!p.installed, bolts:bs};
+      });
       var mopedData = {};
       mopedModels.forEach(function(m){ mopedData[m.id] = m.owned; });
       var storeData = {};
@@ -11366,6 +11442,11 @@
             if(typeof sp.condition === 'number') p.condition = sp.condition;
             if(typeof sp.tierIndex === 'number') p.tierIndex = sp.tierIndex;
             if(typeof sp.installed === 'boolean') p.installed = sp.installed;
+            if(sp.bolts && sp.bolts.length){
+              p.boltState = sp.bolts.map(function(b){
+                return {turn: Math.max(0, Math.min(1.4, b[0]||0)), stripped: !!b[1], spin:0, obj:null};
+              });
+            }
           }
         });
       }
@@ -11513,6 +11594,7 @@
     parts.forEach(function(p, idx){
       p.condition = initialPartsSnapshot[idx].condition;
       p.tierIndex = initialPartsSnapshot[idx].tierIndex;
+      p.boltState = null;   // pultit takaisin irti - osat ovat taas hyllyllä kiristämättä
     });
     updateMoneyDisplay();
     if(repairOpen) renderParts();
@@ -11659,11 +11741,13 @@
   var camMouseIdle = 99;
   function onCamDragStart(e){
     if(e.button !== 0) return;
+    if(wrenchMode) return;   // ruuvitilassa hiirellä käännetään katsetta ja väännetään pultteja
     camDragging = true;
     camDragX = e.clientX; camDragY = e.clientY;
     camMouseIdle = 0;
   }
   function onCamDragMove(e){
+    if(wrenchMode) return;
     if(!camDragging) return;
     var dxm = e.clientX - camDragX, dym = e.clientY - camDragY;
     camDragX = e.clientX; camDragY = e.clientY;
@@ -11785,6 +11869,937 @@
     camera.lookAt(camLook);
   }
 
+
+  // ==========================================================================
+  // ---- FYYSISET PULTIT JA ENSIMMÄISEN PERSOONAN RUUVITILA ----
+  // Vanha "paina välilyöntiä kun palkki on vihreällä" -minipeli ei tuntunut ruuvaamiselta.
+  // Nyt jokainen osa on mopossa kiinni OIKEISSA pulteissa, jotka näkyvät 3D-mallissa siinä
+  // kohdassa mihin osa kiinnittyy - ei siis realistista pulttikuviota joka ruuvista, vaan
+  // pelkät kiinnityspultit: sylinterissä neljä, pakoputkessa kaksi, kaasuttimessa kaksi ja
+  // niin edelleen. Talliin mennään ensimmäiseen persoonaan, avain nousee käteen, ja pultti
+  // kiristetään pitämällä hiiren nappi pohjassa ja pyörittämällä hiirtä myötäpäivään.
+  //
+  // Kaksi epäonnistumista on mukana, kuten oikeassa elämässä:
+  //   - YLIKIRISTYS: jos jaksaa väkisin vääntää täyden kireyden yli, kierre menee. Pultti
+  //     pyörii sen jälkeen tyhjää eikä pidä mitään kiinni ennen kuin kierre korjataan (G).
+  //   - LÖYSTYMINEN: vajaaksi jäänyt pultti aukeaa itsestään ajon tärinästä. Täyteen
+  //     kireyteen vedetty pultti ei löysty koskaan, joten huolellisuus palkitaan.
+  // ==========================================================================
+
+  // pultin kireysasteikko: 0 = irti, 1 = täysi kireys, yli 1.34 = kierre menee
+  var BOLT_TIGHT = 0.85;      // tästä ylöspäin pultti "pitää"
+  var BOLT_PER_REV = 0.55;    // paljonko yksi hiiren kierros kiristää kevyessä vaiheessa
+  var BOLT_STRIP = 1.34;      // tästä yli = kierre menee
+
+  // Pulttien paikat annetaan SUHTEELLISINA mopon näkyvän mallin ääriviivoihin (0..1), jolloin
+  // sama taulukko istuu kaikkiin neljään mopoon vaikka ne ovat eri kokoisia ja eri muotoisia.
+  //   nx: 0 = vasen laita, 1 = oikea laita      ny: 0 = pyörien alareuna, 1 = ylin kohta
+  //   nz: 0 = perä, 1 = keula                   akseli: mihin suuntaan pultin kanta osoittaa
+  var BOLT_LAYOUT = {
+    sylinteri:     {tool:'kiintoavain',   label:'Sylinterin kiinnityspultti', b:[
+                     [0.34,0.40,0.58,'x'],[0.66,0.40,0.58,'x'],
+                     [0.34,0.40,0.46,'x'],[0.66,0.40,0.46,'x']]},
+    sytytystulppa: {tool:'tulppa-avain',  label:'Sytytystulppa', b:[[0.66,0.44,0.64,'x']]},
+    kaasutin:      {tool:'ruuvimeisseli', label:'Kaasuttimen kiinnitysruuvi', b:[
+                     [0.64,0.48,0.40,'x'],[0.36,0.48,0.40,'x']]},
+    pakoputki:     {tool:'kiintoavain',   label:'Pakoputken pultti', b:[
+                     [0.70,0.28,0.42,'x'],[0.70,0.20,0.20,'x']]},
+    ketju:         {tool:'kiintoavain',   label:'Rattaan pultti', b:[
+                     [0.30,0.24,0.26,'x'],[0.30,0.17,0.14,'x']]},
+    jarrut:        {tool:'kiintoavain',   label:'Jarrusatulan pultti', b:[
+                     [0.34,0.27,0.86,'x'],[0.66,0.27,0.86,'x']]},
+    akku:          {tool:'ruuvimeisseli', label:'Akkukotelon ruuvi', b:[
+                     [0.42,0.60,0.18,'y'],[0.58,0.60,0.18,'y']]},
+    renkaat:       {tool:'kiintoavain',   label:'Akselimutteri', b:[
+                     [0.68,0.14,0.93,'x'],[0.68,0.14,0.08,'x']]}
+  };
+  var BOLT_TOOLS = [
+    {id:'kiintoavain',   name:'Kiintoavain 12 mm', icon:'🔧'},
+    {id:'ruuvimeisseli', name:'Ruuvimeisseli',      icon:'🪛'},
+    {id:'tulppa-avain',  name:'Tulppa-avain',       icon:'🔩'}
+  ];
+
+  // ---- pulttien tila ----
+  // Tila roikkuu osassa itsessään (part.boltState), jotta se tallentuu ja latautuu osien mukana.
+  function boltLayoutFor(id){ return BOLT_LAYOUT[id] || null; }
+  function boltStateFor(p){
+    var lay = boltLayoutFor(p.id);
+    if(!lay) return null;
+    if(!p.boltState || p.boltState.length !== lay.b.length){
+      var old = p.boltState || [];
+      p.boltState = lay.b.map(function(_, i){
+        return old[i] ? old[i] : {turn: p.installed ? 1 : 0, stripped:false, spin:0, obj:null};
+      });
+    }
+    return p.boltState;
+  }
+  // montako pulttia on kiinni, ja kuinka hyvin
+  function boltTightCount(p){
+    var st = boltStateFor(p); if(!st) return 0;
+    var n = 0;
+    for(var i=0;i<st.length;i++){ if(!st[i].stripped && st[i].turn >= BOLT_TIGHT) n++; }
+    return n;
+  }
+  function boltAllTight(p){
+    var st = boltStateFor(p); if(!st) return true;
+    return boltTightCount(p) === st.length;
+  }
+  // 0..1 laatu: 1 = jokainen pultti täsmälleen täydessä kireydessä
+  function boltQuality(p){
+    var st = boltStateFor(p); if(!st || !st.length) return 1;
+    var sum = 0;
+    for(var i=0;i<st.length;i++){
+      if(st[i].stripped){ continue; }
+      sum += Math.max(0, 1 - Math.abs(1 - Math.min(1.2, st[i].turn))*1.6);
+    }
+    return Math.max(0, Math.min(1, sum/st.length));
+  }
+  // löysä osa kuluu nopeammin - tämä kerroin menee kulumislaskentaan ajaessa
+  function boltWearMult(p){
+    var st = boltStateFor(p); if(!st || !st.length) return 1;
+    var worst = 1;
+    for(var i=0;i<st.length;i++){
+      var t = st[i].stripped ? 0 : Math.min(1, st[i].turn);
+      if(t < worst) worst = t;
+    }
+    if(worst >= BOLT_TIGHT) return 1;
+    return 1 + (BOLT_TIGHT - worst)*2.6;   // täysin löysällä olevat pultit lähes nelinkertaistavat kulumisen
+  }
+  function boltPartLoose(p){
+    var st = boltStateFor(p); if(!st || !st.length) return false;
+    for(var i=0;i<st.length;i++){
+      if(st[i].stripped || st[i].turn < BOLT_TIGHT) return true;
+    }
+    return false;
+  }
+  // osien yhteenveto puhelimeen/paneeliin
+  function boltLooseSummary(){
+    var out = [];
+    for(var i=0;i<parts.length;i++){
+      var p = parts[i];
+      if(!p.installed) continue;
+      if(boltPartLoose(p)) out.push(p.name);
+    }
+    return out;
+  }
+
+  // ---- pulttien 3D-mallit ----
+  var boltGroup = new THREE.Group();
+  boltGroup.visible = false;
+  scene.add(boltGroup);
+  // Sylinterigeometria on oletuksena Y-akselin suuntainen. Kierretään geometria kerran niin, että
+  // pultin akseli osoittaa +Z:n suuntaan - silloin mesh.rotation.z pyörittää pulttia oikein
+  // oman akselinsa ympäri (tämä on se mitä pelaaja näkee kun pultti kiertyy).
+  var boltHeadGeo  = new THREE.CylinderGeometry(0.031, 0.036, 0.026, 6);
+  boltHeadGeo.rotateX(Math.PI/2);
+  var boltWashGeo  = new THREE.CylinderGeometry(0.046, 0.046, 0.007, 12);
+  boltWashGeo.rotateX(Math.PI/2);
+  var boltNotchGeo = new THREE.BoxGeometry(0.052, 0.005, 0.009);
+  var boltPickGeo  = new THREE.SphereGeometry(0.085, 8, 6);
+  var boltRingGeo  = new THREE.TorusGeometry(0.062, 0.006, 6, 18);
+  var boltMatLoose  = new THREE.MeshStandardMaterial({color:0x6a6a68, metalness:0.75, roughness:0.55});
+  var boltMatTight  = new THREE.MeshStandardMaterial({color:0xbfc3c6, metalness:0.9,  roughness:0.28});
+  var boltMatStrip  = new THREE.MeshStandardMaterial({color:0x8d3f2a, metalness:0.5,  roughness:0.7});
+  var boltMatWash   = new THREE.MeshStandardMaterial({color:0x4a4a48, metalness:0.7,  roughness:0.6});
+  var boltMatNotch  = new THREE.MeshStandardMaterial({color:0x1b1b1a, metalness:0.2,  roughness:0.9});
+  var boltMatRing   = new THREE.MeshBasicMaterial({color:0xffd166});
+  var boltMatPick   = new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false});
+  var boltPickList = [];
+
+  function makeBoltObject(st, p, idx, axis){
+    var g = new THREE.Group();
+    var wash = new THREE.Mesh(boltWashGeo, boltMatWash);
+    wash.position.z = -0.004;
+    g.add(wash);
+    var head = new THREE.Mesh(boltHeadGeo, boltMatLoose);
+    head.position.z = 0.016;
+    g.add(head);
+    // kannan päälle uurre, jotta pultin kiertyminen NÄKYY eikä ole pelkkä numero ruudulla
+    var notch = new THREE.Mesh(boltNotchGeo, boltMatNotch);
+    notch.position.set(0, 0, 0.0145);
+    head.add(notch);
+    var ring = new THREE.Mesh(boltRingGeo, boltMatRing);
+    ring.position.z = 0.016;
+    ring.visible = false;
+    g.add(ring);
+    var pick = new THREE.Mesh(boltPickGeo, boltMatPick);
+    pick.position.z = 0.02;
+    g.add(pick);
+    pick.userData.bolt = st;
+    boltPickList.push(pick);
+    // akseli: kanta osoittaa ulos siltä puolelta mihin pultti kuuluu
+    if(axis === 'x') g.rotation.y = Math.PI/2;
+    else if(axis === 'y') g.rotation.x = -Math.PI/2;
+    st.obj = g; st.head = head; st.ring = ring; st.part = p; st.index = idx;
+    st.axis = axis;
+    boltGroup.add(g);
+    return g;
+  }
+
+  // ---- mopon näkyvän mallin ääriviivat mopon omassa koordinaatistossa ----
+  // Pulttien paikat lasketaan tästä laatikosta, joten sama taulukko istuu kaikkiin mopoihin.
+  var boltBoxCache = {};
+  function mopedModelRoot(){
+    if(equippedMopedId === 'scoba' && typeof scooterRoot !== 'undefined' && scooterRoot) return scooterRoot;
+    if(equippedMopedId === 'kickscooter' && typeof scooter2Root !== 'undefined' && scooter2Root) return scooter2Root;
+    if(equippedMopedId === 'monkey' && typeof monkeyRoot !== 'undefined' && monkeyRoot) return monkeyRoot;
+    if(equippedMopedId === 'derbi' && typeof derbiRoot !== 'undefined' && derbiRoot) return derbiRoot;
+    return null;
+  }
+  function mopedLocalBox(){
+    var key = equippedMopedId;
+    if(boltBoxCache[key]) return boltBoxCache[key];
+    var root = mopedModelRoot();
+    var box = new THREE.Box3();
+    if(root){
+      moped.updateMatrixWorld(true);
+      var inv = new THREE.Matrix4().copy(moped.matrixWorld).invert();
+      var v = new THREE.Vector3();
+      root.traverse(function(o){
+        if(!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
+        var pos = o.geometry.attributes.position;
+        var m = new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld);
+        for(var i=0;i<pos.count;i++){
+          v.set(pos.getX(i), pos.getY(i), pos.getZ(i)).applyMatrix4(m);
+          box.expandByPoint(v);
+        }
+      });
+    }
+    if(box.isEmpty()) box.set(new THREE.Vector3(-0.32,0,-1.0), new THREE.Vector3(0.32,1.1,1.0));
+    boltBoxCache[key] = box;
+    return box;
+  }
+  // ---- pultin paikan hakeminen mopon pinnalta ----
+  // Suhteellinen paikka laatikon sisällä ei yksin riitä: skootterin kate on kapea ja pultti jäisi
+  // rungon SISÄÄN, jolloin sitä ei näe eikä siihen pääse käsiksi. Siksi jokaiselle pultille
+  // ammutaan säde ulkoa sisäänpäin ja pultti asetetaan siihen kohtaan missä säde osuu mopon
+  // näkyvään pintaan. Näin sama taulukko istuu jokaiseen mopoon, oli se skootteri tai Derbi.
+  var boltSurfRay = new THREE.Raycaster();
+  function boltSurfacePoint(local, axis, sign, box){
+    var root = mopedModelRoot();
+    var dir = new THREE.Vector3(axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0);
+    if(!root){
+      var sx = box.max.x - box.min.x, sy = box.max.y - box.min.y, sz = box.max.z - box.min.z;
+      return local.clone().add(dir.clone().multiplyScalar(axis === 'y' ? sy*0.04 : (axis === 'x' ? sx*0.06 : sz*0.05)));
+    }
+    moped.updateMatrixWorld(true);
+    var inv = new THREE.Matrix4().copy(moped.matrixWorld).invert();
+    var start = local.clone().add(dir.clone().multiplyScalar(1.4));
+    var wStart = start.clone().applyMatrix4(moped.matrixWorld);
+    var wEnd   = local.clone().applyMatrix4(moped.matrixWorld);
+    var wDir   = wEnd.clone().sub(wStart).normalize();
+    boltSurfRay.set(wStart, wDir);
+    boltSurfRay.far = 3.0;
+    var hits = boltSurfRay.intersectObject(root, true);
+    // Säde voi lävistää koko mopon ja osua vastakkaiseen sisäpintaan, jolloin pultti hyppäisi
+    // väärälle puolelle (esim. oikean puolen pakoputken pultti ilmestyi vasemmalle). Kelpuutetaan
+    // siis vain osuma joka on oikealla puolella mopon keskilinjaa.
+    var cx = (box.min.x + box.max.x)/2, cy = (box.min.y + box.max.y)/2, cz = (box.min.z + box.max.z)/2;
+    for(var hi=0; hi<hits.length; hi++){
+      var lp = hits[hi].point.clone().applyMatrix4(inv);
+      var rel = (axis === 'x') ? (lp.x - cx) : (axis === 'y' ? (lp.y - cy) : (lp.z - cz));
+      if(sign*rel < 0.015) continue;      // meni keskilinjan yli - väärä puoli
+      return lp.add(dir.clone().multiplyScalar(0.016));   // hitusen pinnan päälle, ei sen sisään
+    }
+    // ei osumaa (esim. pultti mallin ääriviivojen ulkopuolella) - käytetään nimellistä paikkaa
+    var sx2 = box.max.x - box.min.x, sy2 = box.max.y - box.min.y, sz2 = box.max.z - box.min.z;
+    return local.clone().add(dir.clone().multiplyScalar(axis === 'y' ? sy2*0.04 : (axis === 'x' ? sx2*0.06 : sz2*0.05)));
+  }
+
+  // Pultit rakennetaan/siirretään aina kun mopo vaihtuu tai ruuvitilaan mennään.
+  function boltsRelayout(){
+    // vanhat pois
+    for(var i=boltGroup.children.length-1;i>=0;i--) boltGroup.remove(boltGroup.children[i]);
+    boltPickList.length = 0;
+    var box = mopedLocalBox();
+    var sx = box.max.x - box.min.x, sy = box.max.y - box.min.y, sz = box.max.z - box.min.z;
+    for(var pi=0; pi<parts.length; pi++){
+      var p = parts[pi];
+      var lay = boltLayoutFor(p.id);
+      if(!lay) continue;
+      var st = boltStateFor(p);
+      for(var bi=0; bi<lay.b.length; bi++){
+        var spec = lay.b[bi];
+        var g = makeBoltObject(st[bi], p, bi, spec[3]);
+        var axis = spec[3];
+        var sign = (axis === 'y') ? 1 : ((axis === 'x' ? spec[0] : spec[2]) > 0.5 ? 1 : -1);
+        var nominal = new THREE.Vector3(box.min.x + spec[0]*sx, box.min.y + spec[1]*sy, box.min.z + spec[2]*sz);
+        g.position.copy(boltSurfacePoint(nominal, axis, sign, box));
+        if(axis === 'x' && sign < 0) g.rotation.y = -Math.PI/2;
+        else if(axis === 'z' && sign < 0) g.rotation.y = Math.PI;
+      }
+    }
+    boltsRefreshVisuals();
+  }
+  function boltsRefreshVisuals(){
+    for(var pi=0; pi<parts.length; pi++){
+      var p = parts[pi];
+      var st = boltStateFor(p);
+      if(!st) continue;
+      var shown = !!p.installed || (wrenchPending && wrenchPending.partId === p.id && wrenchSeated);
+      for(var bi=0; bi<st.length; bi++){
+        var b = st[bi];
+        if(!b.obj) continue;
+        b.obj.visible = !!shown;
+        if(b.head){
+          b.head.material = b.stripped ? boltMatStrip : (b.turn >= BOLT_TIGHT ? boltMatTight : boltMatLoose);
+          b.head.rotation.z = b.spin || 0;
+        }
+        if(b.ring) b.ring.visible = (wrenchTarget === b);
+      }
+    }
+  }
+
+  // ---- työkalu kädessä ----
+  var toolView = new THREE.Group();
+  toolView.visible = false;
+  scene.add(toolView);
+  function makeToolMeshes(){
+    var steel = new THREE.MeshStandardMaterial({color:0xc9ced2, metalness:0.9, roughness:0.3});
+    var grip  = new THREE.MeshStandardMaterial({color:0xc4452f, metalness:0.1, roughness:0.8});
+    var out = {};
+    // kiintoavain: varsi + kita
+    var w = new THREE.Group();
+    var shaft = new THREE.Mesh(new THREE.BoxGeometry(0.030, 0.012, 0.26), steel);
+    shaft.position.z = -0.10; w.add(shaft);
+    var jaw = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.011, 6, 12, Math.PI*1.45), steel);
+    jaw.rotation.y = Math.PI/2; jaw.position.z = 0.02; w.add(jaw);
+    out['kiintoavain'] = w;
+    // ruuvimeisseli: kärki + kahva
+    var s = new THREE.Group();
+    var blade = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.20, 8), steel);
+    blade.rotation.x = Math.PI/2; blade.position.z = 0.02; s.add(blade);
+    var tip = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.005, 0.03), steel);
+    tip.position.z = 0.125; s.add(tip);
+    var handle = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.020, 0.13, 10), grip);
+    handle.rotation.x = Math.PI/2; handle.position.z = -0.14; s.add(handle);
+    out['ruuvimeisseli'] = s;
+    // tulppa-avain: putki + poikkirauta
+    var t = new THREE.Group();
+    var tube = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.18, 10, 1, true), steel);
+    tube.rotation.x = Math.PI/2; tube.position.z = 0.03; t.add(tube);
+    var bar = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.16, 8), steel);
+    bar.rotation.z = Math.PI/2; bar.position.z = -0.07; t.add(bar);
+    out['tulppa-avain'] = t;
+    Object.keys(out).forEach(function(k){ out[k].visible = false; toolView.add(out[k]); });
+    return out;
+  }
+  var toolMeshes = makeToolMeshes();
+  var wrenchTool = 'kiintoavain';
+
+  // ---- tallin työvalo ----
+  // Tallissa oli ennen pelkkä yleinen päivänvalo, joten ensimmäisessä persoonassa pultit jäivät
+  // hämärään - varsinkin illalla. Katosta roikkuva lamppu syttyy ruuvitilaan mentäessä ja
+  // sammuu poistuttaessa, mikä samalla tekee tallista tunnelmallisemman työtilan.
+  var garageLamp = new THREE.Group();
+  (function buildGarageLamp(){
+    var cordMat = new THREE.MeshStandardMaterial({color:0x2a2a28, roughness:0.9});
+    var cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.55, 6), cordMat);
+    cord.position.y = 0.28;
+    garageLamp.add(cord);
+    var shade = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.20, 14, 1, true),
+      new THREE.MeshStandardMaterial({color:0x8a8f86, roughness:0.6, metalness:0.3, side:THREE.DoubleSide}));
+    garageLamp.add(shade);
+    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 8),
+      new THREE.MeshBasicMaterial({color:0xfff0c4}));
+    bulb.position.y = -0.09;
+    garageLamp.add(bulb);
+    garageLamp.position.set(autotalliPos.x, 2.35, autotalliPos.z + 0.5);
+    garageLamp.visible = false;
+    scene.add(garageLamp);
+  })();
+  var garageWorkLight = new THREE.PointLight(0xffe7b8, 0, 9.5, 2);
+  garageWorkLight.position.set(autotalliPos.x, 2.2, autotalliPos.z + 0.5);
+  scene.add(garageWorkLight);
+  function setGarageLight(on){
+    garageLamp.visible = !!on;
+    garageWorkLight.intensity = on ? 1.35 : 0;
+  }
+
+  // ---- pultin haamu: mihin hyllyltä otettu osa asetetaan ----
+  var boltGhost = new THREE.Mesh(
+    new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshBasicMaterial({color:0x7ac460, transparent:true, opacity:0.28, depthWrite:false})
+  );
+  boltGhost.visible = false;
+  scene.add(boltGhost);
+
+  // ---- ruuvitilan tila ----
+  var wrenchMode = false;
+  var wrenchYaw = 0, wrenchPitch = -0.12;
+  var wrenchTarget = null;      // tähtäimen alla oleva pultti
+  var wrenchTurning = null;     // pultti jota parhaillaan väännetään
+  var wrenchLooking = false;    // hiiri pohjassa mutta ei pultin kohdalla -> katselu
+  var wrenchLockOK = false;     // onnistuiko pointer lock
+  var wrenchCurX = 0, wrenchCurY = 0, wrenchLastAng = 0, wrenchHasAng = false;
+  var wrenchClickAcc = 0;       // naksahdusäänen laskuri
+  var wrenchPending = null;     // hyllyltä asennettava osa (garageShelf-alkio)
+  var wrenchSeated = false;     // onko osa jo asetettu paikalleen
+  var wrenchFromGarage = false;
+  var wrenchMsgText = '', wrenchMsgTime = 0;
+  var wrenchBob = 0, wrenchSpinView = 0;
+
+  var wrenchHudEl    = document.getElementById('wrenchHud');
+  var wrenchCardEl   = document.getElementById('wrenchCard');
+  var wrenchNameEl   = document.getElementById('wrenchName');
+  var wrenchArcEl    = document.getElementById('wrenchArc');
+  var wrenchPctEl    = document.getElementById('wrenchPct');
+  var wrenchNeedEl   = document.getElementById('wrenchToolNeed');
+  var wrenchToolEl   = document.getElementById('wrenchTool');
+  var wrenchTipEl    = document.getElementById('wrenchTip');
+  var wrenchListEl   = document.getElementById('wrenchList');
+  var wrenchCrossEl  = document.getElementById('wrenchCross');
+  var WRENCH_ARC_LEN = 2*Math.PI*31;
+
+  function wrenchSay(t){ wrenchMsgText = t; wrenchMsgTime = 2.6; }
+
+  function wrenchToolName(id){
+    for(var i=0;i<BOLT_TOOLS.length;i++) if(BOLT_TOOLS[i].id === id) return BOLT_TOOLS[i].name;
+    return id;
+  }
+  function wrenchToolIcon(id){
+    for(var i=0;i<BOLT_TOOLS.length;i++) if(BOLT_TOOLS[i].id === id) return BOLT_TOOLS[i].icon;
+    return '🔧';
+  }
+  function wrenchSelectTool(id){
+    wrenchTool = id;
+    Object.keys(toolMeshes).forEach(function(k){ toolMeshes[k].visible = (k === id); });
+    if(wrenchToolEl) wrenchToolEl.textContent = wrenchToolIcon(id) + ' ' + wrenchToolName(id);
+  }
+  function wrenchCycleTool(){
+    var i = 0;
+    for(var k=0;k<BOLT_TOOLS.length;k++) if(BOLT_TOOLS[k].id === wrenchTool) i = k;
+    wrenchSelectTool(BOLT_TOOLS[(i+1) % BOLT_TOOLS.length].id);
+    playRatchet('click');
+  }
+  function wrenchToolNeeded(b){
+    var lay = boltLayoutFor(b.part.id);
+    return lay ? lay.tool : 'kiintoavain';
+  }
+  function wrenchToolMatches(b){ return wrenchToolNeeded(b) === wrenchTool; }
+
+  // ---- sisään ja ulos ----
+  function enterWrenchMode(shelfItem){
+    if(mode === 'riding'){
+      showToast(true, 'Nouse mopolta', 'Ruuvaaminen onnistuu vain jalkaisin mopon vierellä (E nousee pois).', 3000);
+      return;
+    }
+    if(!requireMopedInGarage()) return;
+    if(mini.active) cancelMini();
+    if(bolt.active) cancelBoltGame();
+    wrenchFromGarage = garageOpen;
+    garageOpen = false;
+    garagePanelEl.hidden = true;
+    tunePanel.hidden = true;
+    inventoryPanel.hidden = true; inventoryOpen = false;
+    closeRepair(); closeMopedShop();
+    if(bigMapEl && !bigMapEl.hidden) bigMapEl.hidden = true;
+
+    wrenchPending = shelfItem || null;
+    wrenchSeated = false;
+    boltsRelayout();
+    // pultit heti mopon paikalle, jottei ensimmäinen ruutu näytä niitä maailman origossa
+    boltGroup.position.copy(moped.position);
+    boltGroup.quaternion.copy(moped.quaternion);
+    boltGroup.scale.copy(moped.scale);
+    boltGroup.updateMatrixWorld(true);
+
+    // pelaaja mopon oikealle puolelle, kasvot mopoa kohti
+    var mh = moped.rotation.y;
+    var rx = Math.cos(mh), rz = -Math.sin(mh);
+    player.position.x = moped.position.x + rx*1.15;
+    player.position.z = moped.position.z + rz*1.15;
+    player.position.y = inStore ? 0 : terrainHeight(player.position.x, player.position.z);
+    wrenchYaw = Math.atan2(moped.position.x - player.position.x, moped.position.z - player.position.z);
+    wrenchPitch = -0.25;
+    playerHeading = wrenchYaw;
+    player.rotation.y = wrenchYaw;
+
+    wrenchMode = true;
+    wrenchTarget = null; wrenchTurning = null; wrenchLooking = false;
+    if(playerVisual) playerVisual.visible = false;
+    if(playerShadowBlob) playerShadowBlob.visible = false;
+    boltGroup.visible = true;
+    toolView.visible = true;
+    wrenchSelectTool(wrenchPending ? (boltLayoutFor(wrenchPending.partId) || {tool:'kiintoavain'}).tool : wrenchTool);
+    if(wrenchHudEl) wrenchHudEl.hidden = false;
+    setGarageLight(true);
+    mountHintEl.hidden = true;
+    // pointer lock on mukavampi, mutta jos se ei ole käytettävissä, katselu hoituu raahaamalla
+    try{
+      if(renderer.domElement.requestPointerLock){
+        renderer.domElement.requestPointerLock();
+      }
+    }catch(err){ /* ei haittaa */ }
+    wrenchSay(wrenchPending
+      ? 'Aseta osa paikalleen: katso vihreää haamua ja paina E.'
+      : 'Katso pulttia, pidä hiiren nappi pohjassa ja pyöritä myötäpäivään.');
+  }
+  function exitWrenchMode(){
+    if(!wrenchMode) return;
+    wrenchMode = false;
+    wrenchTurning = null; wrenchLooking = false; wrenchTarget = null;
+    wrenchPending = null; wrenchSeated = false;
+    boltGroup.visible = false;
+    toolView.visible = false;
+    boltGhost.visible = false;
+    setGarageLight(false);
+    if(playerVisual) playerVisual.visible = true;
+    if(wrenchHudEl) wrenchHudEl.hidden = true;
+    try{ if(document.exitPointerLock && document.pointerLockElement) document.exitPointerLock(); }catch(err){}
+    camYawOffset = 0; camPitchOffset = 0;
+    snapCameraToPlayer();
+    if(wrenchFromGarage){ wrenchFromGarage = false; openGarage(); }
+    saveGame();
+  }
+  document.addEventListener('pointerlockchange', function(){
+    wrenchLockOK = (document.pointerLockElement === renderer.domElement);
+    if(wrenchMode && !wrenchLockOK){
+      // Esc vapauttaa lukon - se on samalla ruuvitilan poistumiskomento
+      wrenchTurning = null;
+    }
+  });
+
+  // ---- hiiri ----
+  var wrenchRay = new THREE.Raycaster();
+  var wrenchNdc = new THREE.Vector2(0,0);
+  function wrenchPick(){
+    if(!boltPickList.length) return null;
+    wrenchRay.setFromCamera(wrenchNdc, camera);
+    var hits = wrenchRay.intersectObjects(boltPickList, false);
+    for(var i=0;i<hits.length;i++){
+      var b = hits[i].object.userData.bolt;
+      if(!b || !b.obj || !b.obj.visible) continue;
+      if(hits[i].distance > 2.6) continue;
+      return b;
+    }
+    return null;
+  }
+  renderer.domElement.addEventListener('mousedown', function(e){
+    if(!wrenchMode || e.button !== 0) return;
+    e.preventDefault();
+    if(!wrenchLockOK && renderer.domElement.requestPointerLock){
+      try{ renderer.domElement.requestPointerLock(); }catch(err){}
+    }
+    wrenchDragX = e.clientX; wrenchDragY = e.clientY;
+    if(wrenchTarget){
+      if(!wrenchToolMatches(wrenchTarget)){
+        wrenchSay('Väärä työkalu - tarvitset: ' + wrenchToolName(wrenchToolNeeded(wrenchTarget)) + ' (Q vaihtaa).');
+        playRatchet('miss');
+        return;
+      }
+      wrenchTurning = wrenchTarget;
+      wrenchCurX = 0; wrenchCurY = 0; wrenchHasAng = false; wrenchClickAcc = 0;
+    } else {
+      wrenchLooking = true;
+    }
+  });
+  window.addEventListener('mouseup', function(){
+    if(!wrenchMode) return;
+    if(wrenchTurning) wrenchCheckDone(wrenchTurning);
+    wrenchTurning = null; wrenchLooking = false;
+  });
+  window.addEventListener('mousemove', function(e){
+    if(!wrenchMode) return;
+    var dx = wrenchLockOK ? (e.movementX || 0) : 0;
+    var dy = wrenchLockOK ? (e.movementY || 0) : 0;
+    if(!wrenchLockOK){
+      // ilman pointer lockia liike lasketaan raahauksesta
+      if(!wrenchTurning && !wrenchLooking){ wrenchDragX = e.clientX; wrenchDragY = e.clientY; return; }
+      dx = e.clientX - wrenchDragX; dy = e.clientY - wrenchDragY;
+      wrenchDragX = e.clientX; wrenchDragY = e.clientY;
+    }
+    if(wrenchTurning){
+      wrenchGesture(dx, dy);
+    } else if(wrenchLockOK || wrenchLooking){
+      wrenchYaw   -= dx * 0.0026;
+      wrenchPitch = Math.max(-1.25, Math.min(1.05, wrenchPitch - dy * 0.0022));
+      if(wrenchYaw >  Math.PI) wrenchYaw -= Math.PI*2;
+      if(wrenchYaw < -Math.PI) wrenchYaw += Math.PI*2;
+    }
+  });
+  var wrenchDragX = 0, wrenchDragY = 0;
+
+  // Pyöritysele: hiiren liike kerätään virtuaaliseksi osoittimeksi ruudun keskipisteen ympärille,
+  // ja pultti kiertyy sen mukaan montako astetta osoitin kiertää. Myötäpäivä kiristää,
+  // vastapäivä löysää - täsmälleen kuten oikeassa avaimessa.
+  function wrenchGesture(dx, dy){
+    wrenchCurX += dx; wrenchCurY += dy;
+    var r = Math.sqrt(wrenchCurX*wrenchCurX + wrenchCurY*wrenchCurY);
+    if(r > 110){ var k = 110/r; wrenchCurX *= k; wrenchCurY *= k; r = 110; }
+    if(r < 16){ return; }                  // liian lähellä keskipistettä: kulma heittelehtii
+    var ang = Math.atan2(wrenchCurY, wrenchCurX);
+    if(!wrenchHasAng){ wrenchLastAng = ang; wrenchHasAng = true; return; }
+    var d = ang - wrenchLastAng;
+    while(d >  Math.PI) d -= Math.PI*2;
+    while(d < -Math.PI) d += Math.PI*2;
+    wrenchLastAng = ang;
+    if(Math.abs(d) > 1.6) return;          // hyppy: ohitetaan
+    wrenchApplyTurn(d);
+  }
+  function wrenchApplyTurn(d){
+    var b = wrenchTurning;
+    if(!b) return;
+    b.spin = (b.spin || 0) + d;
+    wrenchSpinView += d;
+    if(b.stripped){
+      wrenchClickAcc += Math.abs(d);
+      if(wrenchClickAcc > 1.1){ wrenchClickAcc = 0; playRatchet('free'); wrenchSay('Kierre on mennyt - pultti pyörii tyhjää. Korjaa kierre: G (12 €).'); }
+      return;
+    }
+    var rev = d/(Math.PI*2);
+    // vastus kasvaa kun pultti lähestyy pohjaa: viimeiset asteet vaativat oikeaa vääntöä
+    var t = b.turn;
+    var res;
+    if(rev < 0) res = 1.0;                              // löysääminen on aina helppoa
+    else if(t < 0.70) res = 1.00;   // kierre pyörii kevyesti sisään: ~1,3 hiiren kierrosta
+    else if(t < 0.95) res = 0.70;   // alkaa tuntua
+    else if(t < 1.15) res = 0.45;   // täysi kireys saavutettu, tästä eteenpäin väännetään väkisin
+    else res = 0.30;                // vielä n. 1,7 kierrosta ennen kuin kierre pettää
+    var before = b.turn;
+    b.turn = Math.max(0, b.turn + rev*BOLT_PER_REV*res);
+    // naksahdusääni noin joka 1/5 kierros, jotta väännöllä on tuntuma
+    wrenchClickAcc += Math.abs(d);
+    if(wrenchClickAcc > 1.25){
+      wrenchClickAcc = 0;
+      playRatchet(b.turn > 1.06 ? 'creak' : (b.turn >= BOLT_TIGHT ? 'tight' : 'click'));
+    }
+    if(before < BOLT_TIGHT && b.turn >= BOLT_TIGHT){
+      playRatchet('seat');
+      wrenchSay('Pultti pitää. Vielä pari astetta niin se on täydessä kireydessä.');
+    }
+    if(b.turn > BOLT_STRIP) wrenchStrip(b);
+  }
+  function wrenchStrip(b){
+    b.stripped = true;
+    b.turn = 0.18;
+    playRatchet('snap');
+    var p = b.part;
+    if(p) p.condition = Math.max(0, p.condition - 6);
+    wrenchSay('KIERRE MENI! Väänsit liikaa. Korjaa kierre painamalla G (12 €).');
+    showToast(true, 'Kierre meni', 'Ylikiristys repi kierteen ' + (p ? p.name.toLowerCase() : 'osan') + ' pultista. Uusi pultti ja kierretappi maksaa 12 € - katso pulttia ja paina G.', 4600);
+    boltsRefreshVisuals();
+    saveGame();
+  }
+  function wrenchFixThread(){
+    var b = wrenchTarget;
+    if(!b){ wrenchSay('Katso ensin sitä pulttia jonka kierre on mennyt.'); return; }
+    if(!b.stripped){ wrenchSay('Tässä pultissa ei ole mitään vikaa.'); return; }
+    if(money < 12){ wrenchSay('Kierretappi ja uusi pultti maksavat 12 € - rahat eivät riitä.'); return; }
+    money -= 12;
+    updateMoneyDisplay();
+    b.stripped = false;
+    b.turn = 0;
+    b.spin = 0;
+    playRatchet('seat');
+    wrenchSay('Kierre korjattu. Kiristä pultti uudestaan varovasti.');
+    boltsRefreshVisuals();
+    saveGame();
+  }
+  // osan asettaminen paikalleen ennen kiristystä
+  // E:llä otetaan seuraava osa hyllyltä ja E:llä se asetetaan paikalleen - näin koko mopon voi
+  // kasata yhdellä istumalla ilman että ruuvitilasta pitää poistua osan välissä.
+  function wrenchTakeNextFromShelf(){
+    if(!garageShelf.length){ wrenchSay('Hylly on tyhjä - ei asennettavia osia.'); return false; }
+    var pick = -1;
+    for(var i=0;i<garageShelf.length;i++){
+      var pp = partById(garageShelf[i].partId);
+      if(pp && !pp.installed && boltLayoutFor(garageShelf[i].partId)){ pick = i; break; }
+    }
+    if(pick < 0){
+      for(var j=0;j<garageShelf.length;j++){
+        if(boltLayoutFor(garageShelf[j].partId)){ pick = j; break; }
+      }
+    }
+    if(pick < 0){ wrenchSay('Hyllyn osia ei voi kiinnittää pulteilla.'); return false; }
+    wrenchPending = garageShelf[pick];
+    wrenchSeated = false;
+    var lay = boltLayoutFor(wrenchPending.partId);
+    var pn = partById(wrenchPending.partId);
+    if(lay) wrenchSelectTool(lay.tool);
+    playRatchet('click');
+    wrenchSay((pn ? pn.name : 'Osa') + ' kädessä. Katso vihreää haamua ja paina E.');
+    boltsRefreshVisuals();
+    return true;
+  }
+  function wrenchSeatPart(){
+    if(!wrenchPending){ if(!wrenchTakeNextFromShelf()) return; else return; }
+    if(wrenchSeated){ wrenchSay('Osa on paikallaan - kiristä sen pultit.'); return; }
+    var p = partById(wrenchPending.partId);
+    if(!p) return;
+    var st = boltStateFor(p);
+    if(st) for(var i=0;i<st.length;i++){ st[i].turn = 0; st[i].stripped = false; st[i].spin = 0; }
+    wrenchSeated = true;
+    boltGhost.visible = false;
+    playRatchet('seat');
+    var lay = boltLayoutFor(p.id);
+    wrenchSay(p.name + ' paikallaan. Kiristä ' + (lay ? lay.b.length : 0) + ' pulttia: ' + wrenchToolName(lay ? lay.tool : 'kiintoavain') + '.');
+    if(lay) wrenchSelectTool(lay.tool);
+    boltsRefreshVisuals();
+  }
+  // tarkistetaan hiiren irrotuksen jälkeen onko osa valmis
+  function wrenchCheckDone(b){
+    var p = b.part;
+    if(!p) return;
+    boltsRefreshVisuals();
+    if(wrenchPending && wrenchSeated && wrenchPending.partId === p.id){
+      if(boltAllTight(p)){
+        var q = boltQuality(p);
+        var it = wrenchPending;
+        wrenchPending = null; wrenchSeated = false;
+        applyShelfInstall(it, q);
+        playRatchet('done');
+        var left = 0;
+        for(var gi2=0; gi2<garageShelf.length; gi2++){ if(boltLayoutFor(garageShelf[gi2].partId)) left++; }
+        wrenchSay(p.name + ' on kiinni, laatu ' + Math.round(q*100) + ' %.' +
+                  (left ? ' Paina E ottaaksesi seuraavan osan hyllyltä (' + left + ' jäljellä).' : ' Hylly on tyhjä.'));
+        boltsRefreshVisuals();
+      }
+      return;
+    }
+    // jo asennetun osan pultit: liian löysäksi jäänyt osa irtoaa
+    if(p.installed){
+      var st = boltStateFor(p);
+      var allOff = true;
+      for(var i=0;i<st.length;i++){ if(!st[i].stripped && st[i].turn > 0.06) allOff = false; }
+      if(allOff && st.length){
+        p.installed = false;
+        partsInstalled = Math.max(0, partsInstalled - 1);
+        garageShelf.push({partId:p.id, kind: p.tierIndex > 0 ? 'tier' : 'orig', tierIndex:p.tierIndex});
+        updateMopedAssembly();
+        playRatchet('snap');
+        wrenchSay(p.name + ' irtosi ja on taas hyllyllä.');
+        exitWrenchMode();
+      }
+    }
+  }
+
+  // ---- ruuvitilan päivitys ----
+  function updateWrench(dt){
+    // liike: W/S eteen-taakse katseen suuntaan, A/D sivuaskel
+    var mv = (input.fwd?1:0) - (input.back?1:0);
+    var stf = (input.right?1:0) - (input.left?1:0);
+    var sy = Math.sin(wrenchYaw), cy = Math.cos(wrenchYaw);
+    if(mv || stf){
+      var sp = 1.5;
+      player.position.x += (sy*mv + cy*stf)*sp*dt;
+      player.position.z += (cy*mv - sy*stf)*sp*dt;
+      resolveCollisions(player.position, 0.28);
+    }
+    player.position.y = inStore ? 0 : terrainHeight(player.position.x, player.position.z);
+    playerHeading = wrenchYaw;
+    player.rotation.y = wrenchYaw;
+    walkSpeedNow = 0;
+
+    // kamera silmien korkeudelle - pitkä jonne katsoo mopoa ylempää kuin lyhyt
+    var eye = 1.58 * (typeof lookScaleOf === 'function' && charLook ? lookScaleOf(charLook).y : 1);
+    var ex = player.position.x, ey = player.position.y + eye, ez = player.position.z;
+    var cp = Math.cos(wrenchPitch);
+    camera.position.set(ex, ey, ez);
+    camPos.copy(camera.position);
+    camLook.set(ex + sy*cp, ey + Math.sin(wrenchPitch), ez + cy*cp);
+    camera.lookAt(camLook);
+
+    // pultit seuraavat mopon sijaintia (mopo voi olla myös osina, jolloin runko on samassa paikassa)
+    boltGroup.position.copy(moped.position);
+    boltGroup.quaternion.copy(moped.quaternion);
+    boltGroup.scale.copy(moped.scale);
+    boltGroup.visible = true;
+
+    // tähtäys
+    var prev = wrenchTarget;
+    wrenchTarget = wrenchTurning ? wrenchTurning : wrenchPick();
+    if(prev !== wrenchTarget){
+      if(prev && prev.ring) prev.ring.visible = false;
+      if(wrenchTarget && wrenchTarget.ring) wrenchTarget.ring.visible = true;
+    }
+    if(wrenchCrossEl) wrenchCrossEl.className = 'wrenchCross' + (wrenchTarget ? ' on' : '');
+
+    // työkalu käteen: kameran eteen oikealle, pieni keinunta ja pyörähdys väännön mukaan
+    wrenchBob += dt*(mv||stf ? 7.5 : 1.6);
+    toolView.position.copy(camera.position);
+    toolView.quaternion.copy(camera.quaternion);
+    toolView.translateX(0.22);
+    toolView.translateY(-0.20 + Math.sin(wrenchBob)*0.008);
+    toolView.translateZ(-0.46 + (wrenchTurning ? -0.06 : 0));
+    var tm = toolMeshes[wrenchTool];
+    if(tm){
+      tm.rotation.z = wrenchTurning ? wrenchSpinView : Math.sin(wrenchBob*0.5)*0.05;
+      tm.rotation.x = -0.28;
+    }
+
+    // hyllyltä asennettavan osan haamu
+    if(wrenchPending && !wrenchSeated){
+      var lay = boltLayoutFor(wrenchPending.partId);
+      if(lay){
+        var box = mopedLocalBox();
+        var sxx = box.max.x-box.min.x, syy = box.max.y-box.min.y, szz = box.max.z-box.min.z;
+        var ax=0, ay=0, az=0;
+        for(var gi=0; gi<lay.b.length; gi++){
+          ax += box.min.x + lay.b[gi][0]*sxx;
+          ay += box.min.y + lay.b[gi][1]*syy;
+          az += box.min.z + lay.b[gi][2]*szz;
+        }
+        ax /= lay.b.length; ay /= lay.b.length; az /= lay.b.length;
+        var gp = new THREE.Vector3(ax, ay, az).applyMatrix4(moped.matrixWorld);
+        boltGhost.position.copy(gp);
+        boltGhost.quaternion.copy(moped.quaternion);
+        boltGhost.scale.set(0.30, 0.26, 0.34);
+        boltGhost.material.opacity = 0.18 + 0.16*(0.5+0.5*Math.sin(wrenchBob*2.4));
+        boltGhost.visible = true;
+      }
+    } else {
+      boltGhost.visible = false;
+    }
+
+    boltsRefreshVisuals();
+    if(wrenchMsgTime > 0) wrenchMsgTime -= dt;
+    wrenchUpdateHud();
+    if(audioCtx && engineGain) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
+  }
+
+  function wrenchUpdateHud(){
+    if(!wrenchHudEl) return;
+    var b = wrenchTarget;
+    if(b && wrenchCardEl){
+      wrenchCardEl.hidden = false;
+      var lay = boltLayoutFor(b.part.id);
+      var n = lay ? lay.b.length : 1;
+      wrenchNameEl.textContent = (lay ? lay.label : 'Pultti') + ' ' + (b.index+1) + '/' + n;
+      var frac = Math.max(0, Math.min(1, b.turn/1.0));
+      if(wrenchArcEl){
+        wrenchArcEl.style.strokeDasharray = WRENCH_ARC_LEN;
+        wrenchArcEl.style.strokeDashoffset = WRENCH_ARC_LEN*(1-frac);
+        wrenchArcEl.style.stroke = b.stripped ? '#c9463a'
+                                 : (b.turn > 1.06 ? '#e2bb2b'
+                                 : (b.turn >= BOLT_TIGHT ? '#7ac460' : '#fbf6e9'));
+      }
+      wrenchPctEl.textContent = b.stripped ? '✕' : (Math.round(b.turn*100) + '%');
+      var need = wrenchToolNeeded(b);
+      wrenchNeedEl.textContent = (need === wrenchTool ? '✓ ' : '✕ ') + wrenchToolName(need);
+      wrenchNeedEl.className = 'wrenchTool' + (need === wrenchTool ? ' ok' : ' bad');
+    } else if(wrenchCardEl){
+      wrenchCardEl.hidden = true;
+    }
+    if(wrenchTipEl){
+      wrenchTipEl.textContent = wrenchMsgTime > 0 ? wrenchMsgText
+        : (wrenchPending && !wrenchSeated ? 'E asettaa osan paikalleen · Q vaihtaa työkalua · Esc pois'
+        : (garageShelf.length ? 'Hiiri pohjaan pultin kohdalla ja pyöritä · E ottaa seuraavan osan hyllyltä · Q työkalu · G kierre · Esc pois'
+        : 'Hiiri pohjaan pultin kohdalla ja pyöritä · myötäpäivä kiristää · Q työkalu · G korjaa kierre · Esc pois'));
+    }
+    // sivulista: osien kiinnitystilanne
+    if(wrenchListEl){
+      var html = '';
+      for(var i=0;i<parts.length;i++){
+        var p = parts[i];
+        var lay2 = boltLayoutFor(p.id);
+        if(!lay2) continue;
+        var seatedNow = !!p.installed || (wrenchPending && wrenchPending.partId === p.id && wrenchSeated);
+        var tc = boltTightCount(p), tot = lay2.b.length;
+        var cls = !seatedNow ? 'off' : (tc === tot ? 'ok' : 'warn');
+        html += '<div class="wl ' + cls + '"><span>' + p.name + '</span><b>' +
+                (!seatedNow ? '–' : (tc + '/' + tot)) + '</b></div>';
+      }
+      wrenchListEl.innerHTML = html;
+    }
+  }
+
+  // ---- pulttien löystyminen ajon tärinästä ----
+  // Täyteen kireyteen (97 % tai yli) vedetty pultti ei löysty koskaan. Vajaaksi jäänyt aukeaa
+  // sitä nopeammin mitä löysemmälle se jäi, ja löysällä oleva osa kuluu myös nopeammin
+  // (ks. boltWearMult). Näin huolellinen kiristäminen kannattaa oikeasti.
+  function updateBoltLoosening(dt){
+    if(mode !== 'riding' || crashed) return;
+    var v = Math.abs(speed);
+    if(v < 2.5) return;
+    // Nopeus vain yhdellä pultilla ei riitä: kerroin on tarkoituksella pieni, koska tämä on
+    // TUNTIKAUSIEN ajoa varten. Melkein täyteen (0,95) kiristetty pultti kestää useita minuutteja
+    // kovaa ajoa ennen kuin se putoaa pitävän rajan alle, kun taas puoliksi kierretty aukeaa
+    // muutamassa minuutissa ja osa alkaa kolista.
+    var base = (v/16) * dt * 0.00055;
+    var warned = false;
+    for(var i=0;i<parts.length;i++){
+      var p = parts[i];
+      if(!p.installed) continue;
+      var st = boltStateFor(p);
+      if(!st) continue;
+      for(var bi=0; bi<st.length; bi++){
+        var b = st[bi];
+        if(b.stripped || b.turn >= 0.97 || b.turn <= 0) continue;
+        var slack = 0.97 - b.turn;
+        b.turn = Math.max(0, b.turn - base*(0.15 + slack*slack*16));
+        b.spin = (b.spin || 0) - base*24;
+        if(b.turn < BOLT_TIGHT && !warned && Math.random() < dt*0.10){
+          warned = true;
+          showToast(true, 'Jokin kolisee', p.name + ' on löysällä - pultit ovat auennut tärinästä. Käy talliin kiristämässä (ruuvitila).', 4200);
+          playRatchet('rattle');
+        }
+      }
+    }
+  }
+
+  // ---- ruuvausäänet ----
+  function playRatchet(kind){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    if(kind === 'snap'){
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, t);
+      osc.frequency.exponentialRampToValueAtTime(60, t+0.22);
+      g.gain.setValueAtTime(0.13, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.30);
+      osc.connect(g).connect(sfxOut()); osc.start(t); osc.stop(t+0.32); return;
+    }
+    if(kind === 'creak'){
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.linearRampToValueAtTime(215, t+0.16);
+      g.gain.setValueAtTime(0.05, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.20);
+      osc.connect(g).connect(sfxOut()); osc.start(t); osc.stop(t+0.22); return;
+    }
+    if(kind === 'rattle'){
+      for(var r=0;r<5;r++){
+        var o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+        o2.type = 'square'; o2.frequency.value = 300 + Math.random()*420;
+        var st2 = t + r*0.055;
+        g2.gain.setValueAtTime(0.035, st2);
+        g2.gain.exponentialRampToValueAtTime(0.001, st2+0.05);
+        o2.connect(g2).connect(sfxOut()); o2.start(st2); o2.stop(st2+0.06);
+      }
+      return;
+    }
+    if(kind === 'done'){
+      [660, 880, 1170].forEach(function(f, i){
+        var o3 = audioCtx.createOscillator(), g3 = audioCtx.createGain();
+        o3.type = 'triangle'; o3.frequency.value = f;
+        var s3 = t + i*0.07;
+        g3.gain.setValueAtTime(0.0001, s3);
+        g3.gain.linearRampToValueAtTime(0.06, s3+0.02);
+        g3.gain.exponentialRampToValueAtTime(0.001, s3+0.2);
+        o3.connect(g3).connect(sfxOut()); o3.start(s3); o3.stop(s3+0.22);
+      });
+      return;
+    }
+    osc.type = kind === 'free' ? 'sine' : 'square';
+    var f0 = kind === 'seat' ? 300 : (kind === 'tight' ? 1250 : (kind === 'miss' ? 180 : (kind === 'free' ? 520 : 900)));
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(60, f0*0.45), t+(kind==='seat'?0.12:0.045));
+    g.gain.setValueAtTime(kind === 'seat' ? 0.09 : 0.045, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t+(kind==='seat'?0.16:0.06));
+    osc.connect(g).connect(sfxOut());
+    osc.start(t); osc.stop(t+0.18);
+  }
+
+  // ---- hyllyltä asennus menee nyt ruuvitilaan ----
+  function wrenchInstallFromShelf(idx){
+    var it = garageShelf[idx];
+    if(!it) return;
+    enterWrenchMode(it);
+  }
+
   var clock = new THREE.Clock();
   var saveThrottleTimer = 4;
   function animate(){
@@ -11871,7 +12886,8 @@
           // Kuluminen hidastettu reilusti (0.9 -> 0.11): ennen osa meni sadasta nollaan
           // alle kahdessa minuutissa kaasua, mikä tarkoitti että talliin piti palata
           // jatkuvasti. Nyt sama matka kestää noin neljännestunnin ajoa.
-          wp.condition = Math.max(0, wp.condition - 0.11*wearMult*dt);
+          // löysällä olevat kiinnityspultit kuluttavat osaa selvästi nopeammin (ks. boltWearMult)
+          wp.condition = Math.max(0, wp.condition - 0.11*wearMult*boltWearMult(wp)*dt);
         }
       } else if(braking){
         speed -= brake*brakeMult*dt;
@@ -12048,6 +13064,10 @@
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Kyydissä - paina <b>E</b> hypätäksesi pois';
       }
+    } else if(wrenchMode){
+      // ---- ruuvitila: ensimmäinen persoona mopon vierellä ----
+      if(exhaustFlame.material.opacity > 0) exhaustFlame.material.opacity = Math.max(0, exhaustFlame.material.opacity - dt*5);
+      updateWrench(dt);
     } else {
       // ---- kävely ----
       if(exhaustFlame.material.opacity > 0) exhaustFlame.material.opacity = Math.max(0, exhaustFlame.material.opacity - dt*5);
@@ -12333,6 +13353,7 @@
     updateRace(dt);
     netTick(dt);
     updateBoltGame(dt);
+    updateBoltLoosening(dt);   // vajaaksi jääneet pultit aukeavat ajon tärinästä
     if(kickCooldown > 0) kickCooldown = Math.max(0, kickCooldown - dt);
     blinkPhase += dt;
     updateMaps(dt);
@@ -13835,4 +14856,3 @@
   animate();
 })();
 </script>
-</html>
