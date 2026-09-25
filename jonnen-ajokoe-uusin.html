@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:83-->
-<!--JONNE-NAME:Jonnen ajokoe 83-->
+<!--JONNE-VERSION:84-->
+<!--JONNE-NAME:Jonnen ajokoe 84-->
 <!--JONNE-DATE:2026-09-25-->
-<!--JONNE-NOTES:Oma hahmo: pituus, vartalo, ihonväri, hiukset, paita ja housut - aloitusruudun uudesta napista|Kaverit näkevät hahmosi juuri sellaisena kuin sen teit|Iso hyppyri crossiradan viereen ja oikea ilmalento: mopo lentää kaaressa eikä liimaudu maahan|Pisimmästä hypystä palkkio ja ennätys talteen|Korjaus: pelaajalista ja kisapaneeli eivät enää jää minimapin alle piiloon-->
+<!--JONNE-NOTES:Näkymättömät seinät siivottu: hyppyrin nousu ja lasku vapaana, tien esteet pois, kaikki törmäysrajat kutistettu|Kuski istuu mopolla paremmin: jalat haarassa tankin sivuilla ja kädet ulos kahvoille|Kaasuttaessa oikea ranne kiertyy kahvassa ja kuski nojaa eteen|Kylän poliisilla on nyt koirayksikkö: katolla istuva poliisikoira lähtee perään kuten muutkin partiot-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -4893,6 +4893,7 @@
     var lightR = new THREE.Mesh(new THREE.BoxGeometry(0.42,0.1,0.28), lightMatR);
     lightR.position.set(0.23,lightY+0.07,lightZ);
     g.add(lightBase, lightL, lightR);
+    g.userData.roofY = lightY;   // koirayksikkö istuttaa koiran tälle korkeudelle
     g.userData.lightL = lightL;
     g.userData.lightR = lightR;
     g.userData.wheels = wheels;
@@ -5015,9 +5016,71 @@
     pos.z += (bz - pos.z) * pull * 0.5;
   }
 
+
+  // ---- poliisikoirayksikkö ----
+  // Sama partioauto kuin muillakin, mutta katolla istuu kylän oma poliisikoira. Tehty pelkistä
+  // laatikoista ja palloista kuten muutkin pelin hahmot - oma hahmo, ei kenenkään muun.
+  function makeDogFigure(){
+    var g = new THREE.Group();
+    var furMat  = new THREE.MeshStandardMaterial({color:0x7a4a28, roughness:0.95, flatShading:true});
+    var creamMat= new THREE.MeshStandardMaterial({color:0xe3d2b4, roughness:0.95, flatShading:true});
+    var capMat  = new THREE.MeshStandardMaterial({color:0x1b2b52, roughness:0.8,  flatShading:true});
+    var noseMat = new THREE.MeshStandardMaterial({color:0x241a14, roughness:0.7});
+    // istuva vartalo: takaosa alhaalla, rinta pystyssä
+    var hind = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.20, 0.34), furMat);
+    hind.position.set(0, 0.10, -0.12);
+    var chest = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.34, 0.24), furMat);
+    chest.position.set(0, 0.28, 0.06);
+    var bib = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.22, 0.05), creamMat);
+    bib.position.set(0, 0.28, 0.19);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.21, 0.22), furMat);
+    head.position.set(0, 0.55, 0.10);
+    var snout = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.11, 0.13), creamMat);
+    snout.position.set(0, 0.51, 0.22);
+    var nose = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.04), noseMat);
+    nose.position.set(0, 0.53, 0.29);
+    g.add(hind, chest, bib, head, snout, nose);
+    // korvat roikkuvat sivuilla
+    for(var e=0; e<2; e++){
+      var ear = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.19, 0.11), furMat);
+      ear.position.set(e ? 0.14 : -0.14, 0.50, 0.08);
+      ear.rotation.z = e ? -0.18 : 0.18;
+      g.add(ear);
+    }
+    // etutassut
+    for(var f=0; f<2; f++){
+      var paw = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.10), creamMat);
+      paw.position.set(f ? 0.09 : -0.09, 0.11, 0.16);
+      g.add(paw);
+    }
+    // häntä
+    var tail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.20), furMat);
+    tail.position.set(0, 0.20, -0.28);
+    tail.rotation.x = 0.5;
+    g.add(tail);
+    // lippalakki
+    var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.09, 12), capMat);
+    cap.position.set(0, 0.68, 0.09);
+    var brim = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 0.13), capMat);
+    brim.position.set(0, 0.645, 0.20);
+    g.add(cap, brim);
+    g.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+    return g;
+  }
+  function makePoliceDogUnit(){
+    var g = makePoliceCar();
+    var dog = makeDogFigure();
+    // Katolle. Korkeus on mitattu renderöimällä: userData.roofY on valopalkin taso eli koko
+    // mallin ylin kohta antenneineen, joten koira leijui sillä puoli metriä katon yläpuolella.
+    dog.position.set(0, 0.98, -0.05);
+    dog.scale.setScalar(1.1);
+    g.add(dog);
+    g.userData.hasDog = true;
+    return g;
+  }
   var policeCars = [];
-  function spawnPoliceCar(loopPoints, startWp){
-    var pcar = makePoliceCar();
+  function spawnPoliceCar(loopPoints, startWp, builder){
+    var pcar = (builder || makePoliceCar)();
     var startPoint = loopPoints[startWp];
     pcar.position.set(startPoint.x, 0, startPoint.z);
     pcar.userData.loopPoints = loopPoints;
@@ -5029,6 +5092,8 @@
   }
   [0, 2].forEach(function(startWp){ spawnPoliceCar(policeLoopLane, startWp); });
   [0, 9].forEach(function(startWp){ spawnPoliceCar(hubLoopLane, startWp); });
+  // koirayksikkö partioi keskustan lenkkiä muiden seassa ja lähtee perään samalla logiikalla
+  spawnPoliceCar(hubLoopLane, 5, makePoliceDogUnit);
   function updatePolice(dt){
     var anyChasing = false;
     for(var pi=0; pi<policeCars.length; pi++){
@@ -6224,10 +6289,12 @@
   // Satuloiden korkeudet on mitattu malleista: kunkin mopon keskilinjan korkeusprofiilista
   // etsitty tasanne ohjaustangon ja takaosan välistä (ks. scratchpad/seatprofile).
   var RIDER_POSE = {
-    proc:        {y:1.02, z:-0.18, leg:-0.39, arm:-0.86, lean:0.26, stand:false},
-    scoba:       {y:0.82, z:-0.30, leg:-0.72, arm:-1.00, lean:0.30, stand:false},
-    monkey:      {y:0.80, z:-0.15, leg:-0.61, arm:-1.00, lean:0.28, stand:false},
-    kickscooter: {y:0.44, z:0.34,  leg:-0.92, arm:-1.04, lean:0.30, stand:false}
+    // splay = jalkojen haara sivulle, armSplay = kädet ulos kahvoille. Ilman näitä jalat
+    // menivät suoraan tankin läpi ja kädet osoittivat keskelle ohjaustankoa.
+    proc:        {y:1.02, z:-0.18, leg:-0.39, arm:-0.86, lean:0.26, splay:0.26, armSplay:0.20, stand:false},
+    scoba:       {y:0.82, z:-0.30, leg:-0.72, arm:-1.00, lean:0.30, splay:0.20, armSplay:0.22, stand:false},
+    monkey:      {y:0.80, z:-0.15, leg:-0.61, arm:-1.00, lean:0.28, splay:0.28, armSplay:0.20, stand:false},
+    kickscooter: {y:0.44, z:0.34,  leg:-0.92, arm:-1.04, lean:0.30, splay:0.16, armSplay:0.18, stand:false}
   };
   function riderHipY(){
     return (playerLimbs && playerLimbs.legL) ? playerLimbs.legL.position.y : 0.88;
@@ -6277,10 +6344,12 @@
     if(!L) return;
     // leg/arm on kulma MOPON kehyksessä (0 = suoraan alas), joten etunoja lisätään takaisin:
     // muuten kallistus kääntäisi myös raajat ja kädet nousisivat vaakaan tangon ohi.
-    if(L.legL) L.legL.rotation.x = pose.leg + lean;
-    if(L.legR) L.legR.rotation.x = pose.leg + lean;
-    if(L.armL) L.armL.rotation.x = pose.arm + lean;
-    if(L.armR) L.armR.rotation.x = pose.arm + lean;
+    // Haara: Rz(+) vie raajan kärjen kohti +X, joten vasen puoli tarvitsee negatiivisen kulman
+    var sp = pose.splay || 0, asp = pose.armSplay || 0;
+    if(L.legL){ L.legL.rotation.x = pose.leg + lean; L.legL.rotation.z = -sp; }
+    if(L.legR){ L.legR.rotation.x = pose.leg + lean; L.legR.rotation.z =  sp; }
+    if(L.armL){ L.armL.rotation.x = pose.arm + lean; L.armL.rotation.z = -asp; }
+    if(L.armR){ L.armR.rotation.x = pose.arm + lean; L.armR.rotation.z =  asp; }
   }
   // Jos GLB-mallit eivät latautuneet, näkyvissä on proseduraalinen mopo vaikka valittuna
   // olisi "scoba" - silloin satulan paikka on eri ja asento pitää ottaa proc-riviltä.
@@ -6294,13 +6363,29 @@
   moped.add(riderEntry.group);
   // Kutsutaan sekä animaatiosilmukasta (näkyvyys) että mopoa vaihdettaessa (asento).
   var riderPoseId = null;
-  function updateRider(){
+  var throttleTwist = 0;   // 0 = kaasu kiinni, 1 = kaasu pohjassa
+  function updateRider(dt){
     if(!riderEntry) return;
     riderEntry.group.visible = (mode === 'riding');
     if(riderPoseId !== equippedMopedId){
       riderPoseId = equippedMopedId;
       applyRiderPose(riderEntry, riderPoseFor(equippedMopedId));
     }
+    if(!riderEntry.group.visible) return;
+    // Kaasukahva: oikea ranne kiertyy ja kyynärpää nousee kun kaasutetaan, ja ylävartalo
+    // nojaa hieman enemmän eteen. Pieni liike, mutta ilman sitä kuski näyttää patsaalta.
+    var want = (input && input.fwd && !crashed && engineRunning) ? 1 : 0;
+    throttleTwist += (want - throttleTwist) * Math.min(1, (dt || 0.016)*7);
+    var pose = riderPoseFor(equippedMopedId);
+    var L = riderEntry.limbs;
+    if(L && L.armR){
+      L.armR.rotation.x = pose.arm + pose.lean - 0.14*throttleTwist;
+      L.armR.rotation.z = (pose.armSplay || 0) + 0.12*throttleTwist;
+    }
+    if(L && L.armL){
+      L.armL.rotation.x = pose.arm + pose.lean - 0.05*throttleTwist;
+    }
+    riderEntry.group.rotation.x = -(pose.lean + 0.07*throttleTwist);
   }
 
   // ---- kyyti kaverin tarakalla (moninpeli) ----
@@ -6308,7 +6393,7 @@
   // sijaintinsa ON kuljettajan mopon sijainti, joka tulee verkosta. Oma kävelevä hahmo
   // piilotetaan ja tilalle asetetaan tämä ryhmä. Se toimii kuin mopon lapsiryhmä, paitsi että
   // mopo on toisen pelaajan koneella - siksi ryhmän paikka ja suunta asetetaan käsin joka ruudulla.
-  var PILLION_POSE = {y:0.80, z:-0.70, leg:-0.52, arm:-0.10, lean:0.18, stand:false};
+  var PILLION_POSE = {y:0.80, z:-0.70, leg:-0.52, arm:-0.10, lean:0.18, splay:0.30, armSplay:0.10, stand:false};
   var PILLION_REACH = 3.2;       // kuinka läheltä kyytiin pääsee
   var pillionOn = null;          // kenen kyydissä ollaan (etäpelaajan tunniste) tai null
   var pillionEntry = makeRiderFigure();
@@ -12109,7 +12194,7 @@
     mopedShadowBlob.position.set(moped.position.x, terrainHeight(moped.position.x, moped.position.z) + 0.02, moped.position.z);
     playerShadowBlob.position.set(player.position.x, (inStore ? 0 : terrainHeight(player.position.x, player.position.z)) + 0.02, player.position.z);
     playerShadowBlob.visible = (mode !== 'riding'); // sama tila kuin player.visible: näkyy kävellessä, piilossa ajaessa
-    updateRider();   // hahmo näkyy mopon satulassa ajon ajan
+    updateRider(dt);   // hahmo näkyy mopon satulassa ajon ajan
 
     updateMission(dt, mode === 'riding' ? moped.position : player.position);
     updateJobs(dt, mode === 'riding' ? moped.position : player.position);
@@ -13555,14 +13640,21 @@
   // ajolinjalle tuntuvat pelaajasta näkymättömiltä seiniltä: mopo pysähtyy täyttä vauhtia
   // johonkin jota ei erota hiekkatiestä. Isoja ympyröitä ei kosketa - ne ovat rakennuksia,
   // joiden eteen tien kuuluukin loppua ja jotka pelaaja näkee hyvissä ajoin.
+  // ---- näkymättömien seinien siivous ----
+  // Kolme erillistä ongelmaa, jotka kaikki tuntuvat pelaajasta samalta "seinä keskellä tyhjää":
+  //   1) pienet koristeet (kivet, kannot) jotka osuvat tien päälle
+  //   2) hyppyrin nousukiito ja laskeutumisalue, jossa mikään este ei kuulu olla
+  //   3) kisan tarkistuspisteet, joiden kohdalla pitää päästä ajamaan läpi
+  // Lisäksi kaikkia törmäysympyröitä kutistetaan hieman: ne oli mitoitettu mallien uloimman
+  // reunan mukaan, jolloin esteeseen osui jo ennen kuin siihen näkyvästi koski.
   (function clearLaneSnags(){
-    var removed = 0;
-    for(var i=colliders.length-1; i>=0; i--){
+    var removed = 0, i, j;
+    for(i=colliders.length-1; i>=0; i--){
       var c = colliders[i];
-      if(c.r > 0.4) continue;
-      for(var j=0; j<roadCorridors.length; j++){
+      if(c.r > 1.0) continue;
+      for(j=0; j<roadCorridors.length; j++){
         var rc = roadCorridors[j];
-        if(distToSegment(c.x, c.z, rc.x1, rc.z1, rc.x2, rc.z2) < rc.hw*0.8){
+        if(distToSegment(c.x, c.z, rc.x1, rc.z1, rc.x2, rc.z2) < rc.hw*0.9){
           colliders.splice(i, 1);
           removed++;
           break;
@@ -13570,6 +13662,44 @@
       }
     }
     return removed;
+  })();
+  (function clearJumpZone(){
+    // Vyöhyke kattaa vauhdinoton (rampin takana), itse rampin ja laskeutumismatkan sen edessä.
+    var fx = Math.sin(rampHeading), fz = Math.cos(rampHeading);
+    var removed = 0;
+    for(var i=colliders.length-1; i>=0; i--){
+      var c = colliders[i];
+      var dx = c.x - rampPos.x, dz = c.z - rampPos.z;
+      var along = dx*fx + dz*fz;          // rampin suuntainen etäisyys
+      var side  = Math.abs(dx*fz - dz*fx); // sivuttaisetäisyys
+      if(along > -34 && along < 62 && side < 11){
+        colliders.splice(i, 1);
+        removed++;
+      }
+    }
+    return removed;
+  })();
+  (function clearRaceCheckpoints(){
+    var removed = 0, rts = RACE_ROUTES, i, j, k;
+    raceEnsureCps();
+    for(i=colliders.length-1; i>=0; i--){
+      var c = colliders[i];
+      if(c.r > 2.5) continue;   // taloja ei pureta, vain pientä rojua
+      var gone = false;
+      for(j=0; j<rts.length && !gone; j++){
+        for(k=0; k<rts[j].cps.length; k++){
+          var cp = rts[j].cps[k];
+          var dx = c.x - cp.x, dz = c.z - cp.z;
+          if(Math.sqrt(dx*dx + dz*dz) < 9){ colliders.splice(i, 1); removed++; gone = true; break; }
+        }
+      }
+    }
+    return removed;
+  })();
+  (function shrinkColliders(){
+    for(var i=0; i<colliders.length; i++){
+      colliders[i].r = Math.max(0.25, colliders[i].r * 0.86);
+    }
   })();
   applyQuality(qualityLevel, false); // tallennettu grafiikka-asetus voimaan heti käynnistyksessä
   openStartScreen();
