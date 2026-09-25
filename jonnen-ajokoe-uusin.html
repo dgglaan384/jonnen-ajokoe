@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:82-->
-<!--JONNE-NAME:Jonnen ajokoe 82-->
+<!--JONNE-VERSION:83-->
+<!--JONNE-NAME:Jonnen ajokoe 83-->
 <!--JONNE-DATE:2026-09-25-->
-<!--JONNE-NOTES:Kisat: kolme reittiä kylän teitä pitkin, lähtölaskenta ja ajanotto|Moninpelissä kaikki kisaavat yhtä aikaa ja tulokset näkyvät livenä|Yksin ajettuna kisa on aika-ajo omaa ennätystä vastaan|Kisa käynnistyy puhelimesta (TAB) ja seuraava tarkistuspiste näkyy kartalla|Palkintorahat sijoituksen mukaan, ennätykset tallentuvat-->
+<!--JONNE-NOTES:Oma hahmo: pituus, vartalo, ihonväri, hiukset, paita ja housut - aloitusruudun uudesta napista|Kaverit näkevät hahmosi juuri sellaisena kuin sen teit|Iso hyppyri crossiradan viereen ja oikea ilmalento: mopo lentää kaaressa eikä liimaudu maahan|Pisimmästä hypystä palkkio ja ennätys talteen|Korjaus: pelaajalista ja kisapaneeli eivät enää jää minimapin alle piiloon-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -132,7 +132,6 @@
 
   /* Kisapaneeli: lähtölaskenta, oma aika ja tulosjärjestys minikartan alla */
   .racePanel{
-    position:absolute;left:16px;top:calc(272px + env(safe-area-inset-top,0px));
     background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:12px;
     padding:10px 12px;min-width:186px;max-width:230px;color:var(--cream);
   }
@@ -458,8 +457,21 @@
   .mpStatus.ok{background:rgba(122,196,96,0.16);border-color:rgba(122,196,96,0.45);}
   .mpStatus.err{background:rgba(216,64,44,0.16);border-color:rgba(216,64,44,0.45);}
   /* ---- pelaajalista HUDissa ---- */
+  /* Vasen pino minikartan ALLE. Ennen pelaajalista oli absoluuttisesti kohdassa 112px eli
+     suoraan minikartan päällä - se jäi kartan alle piiloon eikä sitä nähnyt lainkaan. */
+  .leftStack{
+    position:absolute;left:16px;top:calc(322px + env(safe-area-inset-top,0px));
+    display:flex;flex-direction:column;gap:8px;align-items:flex-start;max-width:252px;
+  }
+  .lookSwatches{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .lookSwatches button{
+    width:26px;height:26px;border-radius:7px;cursor:pointer;padding:0;
+    border:2px solid rgba(251,246,233,0.25);
+  }
+  .lookSwatches button.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(226,87,43,0.35);}
+  .lookRange{flex:1;min-width:120px;accent-color:var(--accent);height:18px;cursor:pointer;}
+
   .mpList{
-    position:absolute;top:calc(112px + env(safe-area-inset-top,0px));left:16px;
     background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:10px;
     padding:7px 11px;min-width:128px;
   }
@@ -502,12 +514,14 @@
     </div>
     <button class="missionToggle" id="missionBtn" type="button">📱 Puhelin</button>
     <div class="moneyChip" id="moneyChip"><span class="lbl">Raha</span><span class="val" id="moneyChipVal">40<small>€</small></span></div>
-    <div class="mpList" id="mpList" hidden></div>
-    <div class="racePanel" id="racePanel" hidden>
-      <div class="raceHead" id="raceHead">Kisa</div>
-      <div class="raceBig" id="raceBig">3</div>
-      <div class="raceSub" id="raceSub"></div>
-      <div class="raceList" id="raceStandings"></div>
+    <div class="leftStack" id="leftStack">
+      <div class="mpList" id="mpList" hidden></div>
+      <div class="racePanel" id="racePanel" hidden>
+        <div class="raceHead" id="raceHead">Kisa</div>
+        <div class="raceBig" id="raceBig">3</div>
+        <div class="raceSub" id="raceSub"></div>
+        <div class="raceList" id="raceStandings"></div>
+      </div>
     </div>
     <div class="vitals" id="vitals">
       <div class="vitalRow"><span class="vIcon">❤️</span><span class="vTrack"><span class="vFill health" id="healthFill"></span></span></div>
@@ -662,9 +676,28 @@
     <p class="startTagline">Kesäloma, mopo ja koko kylä tutkittavana. Rassaa, tienaa ja aja ajokokeeseen asti.</p>
     <div class="startMenu" id="startMenu">
       <button class="primary" id="startPlayBtn" type="button">Pelaa</button>
+      <button id="startLookBtn" type="button">Oma hahmo</button>
       <button id="startMultiBtn" type="button">Moninpeli</button>
       <button id="startSettingsBtn" type="button">Asetukset</button>
       <button id="startCreditsBtn" type="button">Credits</button>
+    </div>
+    <div class="startPane" id="lookPane" hidden>
+      <h3>Oma hahmo</h3>
+      <p class="setHint">Muutokset näkyvät heti hahmossa taustalla, ja ne tallentuvat. Moninpelissä kaverit näkevät sinut juuri tällaisena.</p>
+      <div class="setRow">
+        <span>Pituus</span>
+        <input class="lookRange" id="lookHeight" type="range" min="0" max="100" step="1" value="50">
+      </div>
+      <div class="setRow">
+        <span>Vartalo</span>
+        <input class="lookRange" id="lookBuild" type="range" min="0" max="100" step="1" value="50">
+      </div>
+      <div class="setRow"><span>Ihonväri</span><div class="lookSwatches" id="lookSkin"></div></div>
+      <div class="setRow"><span>Hiukset</span><div class="lookSwatches" id="lookHair"></div></div>
+      <div class="setRow"><span>Paita</span><div class="lookSwatches" id="lookShirt"></div></div>
+      <div class="setRow"><span>Housut</span><div class="lookSwatches" id="lookPants"></div></div>
+      <button class="wideBtn" id="lookRandom" type="button">Arvo satunnainen</button>
+      <button class="wideBtn" id="lookBackBtn" type="button">Takaisin</button>
     </div>
     <div class="startPane" id="multiPane" hidden>
       <h3>Moninpeli</h3>
@@ -2625,6 +2658,131 @@
   crossirata.rotation.y = 0.2;
   scene.add(crossirata);
   registerColliders(crossirata, crossirataColl);
+
+
+  // ---- hyppyri crossiradan kupeeseen ----
+  // Kiila, jota pitkin mopo nousee ja jonka nokalta se lähtee ilmaan. Rampille EI rekisteröidä
+  // törmäysympyrää: siihen pitää päästä ajamaan läpi, muuten se olisi näkymätön seinä.
+  var RAMP_W = 8, RAMP_L = 12, RAMP_H = 3.0;
+  var rampPos = new THREE.Vector3(crossiPos.x + 42, 0, crossiPos.z + 14);
+  var rampHeading = -Math.PI/2;   // ajosuunta rampille: lännestä itään päin katsoen -X
+  function makeHyppyri(){
+    var g = new THREE.Group();
+    var W = RAMP_W/2, L = RAMP_L, H = RAMP_H;
+    // kolmiomainen prisma: pohja y=0, nousu +Z-suuntaan, pystyseinä lopussa
+    var v = [
+      -W,0,0,   W,0,0,   W,0,L,   -W,0,L,      // pohja
+      -W,H,L,   W,H,L                           // yläreuna
+    ];
+    function tri(a,b,c){ return [v[a*3],v[a*3+1],v[a*3+2], v[b*3],v[b*3+1],v[b*3+2], v[c*3],v[c*3+1],v[c*3+2]]; }
+    var pos = []
+      .concat(tri(0,1,2)).concat(tri(0,2,3))    // pohja
+      .concat(tri(0,3,4)).concat(tri(0,4,5)).concat(tri(0,5,1))  // nousupinta (kaksi kolmiota + sivu)
+      .concat(tri(3,2,5)).concat(tri(3,5,4));   // takaseinä
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.computeVertexNormals();
+    // Maailma on kirkkaasti valaistu ja kuvaan ajetaan ACES-sävykartoitus, joka vaalentaa
+    // pintoja selvästi - vaaleampi ruskea näytti valkoiselta betonilaatalta.
+    var ramp = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x4a3520, roughness:1.0, side:THREE.DoubleSide, flatShading:true}));
+    ramp.castShadow = true; ramp.receiveShadow = true;
+    g.add(ramp);
+    // raidalliset reunat, jotta rampin näkee kaukaa
+    var stripeMat = new THREE.MeshStandardMaterial({color:0xb83a18, roughness:0.85});
+    var slopeLen = Math.sqrt(L*L + H*H);
+    for(var si=0; si<2; si++){
+      var rail = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, slopeLen), stripeMat);
+      rail.position.set(si ? W-0.25 : -W+0.25, H*0.5 + 0.22, L*0.5);
+      rail.rotation.x = -Math.atan2(H, L);
+      rail.castShadow = true;
+      g.add(rail);
+    }
+    // tumma maapohja rampin alle, jottei kiila näytä leijuvan nurmen päällä
+    var skirt = new THREE.Mesh(new THREE.BoxGeometry(W*2 + 1.4, 0.35, L + 1.2),
+      new THREE.MeshStandardMaterial({color:0x3a2a18, roughness:1.0}));
+    skirt.position.set(0, 0.12, L*0.5);
+    skirt.receiveShadow = true;
+    g.add(skirt);
+    return g;
+  }
+  var hyppyriGroup = makeHyppyri();
+  hyppyriGroup.rotation.y = rampHeading;
+  scene.add(hyppyriGroup);
+  // Maaston korkeus luetaan vasta ajon aikana: tässä kohtaa tiedostoa maastoa ei ole vielä
+  // muotoiltu loppuun (tasoitukset tehdään myöhemmin), joten top-tason terrainHeight antaisi
+  // väärän arvon ja ramppi jäisi leijumaan tai uppoaisi maahan.
+  var rampReady = false;
+  function rampEnsure(){
+    if(rampReady) return;
+    rampReady = true;
+    rampPos.y = terrainHeight(rampPos.x, rampPos.z);
+    hyppyriGroup.position.copy(rampPos);
+  }
+
+  // ---- ilmalento ----
+  // Normaalisti mopon korkeus liimataan maastoon joka ruudulla. Rampilta lähdettäessä otetaan
+  // ohjat: pystynopeus kasvaa vauhdin mukaan ja painovoima hoitaa loput, kunnes maasto tulee
+  // vastaan. Nokka kääntyy nousun ja pudotuksen mukaan.
+  var mopedAirborne = false, mopedAirVy = 0, mopedAirFromX = 0, mopedAirFromZ = 0;
+  var rampOnNow = false, rampLastLz = 0, jumpBest = 0;
+  function rampLocal(x, z){
+    var dx = x - rampPos.x, dz = z - rampPos.z;
+    return {
+      lx: dx*Math.cos(rampHeading) - dz*Math.sin(rampHeading),
+      lz: dx*Math.sin(rampHeading) + dz*Math.cos(rampHeading)
+    };
+  }
+  function updateMopedAir(dt){
+    rampEnsure();
+    if(crashed){ mopedAirborne = false; rampOnNow = false; return; }
+    if(mopedAirborne){
+      mopedAirVy -= 24*dt;
+      moped.position.y += mopedAirVy*dt;
+      moped.rotation.x = -Math.max(-0.5, Math.min(0.45, mopedAirVy*0.05));
+      var ground = terrainHeight(moped.position.x, moped.position.z);
+      if(moped.position.y <= ground){
+        moped.position.y = ground;
+        mopedAirborne = false;
+        var jx = moped.position.x - mopedAirFromX, jz = moped.position.z - mopedAirFromZ;
+        var jd = Math.sqrt(jx*jx + jz*jz);
+        speed *= 0.88;   // laskeutuminen syö hieman vauhtia
+        if(jd > 6){
+          var isBest = jd > jumpBest + 0.5;
+          if(isBest){
+            jumpBest = jd;
+            var pay = Math.round(jd*2.2);
+            money += pay;
+            showToast(false, 'Pisin hyppy: ' + jd.toFixed(1) + ' m', 'Uusi ennätys - ' + pay + ' €', 3600);
+            saveGame();
+          } else {
+            showToast(false, 'Hyppy ' + jd.toFixed(1) + ' m', 'Ennätys on ' + jumpBest.toFixed(1) + ' m.', 2400);
+          }
+        }
+      }
+      return true;
+    }
+    var L = rampLocal(moped.position.x, moped.position.z);
+    if(Math.abs(L.lx) < RAMP_W*0.5 && L.lz > -1.5 && L.lz < RAMP_L + 1.5){
+      var t = Math.max(0, Math.min(1, L.lz/RAMP_L));
+      var top = rampPos.y + t*RAMP_H;
+      if(moped.position.y < top) moped.position.y = top;
+      moped.rotation.x = -Math.atan2(RAMP_H, RAMP_L);
+      rampOnNow = true;
+      rampLastLz = L.lz;
+      return true;
+    }
+    if(rampOnNow){
+      rampOnNow = false;
+      // Lento lähtee vain rampin nokalta ja riittävällä vauhdilla - sivusta pois ajaminen ei laukaise
+      if(rampLastLz > RAMP_L*0.72 && Math.abs(speed) > 7){
+        mopedAirborne = true;
+        mopedAirVy = Math.min(15, Math.abs(speed)*0.62);
+        mopedAirFromX = moped.position.x;
+        mopedAirFromZ = moped.position.z;
+      }
+    }
+    return false;
+  }
 
   // pikaruokapaikka "Mac Donalds" - uusi pysähdyspaikka kaupan/huoltoaseman kupeessa
   function makeMacDonalds(collOut){
@@ -5771,6 +5929,9 @@
       var g2 = mo.geometry.index ? mo.geometry.toNonIndexed() : mo.geometry;
       var pos = g2.attributes.position, n = pos.count;
       var col = new Float32Array(n*3);
+      // 'zone' talteen kärkipistekohtaisesti: sen avulla värit voidaan laskea uudelleen
+      // hahmon muokkauksessa ilman että koko malli rakennetaan alusta
+      var zon = new Float32Array(n*3);
       for(var i=0; i+2<n; i+=3){
         pa.set(pos.getX(i),   pos.getY(i),   pos.getZ(i)).applyMatrix4(mo.matrixWorld);
         pb.set(pos.getX(i+1), pos.getY(i+1), pos.getZ(i+1)).applyMatrix4(mo.matrixWorld);
@@ -5779,9 +5940,13 @@
         var ax = Math.abs(((pa.x+pb.x+pc.x)/3 - cxp)/halfW);
         var hz = ((pa.z+pb.z+pc.z)/3 - hz0)/hzSpan;
         var cc = zoneColor(yn, ax, hz);
-        for(var k=0; k<3; k++){ col[(i+k)*3] = cc.r; col[(i+k)*3+1] = cc.g; col[(i+k)*3+2] = cc.b; }
+        for(var k=0; k<3; k++){
+          col[(i+k)*3] = cc.r; col[(i+k)*3+1] = cc.g; col[(i+k)*3+2] = cc.b;
+          zon[(i+k)*3] = yn;  zon[(i+k)*3+1] = ax;  zon[(i+k)*3+2] = hz;
+        }
       }
       g2.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      g2.setAttribute('zone', new THREE.BufferAttribute(zon, 3));
       g2.computeVertexNormals();
       mo.geometry = g2;
       // DoubleSide: mallissa on muutama aukko (mm. niskan takana), joista näkyi muuten tausta suoraan läpi
@@ -5807,9 +5972,9 @@
     if(!meshes.length) return null;
     // osat: 0 vartalo+pää, 1 vasen käsi, 2 oikea käsi, 3 vasen jalka, 4 oikea jalka
     var PARTS = 5;
-    var pos = [], col = [], bounds = [], i, k;
+    var pos = [], col = [], zon = [], bounds = [], i, k;
     for(i=0; i<PARTS; i++){
-      pos.push([]); col.push([]);
+      pos.push([]); col.push([]); zon.push([]);
       bounds.push({minX:1e9, maxX:-1e9, minY:1e9, maxY:-1e9, sumZ:0, n:0});
     }
     var va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
@@ -5817,6 +5982,7 @@
       var mo = meshes[mi];
       var P = mo.geometry.attributes.position;
       var C = mo.geometry.attributes.color;
+      var Z = mo.geometry.attributes.zone;
       for(var t=0; t+2<P.count; t+=3){
         va.set(P.getX(t),   P.getY(t),   P.getZ(t)).applyMatrix4(mo.matrixWorld);
         vb.set(P.getX(t+1), P.getY(t+1), P.getZ(t+1)).applyMatrix4(mo.matrixWorld);
@@ -5840,6 +6006,7 @@
         for(k=0; k<3; k++){
           pos[part].push(tri[k].x, tri[k].y, tri[k].z);
           if(C) col[part].push(C.getX(t+k), C.getY(t+k), C.getZ(t+k));
+          if(Z) zon[part].push(Z.getX(t+k), Z.getY(t+k), Z.getZ(t+k));
         }
         var bo = bounds[part];
         if(mx < bo.minX) bo.minX = mx;
@@ -5857,6 +6024,7 @@
       var g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos[i], 3));
       if(col[i].length) g.setAttribute('color', new THREE.Float32BufferAttribute(col[i], 3));
+      if(zon[i].length) g.setAttribute('zone', new THREE.Float32BufferAttribute(zon[i], 3));
       var mat = new THREE.MeshStandardMaterial({
         vertexColors: col[i].length > 0, roughness:0.9, flatShading:true, side:THREE.DoubleSide
       });
@@ -5971,6 +6139,78 @@
   player.position.set(autotalliDoorPos.x + 2.2, 0, autotalliDoorPos.z + 1.2);
   scene.add(player);
 
+
+  // ---- hahmon ulkonäkö ----
+  // Värit lasketaan uudelleen 'zone'-attribuutista (ks. paintCharacterModel), joten mallia ei
+  // tarvitse rakentaa uudestaan kun pelaaja vaihtaa paidan väriä. Pituus ja vartalon koko ovat
+  // pelkkää skaalausta: Y venyttää, X/Z leventää.
+  var LOOK_SKIN  = [0xc08050, 0xf0c9a0, 0xe0a978, 0x8d5524, 0x5c3317, 0xd9a066];
+  var LOOK_SHIRT = [0x8a2412, 0x2f7a78, 0x2b4f8c, 0x6b8f3a, 0xd8a021, 0x7a3b8f, 0x2b2b2b, 0xd9d2c4];
+  var LOOK_PANTS = [0x1e2740, 0x3a3a42, 0x5a4632, 0x22402a, 0x6b2430, 0x101418];
+  var LOOK_HAIR  = [0x2b1c10, 0x0e0e10, 0x7a4a1e, 0xd9b26a, 0x8a1f10, 0xb9b9bf];
+  // 0.5 = oletusmitat: hahmo on tasan sen kokoinen kuin ennen muokkausmahdollisuutta
+  var charLook = {height:0.5, build:0.5, skin:0, shirt:0, pants:0, hair:0};
+  function lookColor(list, idx){ return new THREE.Color(list[((idx|0) % list.length + list.length) % list.length]); }
+  function lookZoneColor(look, yn, ax, hz){
+    var SHOE = new THREE.Color(0x14161a);
+    var PANTS = lookColor(LOOK_PANTS, look.pants);
+    var SHIRT = lookColor(LOOK_SHIRT, look.shirt);
+    var SKIN  = lookColor(LOOK_SKIN,  look.skin);
+    var HAIR  = lookColor(LOOK_HAIR,  look.hair);
+    if(yn < 0.085) return SHOE;
+    if(yn < 0.47)  return PANTS;
+    if(yn < 0.81)  return ax > 0.42 ? SKIN : SHIRT;
+    if(yn < 0.87)  return ax < 0.09 ? SKIN : SHIRT;
+    if(yn < 0.955 && hz > 0.45) return SKIN;
+    return HAIR;
+  }
+  // Värittää minkä tahansa hahmokopion annetun ulkonäön mukaan. Etäpelaajille geometria pitää
+  // kloonata ensin, koska kloonit jakavat saman geometrian - muuten kaverin paidan väri
+  // vaihtaisi myös oman hahmon värin.
+  function applyLookColors(root, look){
+    if(!root) return;
+    root.traverse(function(o){
+      if(!o.isMesh || !o.geometry) return;
+      var Z = o.geometry.attributes.zone, C = o.geometry.attributes.color;
+      if(!Z || !C) return;
+      for(var i=0; i<Z.count; i++){
+        var c = lookZoneColor(look, Z.getX(i), Z.getY(i), Z.getZ(i));
+        C.setXYZ(i, c.r, c.g, c.b);
+      }
+      C.needsUpdate = true;
+    });
+  }
+  function cloneFigureGeometry(root){
+    root.traverse(function(o){ if(o.isMesh && o.geometry) o.geometry = o.geometry.clone(); });
+  }
+  function lookScaleOf(look){
+    // 0.5 -> 1.0 molemmissa, eli keskiasetus ei muuta hahmoa lainkaan
+    return {y: 0.80 + 0.40*look.height, xz: 0.86 + 0.28*look.build};
+  }
+  // Oma hahmo: väri kerran, mittakaava kävelijään, kuskiin ja matkustajaan.
+  function applyCharLook(){
+    applyLookColors(playerModelTemplate, charLook);
+    if(riderEntry) applyLookColors(riderEntry.group, charLook);
+    if(pillionEntry) applyLookColors(pillionEntry.group, charLook);
+    var sc = lookScaleOf(charLook);
+    playerVisual.scale.set(sc.xz, sc.y, sc.xz);
+    if(riderEntry){
+      riderEntry.group.scale.set(sc.xz, sc.y, sc.xz);
+      riderPoseId = null;   // asento lasketaan uudelleen uudella mittakaavalla
+    }
+    if(pillionEntry){
+      pillionEntry.group.scale.set(sc.xz, sc.y, sc.xz);
+      applyRiderPose(pillionEntry, PILLION_POSE);
+    }
+  }
+  function lookToNet(){
+    return [charLook.height, charLook.build, charLook.skin, charLook.shirt, charLook.pants, charLook.hair];
+  }
+  function lookFromNet(a){
+    if(!a || a.length < 6) return null;
+    return {height:+a[0] || 1, build:+a[1] || 1, skin:a[2]|0, shirt:a[3]|0, pants:a[4]|0, hair:a[5]|0};
+  }
+
   // ---- kuski mopon kyydissä ----
   // Ennen hahmo katosi kokonaan kun mopoon nousi, ja mopo ajoi tyhjänä. Nyt mopo-ryhmän
   // lapsena roikkuu oma kopio hahmosta istuma-asennossa: koska se on mopon lapsi, se
@@ -6023,7 +6263,9 @@
     // pose.y ja pose.z tarkoittavat aina sitä mihin LONKAT päätyvät (seistessä jalkaterät).
     // Etunoja kiertää koko ryhmää jalkaterien ympäri, mikä siirtäisi lonkat taakse ja alas,
     // joten se kompensoidaan tässä - muuten satulaan asetettu arvo ei pitäisi paikkaansa.
-    var hip = pose.stand ? 0 : riderHipY();
+    // Hahmon koko vaikuttaa lonkkien korkeuteen: venytetyllä hahmolla lonkat ovat ylempänä,
+    // joten satulan paikka on laskettava skaalatulla mitalla - muuten pitkä Jonne istuisi ilmassa.
+    var hip = pose.stand ? 0 : riderHipY() * (entry.group.scale.y || 1);
     var lean = pose.lean || 0;
     entry.group.position.set(
       0,
@@ -9593,7 +9835,8 @@
     {name:'Uimaranta',    pos:rantaPos,         color:'#6fe3d0'},
     {name:'Naapurikylä',  pos:kylaPos,          color:'#d9c1ff'},
     {name:'Crossirata',   pos:crossiPos,        color:'#ff7a5c'},
-    {name:'Järvimökki',   pos:jarviPos,         color:'#7fe0a0'}
+    {name:'Järvimökki',   pos:jarviPos,         color:'#7fe0a0'},
+    {name:'Hyppyri',      pos:rampPos,          color:'#ffb347'}
   ];
   var miniMapWrapEl = document.getElementById('miniMapWrap');
   var miniCanvas = document.getElementById('miniMap');
@@ -10825,6 +11068,8 @@
         money: money,
         muted: muted,
         raceBest: raceBest,
+        jumpBest: jumpBest,
+        charLook: charLook,
         sfxVolume: sfxVolume,
         musicVolume: musicVolume,
         parts: partsData,
@@ -10878,6 +11123,14 @@
       if(typeof save.qualityLevel === 'string') qualityLevel = save.qualityLevel;
       // ääniasetukset: talletettu voimakkuus otetaan käyttöön heti, myös jos peli on jo äänessä
       if(typeof save.muted === 'boolean') muted = save.muted;
+      if(typeof save.jumpBest === 'number') jumpBest = save.jumpBest;
+      if(save.charLook && typeof save.charLook === 'object'){
+        var clk = ['height','build','skin','shirt','pants','hair'];
+        for(var ci2=0; ci2<clk.length; ci2++){
+          if(typeof save.charLook[clk[ci2]] === 'number') charLook[clk[ci2]] = save.charLook[clk[ci2]];
+        }
+        applyCharLook();
+      }
       if(save.raceBest && typeof save.raceBest === 'object'){
         for(var rbk in save.raceBest){
           if(Object.prototype.hasOwnProperty.call(save.raceBest, rbk) && typeof save.raceBest[rbk] === 'number'){
@@ -11501,8 +11754,12 @@
 
       // maaston kaltevuus mukaan asentoon, jottei runko leikkaa rinteen läpi
       updateSlope(moped.position.x, moped.position.z, heading, dt);
-      moped.rotation.x = -wheelieAngle + stoppieAngle - slopePitchSm;
-      moped.position.y = terrainHeight(moped.position.x, moped.position.z) + (wheelieAngle >= stoppieAngle ? wheelieGroundLift(moped.rotation.x) : stoppieGroundLift(moped.rotation.x));
+      // Ilmassa tai rampilla mopon korkeuden ja nokan hoitaa updateMopedAir - muuten mopo
+      // liimautuisi maastoon eikä lentäisi lainkaan.
+      if(!mopedAirborne && !rampOnNow){
+        moped.rotation.x = -wheelieAngle + stoppieAngle - slopePitchSm;
+        moped.position.y = terrainHeight(moped.position.x, moped.position.z) + (wheelieAngle >= stoppieAngle ? wheelieGroundLift(moped.rotation.x) : stoppieGroundLift(moped.rotation.x));
+      }
       var stuntAngle = Math.max(wheelieAngle/maxWheelieAngle, stoppieAngle/maxStoppieAngle);
       var steerFactor = 1 - Math.min(1, stuntAngle)*0.8;
 
@@ -11514,6 +11771,7 @@
       moped.position.x += Math.sin(heading)*speed*dt;
       moped.position.z += Math.cos(heading)*speed*dt;
       moped.rotation.y = heading;
+      updateMopedAir(dt);
       if(resolveCollisions(moped.position, 0.55)) speed *= 0.55;
 
       var wheelSpin = speed*dt*2.2;
@@ -12176,7 +12434,8 @@
     ];
   }
   function netSelfMeta(){
-    return {name: playerName, moped: equippedMopedId, color: '#' + bodyMat.color.getHexString()};
+    return {name: playerName, moped: equippedMopedId, color: '#' + bodyMat.color.getHexString(),
+            look: lookToNet()};
   }
 
   // ---- etäpelaajan hahmo ----
@@ -12203,8 +12462,18 @@
     sp.renderOrder = 999;
     return sp;
   }
-  function netMakeAvatar(name, mopedId, color){
+  function netMakeAvatar(name, mopedId, color, lookArr){
     var g = new THREE.Group();
+    var rlook = lookFromNet(lookArr);
+    // Kloonit jakavat saman geometrian, joten kaverin värit pitää kirjoittaa omaan kopioonsa -
+    // muuten toisen pelaajan paidan väri vaihtaisi myös oman hahmon värin.
+    var dressRemote = function(grp){
+      if(!rlook || !grp) return;
+      cloneFigureGeometry(grp);
+      applyLookColors(grp, rlook);
+      var rsc = lookScaleOf(rlook);
+      grp.scale.set(rsc.xz, rsc.y, rsc.xz);
+    };
     // kävelijä
     var walkGroup = new THREE.Group();
     var limbs = null;
@@ -12217,6 +12486,7 @@
         legR: fig.getObjectByName('legR')
       };
       walkGroup.add(fig);
+      dressRemote(walkGroup);
     } else {
       var skinM = new THREE.MeshStandardMaterial({color:0xe0a978, roughness:0.75});
       var shirtM = new THREE.MeshStandardMaterial({color:0x2f7a78, roughness:0.85});
@@ -12247,6 +12517,7 @@
     rideGroup.add(bike);
     // Kuski myös etäpelaajan mopon selkään, samalla mallikohtaisella asennolla kuin omalla.
     var remoteRider = makeRiderFigure();
+    dressRemote(remoteRider.group);
     applyRiderPose(remoteRider, riderPoseFor(mopedId));
     rideGroup.add(remoteRider.group);
     rideGroup.visible = false;
@@ -12255,6 +12526,7 @@
     // kaveri on jonkun toisen kyydissä - silloin hänen sijaintinsa on sen mopon sijainti.
     var pillGroup = new THREE.Group();
     var pillRider = makeRiderFigure();
+    dressRemote(pillRider.group);
     applyRiderPose(pillRider, PILLION_POSE);
     pillGroup.add(pillRider.group);
     pillGroup.visible = false;
@@ -12301,11 +12573,12 @@
   function netEnsureRemote(id, meta){
     var r = netRemotes[id];
     if(r){
-      if(meta && (meta.name !== r.name || meta.moped !== r.moped)){
-        // nimi tai mopo vaihtui - rakennetaan hahmo uusiksi
+      var lookKey = meta && meta.look ? meta.look.join(',') : '';
+      if(meta && (meta.name !== r.name || meta.moped !== r.moped || lookKey !== r.lookKey)){
+        // nimi, mopo tai ulkonäkö vaihtui - rakennetaan hahmo uusiksi
         scene.remove(r.avatar.group);
-        r.avatar = netMakeAvatar(meta.name, meta.moped, meta.color);
-        r.name = meta.name; r.moped = meta.moped;
+        r.avatar = netMakeAvatar(meta.name, meta.moped, meta.color, meta.look);
+        r.name = meta.name; r.moped = meta.moped; r.lookKey = lookKey;
         netRenderList();
       }
       return r;
@@ -12315,7 +12588,8 @@
       name: nm,
       moped: (meta && meta.moped) || 'scoba',
       color: (meta && meta.color) || '#e2572b',
-      avatar: netMakeAvatar(nm, (meta && meta.moped) || 'scoba', meta && meta.color),
+      avatar: netMakeAvatar(nm, (meta && meta.moped) || 'scoba', meta && meta.color, meta && meta.look),
+      lookKey: (meta && meta.look) ? meta.look.join(',') : '',
       cur: null, tgt: null, walkPhase: 0
     };
     netRemotes[id] = r;
@@ -12909,6 +13183,7 @@
   function showStartPane(which){
     settingsPaneEl.hidden = (which !== 'settings');
     creditsPaneEl.hidden = (which !== 'credits');
+    if(lookPaneEl) lookPaneEl.hidden = (which !== 'look');
     if(mpPaneEl) mpPaneEl.hidden = (which !== 'multi');
     if(startMenuEl) startMenuEl.hidden = false;
   }
@@ -13074,6 +13349,78 @@
     netRenderList();
   });
   document.getElementById('multiBackBtn').addEventListener('click', function(){ showStartPane(null); });
+  // ---- hahmon muokkaus aloitusruudussa ----
+  var lookPaneEl = document.getElementById('lookPane');
+  var lookHeightEl = document.getElementById('lookHeight');
+  var lookBuildEl = document.getElementById('lookBuild');
+  var lookSwatchIds = {skin:'lookSkin', hair:'lookHair', shirt:'lookShirt', pants:'lookPants'};
+  var lookPalettes = {skin:LOOK_SKIN, hair:LOOK_HAIR, shirt:LOOK_SHIRT, pants:LOOK_PANTS};
+  function lookHex(v){ return '#' + ('000000' + v.toString(16)).slice(-6); }
+  function buildLookSwatches(){
+    for(var key in lookSwatchIds){
+      if(!Object.prototype.hasOwnProperty.call(lookSwatchIds, key)) continue;
+      var host = document.getElementById(lookSwatchIds[key]);
+      if(!host || host.children.length) continue;
+      var pal = lookPalettes[key];
+      for(var i=0; i<pal.length; i++){
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.background = lookHex(pal[i]);
+        btn.setAttribute('data-look', key);
+        btn.setAttribute('data-idx', String(i));
+        btn.addEventListener('click', function(){
+          charLook[this.getAttribute('data-look')] = parseInt(this.getAttribute('data-idx'), 10);
+          applyCharLook();
+          refreshLookUi();
+          saveGame();
+        });
+        host.appendChild(btn);
+      }
+    }
+  }
+  function refreshLookUi(){
+    if(lookHeightEl) lookHeightEl.value = String(Math.round(charLook.height*100));
+    if(lookBuildEl) lookBuildEl.value = String(Math.round(charLook.build*100));
+    for(var key in lookSwatchIds){
+      if(!Object.prototype.hasOwnProperty.call(lookSwatchIds, key)) continue;
+      var host = document.getElementById(lookSwatchIds[key]);
+      if(!host) continue;
+      Array.prototype.forEach.call(host.children, function(b){
+        b.classList.toggle('on', parseInt(b.getAttribute('data-idx'), 10) === (charLook[b.getAttribute('data-look')] | 0));
+      });
+    }
+  }
+  function bindLookRange(el, field){
+    if(!el) return;
+    el.addEventListener('input', function(){
+      var v = parseInt(el.value, 10);
+      if(isNaN(v)) return;
+      charLook[field] = Math.max(0, Math.min(1, v/100));
+      applyCharLook();
+    });
+    el.addEventListener('change', function(){ saveGame(); });
+  }
+  bindLookRange(lookHeightEl, 'height');
+  bindLookRange(lookBuildEl, 'build');
+  var lookRandomEl = document.getElementById('lookRandom');
+  if(lookRandomEl) lookRandomEl.addEventListener('click', function(){
+    charLook.height = nativeRandom();
+    charLook.build = nativeRandom();
+    charLook.skin  = Math.floor(nativeRandom()*LOOK_SKIN.length);
+    charLook.hair  = Math.floor(nativeRandom()*LOOK_HAIR.length);
+    charLook.shirt = Math.floor(nativeRandom()*LOOK_SHIRT.length);
+    charLook.pants = Math.floor(nativeRandom()*LOOK_PANTS.length);
+    applyCharLook();
+    refreshLookUi();
+    saveGame();
+  });
+  var lookBackEl = document.getElementById('lookBackBtn');
+  if(lookBackEl) lookBackEl.addEventListener('click', function(){ showStartPane(null); });
+  document.getElementById('startLookBtn').addEventListener('click', function(){
+    buildLookSwatches();
+    refreshLookUi();
+    showStartPane('look');
+  });
   document.getElementById('startSettingsBtn').addEventListener('click', function(){ showStartPane('settings'); });
   document.getElementById('startCreditsBtn').addEventListener('click', function(){ showStartPane('credits'); });
   document.getElementById('settingsBackBtn').addEventListener('click', function(){ showStartPane(null); });
