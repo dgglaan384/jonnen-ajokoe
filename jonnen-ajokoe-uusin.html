@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:79-->
-<!--JONNE-NAME:Jonnen ajokoe 79-->
-<!--JONNE-DATE:2026-09-24-->
-<!--JONNE-NOTES:Pelaajahahmo näkyy nyt mopon satulassa eikä katoa kyytiin noustessa|Oma istuma-asento jokaiselle mopomallille, myös kavereiden hahmoille|Taustamusiikki: kolmen minuutin silmukka joka ei naksahda|Ääni-napista aukeaa säädin: pelin äänet ja musiikki erikseen + mykistys|Ajokamera nostettu hieman, jotta kuski ei peitä tietä-->
+<!--JONNE-VERSION:80-->
+<!--JONNE-NAME:Jonnen ajokoe 80-->
+<!--JONNE-DATE:2026-09-25-->
+<!--JONNE-NOTES:Kaverin Monkeyn tarakalle voi nousta kyytiin: kaksi pelaajaa samalla mopolla|Muut pelaajat näkyvät minimapissa ja isossa kartassa nimellä ja omalla värillä|Osat kuluvat kahdeksan kertaa hitaammin kuin ennen|Huippunopeus ei enää riipu osien kunnosta - vauhti ei heittele kesken ajon|Pelaajalista kertoo jos joltakulta ei ole kuulunut hetkeen-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -445,6 +445,9 @@
   .mpList .mpRow{font:600 12px/1.5 'Karla',sans-serif;display:flex;gap:7px;align-items:center;}
   .mpList .mpDot{width:7px;height:7px;border-radius:50%;background:#7ac460;flex:0 0 auto;}
   .mpList .mpRow.self .mpDot{background:var(--accent);}
+  /* pelaaja jolta ei ole kuulunut hetkeen: hahmo seisoo koska tieto ei kulje */
+  .mpList .mpRow.stale{opacity:.55;}
+  .mpList .mpAge{font:600 10px 'Karla',sans-serif;opacity:.8;color:#f0b26b;margin-left:2px;}
 
   .vignette{
     position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;
@@ -6027,6 +6030,66 @@
     }
   }
 
+  // ---- kyyti kaverin tarakalla (moninpeli) ----
+  // Monkeyssä on tarakka ja siihen mahtuu toinen pelaaja. Matkustaja ei ohjaa mitään: hänen
+  // sijaintinsa ON kuljettajan mopon sijainti, joka tulee verkosta. Oma kävelevä hahmo
+  // piilotetaan ja tilalle asetetaan tämä ryhmä. Se toimii kuin mopon lapsiryhmä, paitsi että
+  // mopo on toisen pelaajan koneella - siksi ryhmän paikka ja suunta asetetaan käsin joka ruudulla.
+  var PILLION_POSE = {y:0.80, z:-0.70, leg:-0.52, arm:-0.10, lean:0.18, stand:false};
+  var PILLION_REACH = 3.2;       // kuinka läheltä kyytiin pääsee
+  var pillionOn = null;          // kenen kyydissä ollaan (etäpelaajan tunniste) tai null
+  var pillionEntry = makeRiderFigure();
+  var pillionGroup = new THREE.Group();
+  applyRiderPose(pillionEntry, PILLION_POSE);
+  pillionGroup.add(pillionEntry.group);
+  pillionGroup.visible = false;
+  scene.add(pillionGroup);
+  // Lähin kaveri jonka Monkeyn tarakalle voi nousta, tai null. Kaverin pitää olla mopon
+  // selässä ja mopon pitää olla Monkey - muissa malleissa ei ole tarakkaa.
+  function pillionCandidate(){
+    if(typeof netRemotes === 'undefined' || !netRemotes) return null;
+    var best = null, bestD = PILLION_REACH;
+    for(var id in netRemotes){
+      if(!Object.prototype.hasOwnProperty.call(netRemotes, id)) continue;
+      var r = netRemotes[id];
+      if(!r || !r.cur || !(r.cur[5] > 0.5)) continue;
+      if(r.moped !== 'monkey') continue;
+      var dx = r.cur[0] - player.position.x, dz = r.cur[2] - player.position.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      if(d < bestD){ bestD = d; best = id; }
+    }
+    return best;
+  }
+  function enterPillion(id){
+    pillionOn = id;
+    mode = 'pillion';
+    player.visible = false;
+    mountHintEl.hidden = true;
+    pillionGroup.visible = true;
+    var nm = (netRemotes[id] && netRemotes[id].name) || 'kaverin';
+    showToast(true, 'Kyydissä', 'Istut ' + nm + ' tarakalla. Pääset pois painamalla E.', 2600);
+  }
+  function leavePillion(dropped){
+    var wasId = pillionOn;
+    pillionOn = null;
+    mode = 'walking';
+    player.visible = true;
+    pillionGroup.visible = false;
+    var drv = (wasId && typeof netRemotes !== 'undefined' && netRemotes) ? netRemotes[wasId] : null;
+    if(drv && drv.cur){
+      // pudotaan mopon viereen samalla tavalla kuin omalta mopolta noustessa
+      var ang = drv.cur[3] + Math.PI/2;
+      player.position.x = drv.cur[0] + Math.sin(ang)*1.4;
+      player.position.z = drv.cur[2] + Math.cos(ang)*1.4;
+      playerHeading = drv.cur[3];
+      player.rotation.y = playerHeading;
+    }
+    player.position.y = terrainHeight(player.position.x, player.position.z);
+    playerWalkTime = 0;
+    playerWalkAmount = 0;
+    if(dropped) showToast(false, 'Tipuit kyydistä', 'Kuski nousi mopolta tai katosi.', 2600);
+  }
+
   camera.position.set(0,2.4,-4.5);
 
   // ---- input ----
@@ -7103,6 +7166,7 @@
   function handleInteract(){
     if(crashed) return;
     if(mode === 'jail') return; // cutscenen aikana ei voi nousta mopoon/avata paneeleita
+    if(mode === 'pillion'){ leavePillion(false); return; }
     if(mode === 'riding'){
       mode = 'walking';
       var dropAngle = heading + Math.PI/2;
@@ -7118,6 +7182,11 @@
     }
     var dxm = moped.position.x - player.position.x;
     var dzm = moped.position.z - player.position.z;
+    // oma mopo voittaa kaverin tarakan jos molemmat ovat lähellä
+    if(Math.sqrt(dxm*dxm+dzm*dzm) > mountRadius && !inStore){
+      var pcand = pillionCandidate();
+      if(pcand){ enterPillion(pcand); return; }
+    }
     if(Math.sqrt(dxm*dxm+dzm*dzm) <= mountRadius){
       if(!mopedAssembled()){
         showToast(false, 'Mopo on osina', 'Kasaa osat autotallin työpöydällä ('+installedCount()+'/'+parts.length+' valmiina).', 3000);
@@ -9670,6 +9739,65 @@
     ctx.restore();
   }
 
+  // ---- muut pelaajat kartalla ----
+  // Kartat käyttävät peilattua x-akselia (ks. drawMapPlayer ja V71:n karttakorjaus), joten
+  // etäpelaajatkin lasketaan samalla kaavalla kuin tiet ja kohteet: ruutuX = keskipiste - dx*s.
+  // Väri tulee pelaajan tunnisteesta, ei mopon maalista, jotta kaksi samanväristä mopoa
+  // erottuu silti toisistaan kartalla.
+  var NET_MAP_COLORS = ['#63c7ff', '#ffd166', '#8ce99a', '#ff9f68', '#d4a5ff', '#ff8fab'];
+  function netMapColor(id){
+    var h = 0, sid = String(id);
+    for(var i=0; i<sid.length; i++) h = (h*31 + sid.charCodeAt(i)) >>> 0;
+    return NET_MAP_COLORS[h % NET_MAP_COLORS.length];
+  }
+  function netMapEntries(){
+    var out = [];
+    if(typeof netRemotes === 'undefined' || !netRemotes) return out;
+    for(var id in netRemotes){
+      if(!Object.prototype.hasOwnProperty.call(netRemotes, id)) continue;
+      var r = netRemotes[id];
+      if(!r || !r.cur) continue;
+      out.push({x:r.cur[0], z:r.cur[2], heading:r.cur[3], riding:r.cur[5] > 0.5,
+                name:r.name || 'Jonne', color:netMapColor(id)});
+    }
+    return out;
+  }
+  function drawMapRemote(ctx, px, py, heading, size, color, clipped){
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(-heading);
+    ctx.beginPath();
+    if(clipped){
+      // kartan ulkopuolella oleva kaveri näkyy reunassa pelkkänä kolmiona ilman "nokkaa",
+      // jotta sen erottaa kartalla oikeasti näkyvästä pelaajasta
+      ctx.moveTo(0, -size*0.8);
+      ctx.lineTo(size*0.7, size*0.6);
+      ctx.lineTo(-size*0.7, size*0.6);
+    } else {
+      ctx.moveTo(0, -size);
+      ctx.lineTo(size*0.66, size*0.78);
+      ctx.lineTo(0, size*0.32);
+      ctx.lineTo(-size*0.66, size*0.78);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = 1.2;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawMapRemoteName(ctx, px, py, name, color, font){
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillText(name, px + 0.8, py + 0.8);
+    ctx.fillStyle = color;
+    ctx.fillText(name, px, py);
+    ctx.restore();
+  }
+
   function drawMiniMap(){
     if(!miniCtx) return;
     var W = miniCanvas.width, H = miniCanvas.height;
@@ -9762,6 +9890,20 @@
       }
     }
 
+    // kaverit: kartalla näkyvät omalle paikalleen, kauempana olevat kiinni renkaan reunaan
+    // siihen suuntaan mihin heidät löytää
+    var nmes = netMapEntries();
+    for(var ni=0; ni<nmes.length; ni++){
+      var nm = nmes[ni];
+      var ndx = nm.x - ref.x, ndz = nm.z - ref.z;
+      var ndist = Math.sqrt(ndx*ndx + ndz*ndz);
+      var nInside = ndist*s < R - 10;
+      var nbx = nInside ? cx - ndx*s : cx - Math.sin(Math.atan2(ndx, ndz))*(R-8);
+      var nby = nInside ? cy - ndz*s : cy - Math.cos(Math.atan2(ndx, ndz))*(R-8);
+      drawMapRemote(miniCtx, nbx, nby, nm.heading, nInside ? 6 : 5, nm.color, !nInside);
+      if(nInside) drawMapRemoteName(miniCtx, nbx, nby - 9, nm.name, nm.color, "700 9px 'Karla',sans-serif");
+    }
+
     drawMapPlayer(miniCtx, cx, cy, mapHeading(), 7);
     miniCtx.restore();
 
@@ -9849,6 +9991,15 @@
         bigCtx.fillText(LM.name, tx2, ty2 + 10.5);
         break;
       }
+    }
+    // kaverit isolle kartalle: nimi aina näkyviin, koska tilaa on
+    var bnm = netMapEntries();
+    for(var bni=0; bni<bnm.length; bni++){
+      var bn = bnm[bni];
+      var bnx = bx(bn.x), bny = by(bn.z);
+      if(bnx < -20 || bnx > W+20 || bny < -20 || bny > H+20) continue;
+      drawMapRemote(bigCtx, bnx, bny, bn.heading, 7, bn.color, false);
+      drawMapRemoteName(bigCtx, bnx, bny - 11, bn.name, bn.color, "700 10px 'Karla',sans-serif");
     }
     drawMapPlayer(bigCtx, bx(ref2.x), by(ref2.z), mapHeading(), 8);
     bigCtx.font = "700 11px 'Karla',sans-serif";
@@ -10843,14 +10994,19 @@
         gripMult     += modelPerf.grip || 0;
       }
       var avgCond = totalCond/parts.length/100;
-      var perfFactor = 0.55 + 0.45*avgCond;
-      var effMaxSpeed = maxSpeed*perfFactor*topSpeedMult;
+      // Huippunopeus EI enää riipu osien kunnosta. Ennen kaava oli 0.55 + 0.45*kunto, jolloin
+      // vauhti hiipui koko ajan ajaessa ja mopo tuntui rikkovan itsensä kesken matkan.
+      // Kunto vaikuttaa enää kiihtyvyyteen, ja siihenkin vasta kun mopo on pahasti retuperällä
+      // (alle 35 %). Normaalissa pelissä vauhti on siis vakio, mutta rämän korjaaminen
+      // kannattaa yhä - ja käynnistyminen riippuu kunnosta edelleen (ks. startChanceNow).
+      var condAccel = (avgCond >= 0.35) ? 1 : (0.85 + 0.15*(avgCond/0.35));
+      var effMaxSpeed = maxSpeed*topSpeedMult;
 
       var throttle = input.fwd && !stalled && engineRunning;
       var braking = input.back;
 
       if(throttle){
-        speed += accel*perfFactor*accelMult*dt;
+        speed += accel*condAccel*accelMult*dt;
         fuel -= dt*0.46; // kulutus kevennetty uudestaan (1.05 -> 0.46): tankkaus vaatii nyt ajon huoltoasemalle, joten tankin pitää riittää pitkälle
         for(var wi=0; wi<parts.length; wi++){
           var wp = parts[wi];
@@ -10859,7 +11015,10 @@
           for(var wk=0; wk<wpTier.effects.length; wk++){
             if(wpTier.effects[wk].type === 'durability') wearMult = Math.min(wearMult, 1-wpTier.effects[wk].amount);
           }
-          wp.condition = Math.max(0, wp.condition - 0.9*wearMult*dt);
+          // Kuluminen hidastettu reilusti (0.9 -> 0.11): ennen osa meni sadasta nollaan
+          // alle kahdessa minuutissa kaasua, mikä tarkoitti että talliin piti palata
+          // jatkuvasti. Nyt sama matka kestää noin neljännestunnin ajoa.
+          wp.condition = Math.max(0, wp.condition - 0.11*wearMult*dt);
         }
       } else if(braking){
         speed -= brake*brakeMult*dt;
@@ -11004,6 +11163,33 @@
 
     } else if(mode === 'jail'){
       updateJailCutscene(dt);
+    } else if(mode === 'pillion'){
+      // ---- kyydissä kaverin tarakalla ----
+      // Ei omaa ohjausta: paikka ja suunta kopioidaan kuljettajan viimeisimmästä tilasta.
+      // Jos kuski nousee mopolta tai katoaa kokonaan, kyydistä pudotaan maahan.
+      if(exhaustFlame.material.opacity > 0) exhaustFlame.material.opacity = Math.max(0, exhaustFlame.material.opacity - dt*5);
+      var drv = (typeof netRemotes !== 'undefined' && netRemotes) ? netRemotes[pillionOn] : null;
+      if(!drv || !drv.cur || !(drv.cur[5] > 0.5)){
+        leavePillion(true);
+      } else {
+        player.position.set(drv.cur[0], drv.cur[1], drv.cur[2]);
+        playerHeading = drv.cur[3];
+        player.rotation.y = playerHeading;
+        walkSpeedNow = 0;
+        pillionGroup.position.copy(player.position);
+        pillionGroup.rotation.y = playerHeading;
+        pillionGroup.visible = true;
+        updateCamOffsets(dt, Math.abs(drv.cur[4]) > 1.5);
+        var desiredCamP = followCamera(player.position, playerHeading, 5.1, 2.8, 1.15);
+        camPos.lerp(desiredCamP, 1-Math.pow(0.001,dt));
+        camera.position.copy(camPos);
+        var lookTargetP = player.position.clone().add(new THREE.Vector3(0,1.0,0));
+        camLook.lerp(lookTargetP, 1-Math.pow(0.0005,dt));
+        camera.lookAt(camLook);
+        if(audioCtx && engineGain) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = 'Kyydissä - paina <b>E</b> hypätäksesi pois';
+      }
     } else {
       // ---- kävely ----
       if(exhaustFlame.material.opacity > 0) exhaustFlame.material.opacity = Math.max(0, exhaustFlame.material.opacity - dt*5);
@@ -11195,6 +11381,9 @@
         mountHintEl.innerHTML = mopedAssembled()
           ? 'Paina <b>E</b> noustaksesi mopoon'
           : 'Mopo on osina (' + installedCount() + '/' + parts.length + ') - kasaa se työpöydällä';
+      } else if(!inStore && pillionCandidate()){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = 'Paina <b>E</b> noustaksesi kaverin tarakalle';
       } else if(nearTalli){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b> avataksesi kaupan';
@@ -11480,6 +11669,7 @@
   var netPending = [];             // hostilla: kutsut jotka odottavat vastauskoodia
   var netRemotes = {};             // id -> {name, avatar, cur, tgt, moped, color}
   var netSendTimer = 0;
+  var netListTimer = 0;   // pelaajalistan virkistysrytmi
   var netClockTimer = 0;
   var netNextId = 1;
   var netSelfId = 0;
@@ -11552,6 +11742,23 @@
   function netSelfState(){
     var riding = (mode === 'riding');
     var ref = riding ? moped.position : player.position;
+    // Kyydissä ollessa oma sijainti on kuljettajan mopo. Omalla ruudulla käytetään pehmeää
+    // liukua (drv.cur), mutta verkkoon lähetetään kuljettajan VIIMEISIN tunnettu paikka
+    // (drv.tgt) - muuten muiden ruudulla matkustaja laahaisi mopon perässä, koska
+    // pehmennys tehtäisiin kahteen kertaan peräkkäin.
+    if(mode === 'pillion' && typeof netRemotes !== 'undefined' && netRemotes){
+      var dsrc = netRemotes[pillionOn];
+      if(dsrc && dsrc.tgt){
+        return [
+          Math.round(dsrc.tgt[0]*100)/100,
+          Math.round(dsrc.tgt[1]*100)/100,
+          Math.round(dsrc.tgt[2]*100)/100,
+          Math.round(dsrc.tgt[3]*1000)/1000,
+          Math.round(dsrc.tgt[4]*100)/100,
+          0, 0, 0, 1
+        ];
+      }
+    }
     return [
       Math.round(ref.x*100)/100,
       Math.round(ref.y*100)/100,
@@ -11560,7 +11767,8 @@
       Math.round((riding ? speed : (walkSpeedNow || 0))*100)/100,
       riding ? 1 : 0,
       Math.round(wheelieAngle*1000)/1000,
-      Math.round(stoppieAngle*1000)/1000
+      Math.round(stoppieAngle*1000)/1000,
+      (mode === 'pillion') ? 1 : 0    // istutaan kaverin tarakalla, ei omalla mopolla
     ];
   }
   function netSelfMeta(){
@@ -11639,12 +11847,20 @@
     rideGroup.add(remoteRider.group);
     rideGroup.visible = false;
     g.add(rideGroup);
+    // matkustaja: pelkkä hahmo ilman mopoa, sijoitettuna tarakan kohdalle. Näkyy kun
+    // kaveri on jonkun toisen kyydissä - silloin hänen sijaintinsa on sen mopon sijainti.
+    var pillGroup = new THREE.Group();
+    var pillRider = makeRiderFigure();
+    applyRiderPose(pillRider, PILLION_POSE);
+    pillGroup.add(pillRider.group);
+    pillGroup.visible = false;
+    g.add(pillGroup);
     var plate = netMakeNameSprite(name);
     plate.position.y = 2.15;
     g.add(plate);
     g.traverse(function(o){ if(o.isMesh){ o.castShadow = true; } });
     scene.add(g);
-    return {group:g, walk:walkGroup, ride:rideGroup, bike:bike, limbs:limbs, plate:plate};
+    return {group:g, walk:walkGroup, ride:rideGroup, pill:pillGroup, bike:bike, limbs:limbs, plate:plate};
   }
   // näyttää kloonatusta mopo-ryhmästä vain sen mallin joka etäpelaajalla on käytössä
   function netApplyMopedSkin(bike, mopedId, color){
@@ -11704,11 +11920,33 @@
   }
   // tilan soveltaminen: uusi tila jää tavoitteeksi ja hahmo liukuu siihen (interpolointi),
   // jolloin 15 Hz:n päivitys ei näy nykimisenä
+  function netNow(){
+    return (window.performance && window.performance.now) ? window.performance.now() : Date.now();
+  }
+  // Etäpelaajan nimi menee innerHTML:ään, ja nimi tulee toiselta koneelta - siivotaan
+  // kulmasulut, ettei kaveri voi ujuttaa listaan omaa merkkaustaan.
+  function netEsc(s){
+    return String(s == null ? '' : s).split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;');
+  }
   function netApplyState(id, st, meta){
     var r = netEnsureRemote(id, meta);
     if(!st || st.length < 8) return;
     if(!r.cur) r.cur = st.slice();
     r.tgt = st.slice();
+    r.last = netNow();   // milloin tältä pelaajalta viimeksi kuultiin
+  }
+  // Kummallakin puolella: pelaaja joka on ollut pitkään hiljaa on oikeasti poissa, eikä sen
+  // hahmoa pidä jättää seisomaan maastoon. Hostilla tämä estää myös sen, että vanha haamu
+  // välittyisi ikuisesti muille pelaajille jumittuneena samaan kohtaan.
+  var NET_STALE_RELAY = 5000;    // tätä vanhempaa tilaa ei enää välitetä eteenpäin
+  var NET_STALE_DROP = 12000;    // tämän jälkeen hahmo poistetaan kokonaan
+  function netPruneRemotes(){
+    var now = netNow();
+    for(var id in netRemotes){
+      if(!Object.prototype.hasOwnProperty.call(netRemotes, id)) continue;
+      var r = netRemotes[id];
+      if(r.last && (now - r.last) > NET_STALE_DROP) netRemoveRemote(id);
+    }
   }
   function netUpdateRemotes(dt){
     var k = 1 - Math.pow(0.0001, dt);   // pehmeä liuku tavoitetilaan
@@ -11727,15 +11965,22 @@
       c[3] += dh*k;
       c[4] += (t[4]-c[4])*k;
       c[5] = t[5];
+      c[8] = t[8];   // kyytilippu ei liu'u, se on päällä tai pois
       c[6] += (t[6]-c[6])*k;
       c[7] += (t[7]-c[7])*k;
       var a = r.avatar;
       a.group.position.set(c[0], c[1], c[2]);
       a.group.rotation.y = c[3];
-      var riding = c[5] > 0.5;
+      var pillion = c.length > 8 && c[8] > 0.5;
+      var riding = !pillion && c[5] > 0.5;
       a.ride.visible = riding;
-      a.walk.visible = !riding;
-      if(riding){
+      a.walk.visible = !riding && !pillion;
+      if(a.pill) a.pill.visible = pillion;
+      if(pillion){
+        // matkustajan paikka tulee sellaisenaan kuljettajan mopolta, joten mitään
+        // omaa kallistusta tai kävelysykliä ei lasketa
+        a.group.position.y = c[1];
+      } else if(riding){
         a.ride.rotation.x = -c[6] + c[7];
         a.bike.rotation.set(0,0,0);
       } else {
@@ -11763,6 +12008,11 @@
   function netTick(dt){
     if(!netActive()) return;
     netUpdateRemotes(dt);
+    netPruneRemotes();
+    // pelaajalista päivittyy puolen sekunnin välein, jotta "x s sitten" -merkintä kasvaa
+    // silmissä jos joltakulta ei kuulu mitään
+    netListTimer -= dt;
+    if(netListTimer <= 0){ netListTimer = 0.5; netRenderList(); }
     netSendTimer -= dt;
     if(netSendTimer > 0) return;
     netSendTimer = NET_TICK;
@@ -11772,11 +12022,16 @@
     }
     // host kokoaa kaikkien tilat ja lähettää saman paketin kaikille
     var all = {};
+    var nowMs = netNow();
     all['0'] = {s:netSelfState(), m:netSelfMeta()};
     for(var id in netRemotes){
       if(!Object.prototype.hasOwnProperty.call(netRemotes, id)) continue;
       var r = netRemotes[id];
-      if(r.tgt) all[id] = {s:r.tgt, m:{name:r.name, moped:r.moped, color:r.color}};
+      // vanhentunutta tilaa ei välitetä: muuten katkenneesta yhteydestä jäisi muille
+      // pelaajille haamu seisomaan ikuisesti viimeiseen tunnettuun paikkaansa
+      if(r.tgt && (nowMs - (r.last || 0)) < NET_STALE_RELAY){
+        all[id] = {s:r.tgt, m:{name:r.name, moped:r.moped, color:r.color}};
+      }
     }
     netClockTimer -= dt;
     var sendClock = false;
@@ -12232,9 +12487,14 @@
     if(mpLeaveEl) mpLeaveEl.hidden = false;
     mpListEl.hidden = false;
     var html = '<div class="mpHead">' + (netRole === 'host' ? 'Host · ' : 'Mukana · ') + (ids.length+1) + '</div>';
-    html += '<div class="mpRow self"><i class="mpDot"></i>' + playerName + '</div>';
+    html += '<div class="mpRow self"><i class="mpDot"></i>' + netEsc(playerName) + '</div>';
     for(var i=0; i<ids.length; i++){
-      html += '<div class="mpRow"><i class="mpDot"></i>' + netRemotes[ids[i]].name + '</div>';
+      var rr = netRemotes[ids[i]];
+      // Jos pelaajalta ei ole kuulunut hetkeen, se näkyy listalla - silloin hahmo seisoo
+      // paikallaan siksi ettei tieto tule perille, ei siksi että pelaaja seisoisi oikeasti.
+      var age = netNow() - (rr.last || 0);
+      var stale = (rr.last && age > 1500) ? ' <span class="mpAge">' + Math.round(age/1000) + ' s sitten</span>' : '';
+      html += '<div class="mpRow' + (stale ? ' stale' : '') + '"><i class="mpDot"></i>' + netEsc(rr.name) + stale + '</div>';
     }
     mpListEl.innerHTML = html;
   }
