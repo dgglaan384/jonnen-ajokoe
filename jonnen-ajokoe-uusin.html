@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!--JONNE-VERSION:81-->
-<!--JONNE-NAME:Jonnen ajokoe 81-->
+<!--JONNE-VERSION:82-->
+<!--JONNE-NAME:Jonnen ajokoe 82-->
 <!--JONNE-DATE:2026-09-25-->
-<!--JONNE-NOTES:Korjaus: yhteys ei enää jää hiljaa kuolleeksi - peli huomaa katkoksen ja liittyy itse uudestaan|Hostin päässä hiljennyt kaveri pudotetaan, jotta hän pääsee liittymään puhtaalta pöydältä|Sisältää myös V80:n: tarakkakyyti, pelaajat kartalla, osien kuluminen ja vakaa huippunopeus-->
+<!--JONNE-NOTES:Kisat: kolme reittiä kylän teitä pitkin, lähtölaskenta ja ajanotto|Moninpelissä kaikki kisaavat yhtä aikaa ja tulokset näkyvät livenä|Yksin ajettuna kisa on aika-ajo omaa ennätystä vastaan|Kisa käynnistyy puhelimesta (TAB) ja seuraava tarkistuspiste näkyy kartalla|Palkintorahat sijoituksen mukaan, ennätykset tallentuvat-->
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -129,6 +129,29 @@
     color:var(--cream);font:600 12px 'Karla',sans-serif;padding:7px 10px;cursor:pointer;
   }
   .audioPanel .apMute.on{background:var(--accent);border-color:var(--accent);}
+
+  /* Kisapaneeli: lähtölaskenta, oma aika ja tulosjärjestys minikartan alla */
+  .racePanel{
+    position:absolute;left:16px;top:calc(272px + env(safe-area-inset-top,0px));
+    background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:12px;
+    padding:10px 12px;min-width:186px;max-width:230px;color:var(--cream);
+  }
+  .racePanel .raceHead{font:700 9px/1 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.6;}
+  .racePanel .raceBig{font:600 30px/1.05 'Teko',sans-serif;margin-top:3px;font-variant-numeric:tabular-nums;}
+  .racePanel .raceSub{font:600 11px/1.35 'Karla',sans-serif;opacity:.8;margin-top:1px;}
+  .racePanel .raceList{margin-top:7px;}
+  .racePanel .raceRow{font:600 11px/1.55 'Karla',sans-serif;display:flex;gap:6px;align-items:baseline;}
+  .racePanel .raceRow .rPos{opacity:.55;width:14px;flex:none;}
+  .racePanel .raceRow .rName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .racePanel .raceRow .rVal{opacity:.75;font-variant-numeric:tabular-nums;}
+  .racePanel .raceRow.me{color:var(--accent);}
+  .raceBtn{
+    display:block;width:100%;text-align:left;margin:4px 0;padding:7px 9px;cursor:pointer;
+    background:rgba(251,246,233,0.07);border:1px solid var(--panel-line);border-radius:8px;
+    color:var(--cream);font:600 12px 'Karla',sans-serif;
+  }
+  .raceBtn:hover{background:rgba(251,246,233,0.14);}
+  .raceBtn .rbMeta{display:block;font:600 10px 'Karla',sans-serif;opacity:.6;margin-top:2px;}
 
   .missionToggle{
     position:absolute;top:calc(64px + env(safe-area-inset-top,0px));right:16px;pointer-events:auto;
@@ -480,6 +503,12 @@
     <button class="missionToggle" id="missionBtn" type="button">📱 Puhelin</button>
     <div class="moneyChip" id="moneyChip"><span class="lbl">Raha</span><span class="val" id="moneyChipVal">40<small>€</small></span></div>
     <div class="mpList" id="mpList" hidden></div>
+    <div class="racePanel" id="racePanel" hidden>
+      <div class="raceHead" id="raceHead">Kisa</div>
+      <div class="raceBig" id="raceBig">3</div>
+      <div class="raceSub" id="raceSub"></div>
+      <div class="raceList" id="raceStandings"></div>
+    </div>
     <div class="vitals" id="vitals">
       <div class="vitalRow"><span class="vIcon">❤️</span><span class="vTrack"><span class="vFill health" id="healthFill"></span></span></div>
       <div class="vitalRow"><span class="vIcon">🍔</span><span class="vTrack"><span class="vFill hunger" id="hungerFill"></span></span></div>
@@ -495,6 +524,8 @@
         <div id="phoneStory" class="phoneStory"></div>
         <div class="phoneHead">🛵 Keikat</div>
         <div id="missionsList"></div>
+        <div class="phoneHead">🏁 Kisat</div>
+        <div id="raceRouteList"></div>
         <div class="phoneHead">🎒 Varusteet</div>
         <div id="inventoryList"></div>
       </div>
@@ -9890,6 +9921,25 @@
       }
     }
 
+    // kisan seuraava tarkistuspiste: kirkas rengas, jotta suunnan näkee yhdellä vilkaisulla
+    var rcp = raceActiveCp();
+    if(rcp){
+      var rdx = rcp.x - ref.x, rdz = rcp.z - ref.z;
+      var rdist = Math.sqrt(rdx*rdx + rdz*rdz);
+      var rIn = rdist*s < R - 10;
+      var rmx = rIn ? cx - rdx*s : cx - Math.sin(Math.atan2(rdx, rdz))*(R-8);
+      var rmy = rIn ? cy - rdz*s : cy - Math.cos(Math.atan2(rdx, rdz))*(R-8);
+      miniCtx.beginPath();
+      miniCtx.arc(rmx, rmy, 7, 0, Math.PI*2);
+      miniCtx.strokeStyle = '#ffc24b';
+      miniCtx.lineWidth = 2.6;
+      miniCtx.stroke();
+      miniCtx.beginPath();
+      miniCtx.arc(rmx, rmy, 2.6, 0, Math.PI*2);
+      miniCtx.fillStyle = '#ffc24b';
+      miniCtx.fill();
+    }
+
     // kaverit: kartalla näkyvät omalle paikalleen, kauempana olevat kiinni renkaan reunaan
     // siihen suuntaan mihin heidät löytää
     var nmes = netMapEntries();
@@ -9991,6 +10041,14 @@
         bigCtx.fillText(LM.name, tx2, ty2 + 10.5);
         break;
       }
+    }
+    var brcp = raceActiveCp();
+    if(brcp){
+      bigCtx.beginPath();
+      bigCtx.arc(bx(brcp.x), by(brcp.z), 9, 0, Math.PI*2);
+      bigCtx.strokeStyle = '#ffc24b';
+      bigCtx.lineWidth = 2.8;
+      bigCtx.stroke();
     }
     // kaverit isolle kartalle: nimi aina näkyviin, koska tilaa on
     var bnm = netMapEntries();
@@ -10403,6 +10461,7 @@
       closeMopedShop();
       closeGarage();
       renderMissions();
+      renderRaceRoutes();
       renderInventory(); // varusteluettelo on nyt puhelimen oma osio
     }
   }
@@ -10420,6 +10479,328 @@
     }
     crashOverlayEl.classList.add('show');
     setTimeout(respawnAtHome, 1400);
+  }
+
+
+  // ============================================================================
+  // ---- KISAT ----
+  // Reitti on lista tarkistuspisteitä olemassa olevien kohteiden kohdalla, joten kisa kulkee
+  // aina paikkojen kautta jotka näkyvät kartalla eikä tyhjän pellon poikki.
+  //
+  // Kuka omistaa kisan: yksinpelissä ja hostilla oma peli (raceIsAuthority). Liittyjä ei laske
+  // vaiheita itse vaan saa ne hostilta 'w'-paketin r-kentässä - muuten lähtölaskennat eläisivät
+  // omaa elämäänsä joka koneella. Jokainen laskee kuitenkin OMAN tarkistuspisteensä itse ja
+  // ilmoittaa sen verkkotilassa, joten maaliintulo ei ole kiinni siitä ehtiikö paketti perille.
+  // ============================================================================
+  var RACE_CP_RADIUS = 11;
+  var RACE_MAX_TIME = 420;      // kisa katkaistaan viimeistään tässä ajassa
+  var RACE_RESULT_TIME = 12;    // tulosruutu näkyy näin monta sekuntia
+  var RACE_ROUTES = [
+    {id:'kyla',   name:'Kyläkierros', reward:120,
+     cps:[mopedShopPos, kauppaIsoPos, policeStationPos, macdonaldsPos, homePos]},
+    {id:'jarvi',  name:'Järvilenkki', reward:180,
+     cps:[homePos, rantaPos, jarviPos, kylaPos, kauppaPos]},
+    {id:'crossi', name:'Crossikisa',  reward:220,
+     cps:[kauppaPos, crossiPos, romuPos, meetSpot, autotalliPos]}
+  ];
+  var race = {active:false, routeId:'', phase:'', timer:0, myCp:0, myFinish:0, standings:[], awarded:false};
+  var raceBest = {};            // omat parhaat ajat reiteittäin (tallentuu peliin)
+  var raceRingMesh = null;
+  var racePanelEl = document.getElementById('racePanel');
+  var raceHeadEl = document.getElementById('raceHead');
+  var raceBigEl = document.getElementById('raceBig');
+  var raceSubEl = document.getElementById('raceSub');
+  var raceStandingsEl = document.getElementById('raceStandings');
+  var raceRouteListEl = document.getElementById('raceRouteList');
+
+  // Kohteiden omat sijainnit ovat rakennusten keskipisteitä: niiden päälle ajaminen veisi
+  // kaupan sisälle eikä mopolla ylipäätään pääse talon läpi. Siksi jokainen tarkistuspiste
+  // siirretään lähimpään tienkohtaan - kisa kulkee teitä pitkin niin kuin pitääkin.
+  var raceCpsReady = false;
+  // Lähin tienkohta, joka on riittävän kaukana reitin jo valituista pisteistä. Ilman
+  // etäisyysvaatimusta kaksi kaukana toisistaan olevaa kohdetta saattoi kutistua samaan
+  // tienkohtaan, jolloin reitin keskeltä olisi voinut "käydä" jo lähtöpaikalla.
+  function raceSnapToRoad(p, avoid, minGap){
+    var best = null, bestD = 1e9, i, j, k;
+    for(i=0; i<roadPaths.length; i++){
+      var path = roadPaths[i];
+      for(j=0; j<path.length; j++){
+        var q = path[j];
+        var ok = true;
+        for(k=0; k<avoid.length; k++){
+          var ax = avoid[k].x - q.x, az = avoid[k].z - q.z;
+          if(Math.sqrt(ax*ax + az*az) < minGap){ ok = false; break; }
+        }
+        if(!ok) continue;
+        var dx = q.x - p.x, dz = q.z - p.z;
+        var d = dx*dx + dz*dz;
+        if(d < bestD){ bestD = d; best = q; }
+      }
+    }
+    if(!best) return null;
+    return new THREE.Vector3(best.x, 0, best.z);
+  }
+  function raceEnsureCps(){
+    if(raceCpsReady) return;
+    raceCpsReady = true;
+    for(var i=0; i<RACE_ROUTES.length; i++){
+      var rt = RACE_ROUTES[i];
+      var out = [];
+      for(var j=0; j<rt.cps.length; j++){
+        var src = rt.cps[j];
+        var snapped = raceSnapToRoad(src, out, 25);
+        var dSnap = snapped
+          ? Math.sqrt((snapped.x-src.x)*(snapped.x-src.x) + (snapped.z-src.z)*(snapped.z-src.z))
+          : 1e9;
+        // Jos lähin kelvollinen tienkohta on kaukana, kohteen luo ei yksinkertaisesti mene
+        // tietä - silloin piste jätetään kohteen viereen sen sijaan että se hyppäisi
+        // toiselle puolelle kylää.
+        out.push(dSnap <= 90 ? snapped : new THREE.Vector3(src.x + 11, 0, src.z + 11));
+      }
+      rt.cps = raceOrderRoute(out);
+    }
+  }
+  // Pisteet järjestetään lähtöpaikasta lähtien aina lähimpään seuraavaan. Kohteiden
+  // luettelojärjestys ei ole maantieteellinen, joten ilman tätä reitti saattoi pomppia
+  // kartan laidasta toiseen ja takaisin.
+  function raceOrderRoute(cps){
+    if(cps.length < 3) return cps;
+    var left = cps.slice(1), ordered = [cps[0]], cur = cps[0];
+    while(left.length){
+      var bi = 0, bd = 1e9;
+      for(var i=0; i<left.length; i++){
+        var dx = left[i].x - cur.x, dz = left[i].z - cur.z;
+        var d = dx*dx + dz*dz;
+        if(d < bd){ bd = d; bi = i; }
+      }
+      cur = left[bi];
+      ordered.push(cur);
+      left.splice(bi, 1);
+    }
+    return ordered;
+  }
+  function raceRouteById(id){
+    raceEnsureCps();
+    for(var i=0; i<RACE_ROUTES.length; i++) if(RACE_ROUTES[i].id === id) return RACE_ROUTES[i];
+    return null;
+  }
+  function raceIsAuthority(){ return netRole !== 'client'; }
+  function raceTime(sec){
+    if(!sec) return '-';
+    var m = Math.floor(sec/60), r = sec - m*60;
+    return m + ':' + (r < 10 ? '0' : '') + r.toFixed(1);
+  }
+  function raceLocalReset(){
+    race.active = false; race.routeId = ''; race.phase = ''; race.timer = 0;
+    race.myCp = 0; race.myFinish = 0; race.standings = []; race.awarded = false;
+    if(raceRingMesh) raceRingMesh.visible = false;
+    if(racePanelEl) racePanelEl.hidden = true;
+    renderRaceRoutes();
+  }
+  // Käynnistys. Liittyjä ei voi aloittaa itse vaan pyytää hostia, joka aloittaa kaikille.
+  function raceRequestStart(routeId){
+    var route = raceRouteById(routeId);
+    if(!route) return;
+    if(race.active){ showToast(true, 'Kisa on jo käynnissä', 'Odota että tämä kisa päättyy.', 2600); return; }
+    if(netRole === 'client'){
+      netSendRaw(netHostCh, {t:'rs', route:routeId});
+      showToast(false, 'Kisaehdotus lähti', 'Odotetaan että host käynnistää kisan.', 2600);
+      return;
+    }
+    raceBegin(routeId);
+  }
+  function raceBegin(routeId){
+    var route = raceRouteById(routeId);
+    if(!route || race.active) return;
+    race.active = true; race.routeId = routeId; race.phase = 'count'; race.timer = 5;
+    race.myCp = 0; race.myFinish = 0; race.standings = []; race.awarded = false;
+    if(racePanelEl) racePanelEl.hidden = false;
+    showToast(false, route.name, 'Kisa alkaa! Aja tarkistuspisteiden läpi järjestyksessä.', 3400);
+    renderRaceRoutes();
+  }
+  function raceCmp(a, b){
+    if(a.f && b.f) return a.f - b.f;
+    if(a.f) return -1;
+    if(b.f) return 1;
+    return (b.c || 0) - (a.c || 0);
+  }
+  function raceBuildStandings(){
+    var list = [{n:playerName, c:race.myCp, f:race.myFinish, me:true}];
+    if(typeof netRemotes !== 'undefined' && netRemotes){
+      for(var id in netRemotes){
+        if(!Object.prototype.hasOwnProperty.call(netRemotes, id)) continue;
+        var r = netRemotes[id];
+        if(!r || !r.tgt) continue;
+        list.push({n:r.name, c:(r.tgt[9] || 0), f:(r.tgt[10] || 0)});
+      }
+    }
+    list.sort(raceCmp);
+    race.standings = list;
+  }
+  function raceEveryoneDone(){
+    if(!race.standings.length) return false;
+    for(var i=0; i<race.standings.length; i++) if(!race.standings[i].f) return false;
+    return true;
+  }
+  // Oma sijoitus lasketaan omasta ajasta eikä nimistä: kaksi samannimistä pelaajaa ei sotke.
+  function raceMyPlace(){
+    if(!race.myFinish) return 0;
+    var better = 0;
+    for(var i=0; i<race.standings.length; i++){
+      var e = race.standings[i];
+      if(e.f && e.f < race.myFinish - 0.001) better++;
+    }
+    return better + 1;
+  }
+  function raceAwardSelf(route){
+    if(race.awarded) return;
+    race.awarded = true;
+    if(!race.myFinish){
+      showToast(true, 'Kisa päättyi', 'Et ehtinyt maaliin asti.', 3200);
+      return;
+    }
+    var finishers = 0, i;
+    for(i=0; i<race.standings.length; i++) if(race.standings[i].f) finishers++;
+    var place = raceMyPlace();
+    var prize = 0;
+    if(finishers > 1){
+      prize = place === 1 ? route.reward
+            : place === 2 ? Math.round(route.reward*0.5)
+            : place === 3 ? Math.round(route.reward*0.3) : 0;
+    }
+    var best = raceBest[route.id] || 0;
+    var isBest = (!best || race.myFinish < best);
+    if(isBest){
+      raceBest[route.id] = race.myFinish;
+      // yksin ajettu kisa on aika-ajo: palkkio tulee oman ennätyksen rikkomisesta
+      if(finishers <= 1) prize = Math.round(route.reward*0.6);
+    }
+    if(prize > 0) money += prize;
+    var txt = 'Aika ' + raceTime(race.myFinish);
+    if(finishers > 1) txt += ' · sijoitus ' + place + '/' + finishers;
+    if(isBest) txt += ' · uusi ennätys!';
+    if(prize > 0) txt += ' · ' + prize + ' €';
+    showToast(prize > 0 ? false : true, route.name + ' maalissa', txt, 4600);
+    saveGame();
+  }
+  function raceFinishAll(){
+    race.phase = 'done';
+    race.timer = RACE_RESULT_TIME;
+    raceBuildStandings();
+  }
+  function raceActiveCp(){
+    if(!race.active || race.phase !== 'run' || race.myFinish) return null;
+    var route = raceRouteById(race.routeId);
+    if(!route) return null;
+    return route.cps[race.myCp] || null;
+  }
+  function raceUpdateRing(){
+    var cp = raceActiveCp();
+    if(!cp){ if(raceRingMesh) raceRingMesh.visible = false; return; }
+    if(!raceRingMesh){
+      var geo = new THREE.TorusGeometry(3.0, 0.22, 8, 22);
+      geo.rotateX(Math.PI/2);
+      raceRingMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0xffc24b, transparent:true, opacity:0.9}));
+      raceRingMesh.renderOrder = 5;
+      scene.add(raceRingMesh);
+    }
+    raceRingMesh.visible = true;
+    raceRingMesh.position.set(cp.x, terrainHeight(cp.x, cp.z) + 1.5 + Math.sin(blinkPhase*2.2)*0.25, cp.z);
+    raceRingMesh.rotation.y += 0.02;
+  }
+  function raceRenderHud(route){
+    if(!racePanelEl) return;
+    racePanelEl.hidden = false;
+    if(race.phase === 'count'){
+      raceHeadEl.textContent = route.name;
+      raceBigEl.textContent = String(Math.max(1, Math.ceil(race.timer)));
+      raceSubEl.textContent = 'Valmistaudu lähtöön';
+    } else if(race.phase === 'run'){
+      raceHeadEl.textContent = route.name;
+      raceBigEl.textContent = race.myFinish ? raceTime(race.myFinish) : raceTime(race.timer);
+      raceSubEl.textContent = race.myFinish
+        ? 'Maalissa - odotetaan muita'
+        : 'Tarkistuspiste ' + (race.myCp + 1) + '/' + route.cps.length;
+    } else {
+      raceHeadEl.textContent = route.name + ' - tulokset';
+      raceBigEl.textContent = race.myFinish ? raceTime(race.myFinish) : '-';
+      raceSubEl.textContent = 'Kisa päättyi';
+    }
+    var html = '';
+    for(var i=0; i<race.standings.length && i<6; i++){
+      var e = race.standings[i];
+      var val = e.f ? raceTime(e.f) : ((e.c || 0) + '/' + route.cps.length);
+      html += '<div class="raceRow' + (e.me ? ' me' : '') + '">' +
+              '<span class="rPos">' + (i+1) + '.</span>' +
+              '<span class="rName">' + netEsc(e.n) + '</span>' +
+              '<span class="rVal">' + val + '</span></div>';
+    }
+    raceStandingsEl.innerHTML = html;
+  }
+  function updateRace(dt){
+    if(!race.active){
+      if(raceRingMesh) raceRingMesh.visible = false;
+      if(racePanelEl && !racePanelEl.hidden) racePanelEl.hidden = true;
+      return;
+    }
+    var route = raceRouteById(race.routeId);
+    if(!route){ raceLocalReset(); return; }
+
+    if(raceIsAuthority()){
+      if(race.phase === 'count'){
+        race.timer -= dt;
+        if(race.timer <= 0){ race.phase = 'run'; race.timer = 0; showToast(false, 'Lähtö!', route.name + ' alkoi.', 2200); }
+      } else if(race.phase === 'run'){
+        race.timer += dt;
+        raceBuildStandings();
+        if(raceEveryoneDone() || race.timer > RACE_MAX_TIME) raceFinishAll();
+      } else {
+        race.timer -= dt;
+        if(race.timer <= 0){ raceLocalReset(); return; }
+      }
+    }
+
+    // oma eteneminen lasketaan aina itse, myös liittyjällä
+    if(race.phase === 'run' && !race.myFinish){
+      var cp = route.cps[race.myCp];
+      if(cp){
+        var ref = (mode === 'riding') ? moped.position : player.position;
+        var dx = cp.x - ref.x, dz = cp.z - ref.z;
+        if(Math.sqrt(dx*dx + dz*dz) < RACE_CP_RADIUS){
+          race.myCp++;
+          if(race.myCp >= route.cps.length){
+            race.myFinish = Math.max(0.1, race.timer);
+            showToast(false, 'Maalissa!', 'Aikasi ' + raceTime(race.myFinish), 3200);
+          } else {
+            showToast(false, 'Tarkistuspiste ' + race.myCp + '/' + route.cps.length,
+                      'Seuraava piste näkyy kartalla.', 1800);
+          }
+        }
+      }
+    }
+    if(race.phase === 'done') raceAwardSelf(route);
+    raceUpdateRing();
+    raceRenderHud(route);
+  }
+  function renderRaceRoutes(){
+    if(!raceRouteListEl) return;
+    raceEnsureCps();
+    var html = '';
+    for(var i=0; i<RACE_ROUTES.length; i++){
+      var rt = RACE_ROUTES[i];
+      var best = raceBest[rt.id];
+      html += '<button class="raceBtn" type="button" data-race="' + rt.id + '">🏁 ' + rt.name +
+              '<span class="rbMeta">' + rt.cps.length + ' pistettä · palkinto ' + rt.reward + ' € · ' +
+              (best ? ('ennätys ' + raceTime(best)) : 'ei ennätystä') + '</span></button>';
+    }
+    if(race.active) html += '<div class="phoneNote">Kisa on käynnissä.</div>';
+    raceRouteListEl.innerHTML = html;
+    Array.prototype.forEach.call(raceRouteListEl.querySelectorAll('button[data-race]'), function(b){
+      b.addEventListener('click', function(){
+        raceRequestStart(b.getAttribute('data-race'));
+        togglePhone();
+      });
+    });
   }
 
   // ---- tallennus: koko etenemä talteen selaimen localStorageen, jotta sivun päivitys ei nollaa kesää.
@@ -10443,6 +10824,7 @@
         v: 1,
         money: money,
         muted: muted,
+        raceBest: raceBest,
         sfxVolume: sfxVolume,
         musicVolume: musicVolume,
         parts: partsData,
@@ -10496,6 +10878,13 @@
       if(typeof save.qualityLevel === 'string') qualityLevel = save.qualityLevel;
       // ääniasetukset: talletettu voimakkuus otetaan käyttöön heti, myös jos peli on jo äänessä
       if(typeof save.muted === 'boolean') muted = save.muted;
+      if(save.raceBest && typeof save.raceBest === 'object'){
+        for(var rbk in save.raceBest){
+          if(Object.prototype.hasOwnProperty.call(save.raceBest, rbk) && typeof save.raceBest[rbk] === 'number'){
+            raceBest[rbk] = save.raceBest[rbk];
+          }
+        }
+      }
       if(typeof save.sfxVolume === 'number') sfxVolume = Math.max(0, Math.min(1, save.sfxVolume));
       if(typeof save.musicVolume === 'number') musicVolume = Math.max(0, Math.min(1, save.musicVolume));
       applyVolumes();
@@ -11471,6 +11860,7 @@
     updateBoosts(dt);
     updateVitals(dt);
     updateMini(dt);
+    updateRace(dt);
     netTick(dt);
     updateBoltGame(dt);
     if(kickCooldown > 0) kickCooldown = Math.max(0, kickCooldown - dt);
@@ -11766,7 +12156,8 @@
           Math.round(dsrc.tgt[2]*100)/100,
           Math.round(dsrc.tgt[3]*1000)/1000,
           Math.round(dsrc.tgt[4]*100)/100,
-          0, 0, 0, 1
+          0, 0, 0, 1,
+          race.myCp, Math.round(race.myFinish*100)/100
         ];
       }
     }
@@ -11779,7 +12170,9 @@
       riding ? 1 : 0,
       Math.round(wheelieAngle*1000)/1000,
       Math.round(stoppieAngle*1000)/1000,
-      (mode === 'pillion') ? 1 : 0    // istutaan kaverin tarakalla, ei omalla mopolla
+      (mode === 'pillion') ? 1 : 0,   // istutaan kaverin tarakalla, ei omalla mopolla
+      race.myCp,                      // monesko kisan tarkistuspiste on seuraavana
+      Math.round(race.myFinish*100)/100
     ];
   }
   function netSelfMeta(){
@@ -12079,7 +12472,13 @@
         if(String(k2) === String(p.id)) continue;   // omaa tilaa ei lähetetä takaisin
         mine[k2] = all[k2];
       }
-      netSendRaw(p.ch, sendClock ? {t:'w', p:mine, d:dayTime} : {t:'w', p:mine});
+      // Kisakenttä on aina mukana: joko tila tai null. Jos se lähetettäisiin vain kerran
+      // kisan päättyessä, yksikin hukkunut paketti jättäisi kisapaneelin roikkumaan ruudulle.
+      var pkt = sendClock ? {t:'w', p:mine, d:dayTime} : {t:'w', p:mine};
+      pkt.r = race.active
+        ? {id:race.routeId, ph:race.phase, t:Math.round(race.timer*100)/100, st:race.standings}
+        : null;
+      netSendRaw(p.ch, pkt);
     }
   }
   // ---- viestien vastaanotto ----
@@ -12091,6 +12490,9 @@
       if(msg.t === 's'){
         if(msg.m && msg.m.name) fromPeer.name = msg.m.name;
         netApplyState(fromPeer.id, msg.s, msg.m);
+      } else if(msg.t === 'rs'){
+        // kaveri ehdotti kisaa - host käynnistää sen kaikille
+        raceBegin(String(msg.route || ''));
       }
       return;
     }
@@ -12106,6 +12508,24 @@
       for(var rid in netRemotes){
         if(!Object.prototype.hasOwnProperty.call(netRemotes, rid)) continue;
         if(!seen[rid]) netRemoveRemote(rid);
+      }
+      // kisan tila tulee hostilta sellaisenaan; oma tarkistuspiste lasketaan silti itse
+      if(msg.r){
+        if(!race.active || race.routeId !== msg.r.id){
+          race.active = true; race.routeId = msg.r.id;
+          race.myCp = 0; race.myFinish = 0; race.awarded = false;
+          if(racePanelEl) racePanelEl.hidden = false;
+        }
+        race.phase = msg.r.ph;
+        race.timer = msg.r.t || 0;
+        race.standings = msg.r.st || [];
+        // hostin listassa 'me' viittaa hostiin itseensä, joten oma rivi etsitään nimen
+        // perusteella uudestaan tällä koneella
+        for(var si=0; si<race.standings.length; si++){
+          race.standings[si].me = (race.standings[si].n === playerName);
+        }
+      } else if(msg.r === null && race.active){
+        raceLocalReset();
       }
       // hostin kello: liu'utetaan omaa aikaa sitä kohti, ei hypätä
       if(typeof msg.d === 'number'){
