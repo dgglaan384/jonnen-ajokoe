@@ -689,7 +689,7 @@
       <div class="wrenchList" id="wrenchList"></div>
       <div class="wrenchBar">
         <span id="wrenchTool">🔧 Kiintoavain 12 mm</span>
-        <span id="wrenchTip">Hiiri pohjaan pultin kohdalla ja pyöritä.</span>
+        <span id="wrenchTip">Osoita pulttia ja pyöritä hiiren rullaa.</span>
       </div>
     </div>
     <div class="mopedPanel" id="mopedPanel" hidden>
@@ -6618,7 +6618,13 @@
       {label:'Daytona Anima 150cc', price:520, requires:'monkey', bolts:5,
         effects:[{type:'accel',amount:0.46},{type:'topspeed',amount:0.34}]},
       {label:'Daytona Anima 190cc', price:980, requires:'monkey', bolts:6,
-        effects:[{type:'accel',amount:0.62},{type:'topspeed',amount:0.48}]}
+        effects:[{type:'accel',amount:0.62},{type:'topspeed',amount:0.48}]},
+      // 88BR on Derbin oma iso sylinterisarja. Se EI ole osa tavallista viritysketjua vaan
+      // ostetaan tallista omalla napillaan, joten se on merkitty br88-lipulla ja jätetään
+      // "seuraava viritysosa" -logiikan ulkopuolelle. Ketjun perään lisääminen pitää vanhojen
+      // tallennusten tierIndex-numerot ennallaan.
+      {label:'88BR-sylinterisarja', price:260, requires:'derbi', bolts:4, br88:true,
+        effects:[{type:'accel',amount:0.40},{type:'topspeed',amount:0.26}]}
     ]},
     {id:'kaasutin', name:'Kaasutin', condition:30, tierIndex:0, tiers:[
       {label:'Vakio', price:0, effects:[]},
@@ -6788,6 +6794,7 @@
       var cost = repairCostFor(p);
       var cur = p.tiers[p.tierIndex];
       var next = p.tiers[p.tierIndex+1];
+      if(next && next.br88) next = null;   // 88BR ostetaan omasta napistaan, ei ketjun kautta
       var isTuned = p.tierIndex > 0;
       var kitOnShelf = shelfHas(p.id, 'repair');
       var tierOnShelf = shelfHas(p.id, 'tier');
@@ -6831,6 +6838,52 @@
       }
       partsListEl.appendChild(row);
     });
+    // ---- 88BR-sylinterisarja: Derbin oma iso sarja ----
+    // Tämä on se osa joka vie Derbin 210:stä 250 kilometriin tunnissa, kun tehoputki ja avoin
+    // ilmansuodatin ovat myös paikallaan. Ostetaan omasta napistaan eikä tavallisen
+    // viritysketjun kautta, koska se sopii vain Derbiin.
+    var cylPart = partById('sylinteri');
+    var br88Tier = null, br88Index = -1;
+    for(var bt=0; bt<cylPart.tiers.length; bt++){
+      if(cylPart.tiers[bt].br88){ br88Tier = cylPart.tiers[bt]; br88Index = bt; }
+    }
+    if(br88Tier){
+      var br88OnShelf = false;
+      for(var bs=0; bs<garageShelf.length; bs++){
+        if(garageShelf[bs].partId === 'sylinteri' && garageShelf[bs].tierIndex === br88Index) br88OnShelf = true;
+      }
+      var br88In = (cylPart.tierIndex === br88Index);
+      var br88Row = document.createElement('button');
+      br88Row.className = 'wideBtn';
+      br88Row.type = 'button';
+      br88Row.style.marginTop = '12px';
+      if(!mopedOwnedById('derbi')){
+        br88Row.textContent = '🔩 88BR-sylinterisarja · vaatii Derbin';
+        br88Row.disabled = true;
+      } else if(br88In){
+        br88Row.textContent = '🔩 88BR-sylinterisarja asennettu · Derbi kulkee ' + Math.round(derbiTopSpeedKmh()) + ' km/h';
+        br88Row.disabled = true;
+      } else if(br88OnShelf){
+        br88Row.textContent = '🔩 88BR odottaa autotallin hyllyllä';
+        br88Row.disabled = true;
+      } else {
+        br88Row.textContent = '🔩 88BR-sylinterisarja ' + br88Tier.price + ' € · Derbi 250 km/h';
+        br88Row.disabled = (money < br88Tier.price);
+        br88Row.addEventListener('click', function(){
+          if(money < br88Tier.price) return;
+          money -= br88Tier.price;
+          upgradesBought++;
+          updateMoneyDisplay();
+          addToShelf('sylinteri', 'tier', br88Index);
+          showToast(false, '88BR-sylinterisarja ostettu',
+            'Sarja odottaa kotiautotallin hyllyllä. Pultaa se paikalleen ruuvitilassa - neljä pulttia. ' +
+            'Tehoputken ja avoimen ilmansuodattimen kanssa Derbi kulkee 250 km/h.', 5200);
+          renderParts();
+        });
+      }
+      partsListEl.appendChild(br88Row);
+    }
+
     // Renkaan paikkaus: ilmainen vaihtoehto renkaiden korjaussarjalle, mutta vaatii osaamista -
     // työvaiheet pitää tehdä oikeassa järjestyksessä.
     var tyre = partById('renkaat');
@@ -7533,7 +7586,7 @@
       plate:[0, 0.58, -0.80]},
     {id:'kickscooter', name:'Kevytskootteri', desc:'Ketterä toinen skootteri. Tulee valmiiksi tehdasmaalattuna, ei sovi tallin maalin-/tarransvaihtoon.', price:220, owned:false,
       plate:[0, 0.33, -0.15]},
-    {id:'derbi', name:'Derbi 50cc', desc:'Oikea mopo eikä skootteri. Vakiona 120 km/h, ja kolmella viritysosalla 210 km/h.', price:520, owned:false,
+    {id:'derbi', name:'Derbi 50cc', desc:'Oikea mopo eikä skootteri. Vakiona 120 km/h, kolmella viritysosalla 210 km/h ja 88BR-sylinterisarjalla 250 km/h.', price:520, owned:false,
       perf:{accel:0.30, topspeed:0.30, brake:0.18, grip:0.16}, plate:[0, 0.46, -0.82]},
     {id:'monkey', name:'Sininen Monkey', desc:'Kaupan kruununjalokivi: nopein, vetävin ja pitävin pyörä koko kylässä. Tehdasmaalattu sininen, ei sovi tallin maalin-/tarranvaihtoon.', price:1000, owned:false,
       perf:{accel:0.38, topspeed:0.32, brake:0.25, grip:0.20}, plate:[0, 0.42, -0.86]}
@@ -7614,7 +7667,17 @@
     if(storeHas('ilmansuodatin')) n++;                       // avoin ilmansuodatin
     return n;
   }
-  function derbiTopSpeedKmh(){ return 120 + (210 - 120)*(derbiUpgradeCount()/3); }
+  // 88BR-sylinterisarja on oma lisänsä kolmen perusviritysosan päälle: kaikki neljä yhdessä
+  // antavat käyttäjän toivomat 250 km/h (120 vakiona, 210 kolmella osalla, 250 kun 88BR on kiinni).
+  function derbiHas88br(){
+    var c = partById('sylinteri');
+    return !!(c && c.installed && c.tiers[c.tierIndex] && c.tiers[c.tierIndex].br88);
+  }
+  function derbiTopSpeedKmh(){
+    var v = 120 + (210 - 120)*(derbiUpgradeCount()/3);
+    if(derbiHas88br()) v += 40;
+    return v;
+  }
   function mopedModelPerf(){
     for(var mp=0; mp<mopedModels.length; mp++){
       if(mopedModels[mp].id === equippedMopedId) return mopedModels[mp].perf || null;
@@ -11888,7 +11951,7 @@
 
   // pultin kireysasteikko: 0 = irti, 1 = täysi kireys, yli 1.34 = kierre menee
   var BOLT_TIGHT = 0.85;      // tästä ylöspäin pultti "pitää"
-  var BOLT_PER_REV = 0.55;    // paljonko yksi hiiren kierros kiristää kevyessä vaiheessa
+  var BOLT_PER_NOTCH = 0.10;  // paljonko yksi hiiren rullan naksahdus kiristää kevyessä vaiheessa
   var BOLT_STRIP = 1.34;      // tästä yli = kierre menee
 
   // Pulttien paikat annetaan SUHTEELLISINA mopon näkyvän mallin ääriviivoihin (0..1), jolloin
@@ -12231,8 +12294,7 @@
   var wrenchTurning = null;     // pultti jota parhaillaan väännetään
   var wrenchLooking = false;    // hiiri pohjassa mutta ei pultin kohdalla -> katselu
   var wrenchLockOK = false;     // onnistuiko pointer lock
-  var wrenchCurX = 0, wrenchCurY = 0, wrenchLastAng = 0, wrenchHasAng = false;
-  var wrenchClickAcc = 0;       // naksahdusäänen laskuri
+  var wrenchNotchTimer = 0;     // työkalun nykäisyanimaatio rullan naksahduksen jälkeen
   var wrenchPending = null;     // hyllyltä asennettava osa (garageShelf-alkio)
   var wrenchSeated = false;     // onko osa jo asetettu paikalleen
   var wrenchFromGarage = false;
@@ -12333,7 +12395,7 @@
     }catch(err){ /* ei haittaa */ }
     wrenchSay(wrenchPending
       ? 'Aseta osa paikalleen: katso vihreää haamua ja paina E.'
-      : 'Katso pulttia, pidä hiiren nappi pohjassa ja pyöritä myötäpäivään.');
+      : 'Katso pulttia ja pyöritä hiiren rullaa: ylös kiristää, alas löysää.');
   }
   function exitWrenchMode(){
     if(!wrenchMode) return;
@@ -12375,6 +12437,8 @@
     }
     return null;
   }
+  // Pultteja EI väännetä hiirtä pyörittämällä vaan RULLALLA (ks. alempaa), joten hiiren nappi
+  // tekee ruuvitilassa vain yhtä asiaa: kääntää katsetta jos pointer lock ei ole päällä.
   renderer.domElement.addEventListener('mousedown', function(e){
     if(!wrenchMode || e.button !== 0) return;
     e.preventDefault();
@@ -12382,22 +12446,11 @@
       try{ renderer.domElement.requestPointerLock(); }catch(err){}
     }
     wrenchDragX = e.clientX; wrenchDragY = e.clientY;
-    if(wrenchTarget){
-      if(!wrenchToolMatches(wrenchTarget)){
-        wrenchSay('Väärä työkalu - tarvitset: ' + wrenchToolName(wrenchToolNeeded(wrenchTarget)) + ' (Q vaihtaa).');
-        playRatchet('miss');
-        return;
-      }
-      wrenchTurning = wrenchTarget;
-      wrenchCurX = 0; wrenchCurY = 0; wrenchHasAng = false; wrenchClickAcc = 0;
-    } else {
-      wrenchLooking = true;
-    }
+    wrenchLooking = true;
   });
   window.addEventListener('mouseup', function(){
     if(!wrenchMode) return;
-    if(wrenchTurning) wrenchCheckDone(wrenchTurning);
-    wrenchTurning = null; wrenchLooking = false;
+    wrenchLooking = false;
   });
   window.addEventListener('mousemove', function(e){
     if(!wrenchMode) return;
@@ -12405,13 +12458,11 @@
     var dy = wrenchLockOK ? (e.movementY || 0) : 0;
     if(!wrenchLockOK){
       // ilman pointer lockia liike lasketaan raahauksesta
-      if(!wrenchTurning && !wrenchLooking){ wrenchDragX = e.clientX; wrenchDragY = e.clientY; return; }
+      if(!wrenchLooking){ wrenchDragX = e.clientX; wrenchDragY = e.clientY; return; }
       dx = e.clientX - wrenchDragX; dy = e.clientY - wrenchDragY;
       wrenchDragX = e.clientX; wrenchDragY = e.clientY;
     }
-    if(wrenchTurning){
-      wrenchGesture(dx, dy);
-    } else if(wrenchLockOK || wrenchLooking){
+    if(wrenchLockOK || wrenchLooking){
       wrenchYaw   -= dx * 0.0026;
       wrenchPitch = Math.max(-1.25, Math.min(1.05, wrenchPitch - dy * 0.0022));
       if(wrenchYaw >  Math.PI) wrenchYaw -= Math.PI*2;
@@ -12420,55 +12471,57 @@
   });
   var wrenchDragX = 0, wrenchDragY = 0;
 
-  // Pyöritysele: hiiren liike kerätään virtuaaliseksi osoittimeksi ruudun keskipisteen ympärille,
-  // ja pultti kiertyy sen mukaan montako astetta osoitin kiertää. Myötäpäivä kiristää,
-  // vastapäivä löysää - täsmälleen kuten oikeassa avaimessa.
-  function wrenchGesture(dx, dy){
-    wrenchCurX += dx; wrenchCurY += dy;
-    var r = Math.sqrt(wrenchCurX*wrenchCurX + wrenchCurY*wrenchCurY);
-    if(r > 110){ var k = 110/r; wrenchCurX *= k; wrenchCurY *= k; r = 110; }
-    if(r < 16){ return; }                  // liian lähellä keskipistettä: kulma heittelehtii
-    var ang = Math.atan2(wrenchCurY, wrenchCurX);
-    if(!wrenchHasAng){ wrenchLastAng = ang; wrenchHasAng = true; return; }
-    var d = ang - wrenchLastAng;
-    while(d >  Math.PI) d -= Math.PI*2;
-    while(d < -Math.PI) d += Math.PI*2;
-    wrenchLastAng = ang;
-    if(Math.abs(d) > 1.6) return;          // hyppy: ohitetaan
-    wrenchApplyTurn(d);
-  }
-  function wrenchApplyTurn(d){
-    var b = wrenchTurning;
-    if(!b) return;
-    b.spin = (b.spin || 0) + d;
-    wrenchSpinView += d;
-    if(b.stripped){
-      wrenchClickAcc += Math.abs(d);
-      if(wrenchClickAcc > 1.1){ wrenchClickAcc = 0; playRatchet('free'); wrenchSay('Kierre on mennyt - pultti pyörii tyhjää. Korjaa kierre: G (12 €).'); }
+  // ---- KIRISTYS HIIREN RULLALLA ----
+  // Yksi rullan naksahdus = yksi avaimen veto. Rulla ylös kiristää, rulla alas löysää. Tämä on
+  // tarkempaa ja rauhallisempaa kuin hiiren pyörittäminen ympyrää: pultin kannan näkee kiertyvän
+  // 45 astetta joka naksahduksella ja jokaisesta kuuluu räikän naksaus. Nollasta täyteen kireyteen
+  // menee noin 12 naksahdusta, ja siitä eteenpäin kireys vastustaa niin että ylikiristämiseen
+  // tarvitaan vielä kymmenkunta lisää - sitä ei siis tee vahingossa, mutta jos jaksaa väkisin
+  // rullata, kierre menee.
+  renderer.domElement.addEventListener('wheel', function(e){
+    if(!wrenchMode) return;
+    e.preventDefault();            // ruutu ei saa vieriä ruuvatessa
+    var b = wrenchTarget;
+    if(!b){
+      wrenchSay('Osoita ensin pulttia - tähtäin muuttuu keltaiseksi kun pultti on kohdalla.');
       return;
     }
-    var rev = d/(Math.PI*2);
-    // vastus kasvaa kun pultti lähestyy pohjaa: viimeiset asteet vaativat oikeaa vääntöä
+    if(!wrenchToolMatches(b)){
+      wrenchSay('Väärä työkalu - tarvitset: ' + wrenchToolName(wrenchToolNeeded(b)) + ' (Q vaihtaa).');
+      playRatchet('miss');
+      return;
+    }
+    wrenchTurnNotch(b, (e.deltaY < 0) ? 1 : -1);   // rulla ylös = kiristä
+  }, {passive:false});
+
+  // yksi rullan naksahdus yhteen pulttiin
+  function wrenchTurnNotch(b, dir){
+    wrenchTurning = b;
+    wrenchNotchTimer = 0.16;
+    b.spin = (b.spin || 0) + dir*(Math.PI/4);   // kanta kiertyy 45 astetta naksahdusta kohti
+    wrenchSpinView += dir*(Math.PI/4);
+    if(b.stripped){
+      playRatchet('free');
+      wrenchSay('Kierre on mennyt - pultti pyörii tyhjää. Korjaa kierre: G (12 €).');
+      return;
+    }
+    // vastus kasvaa kun pultti lähestyy pohjaa: viimeiset naksahdukset vaativat oikeaa vääntöä
     var t = b.turn;
     var res;
-    if(rev < 0) res = 1.0;                              // löysääminen on aina helppoa
-    else if(t < 0.70) res = 1.00;   // kierre pyörii kevyesti sisään: ~1,3 hiiren kierrosta
+    if(dir < 0) res = 1.00;         // löysääminen on aina helppoa
+    else if(t < 0.70) res = 1.00;   // kierre pyörii kevyesti sisään: n. 7 naksahdusta
     else if(t < 0.95) res = 0.70;   // alkaa tuntua
     else if(t < 1.15) res = 0.45;   // täysi kireys saavutettu, tästä eteenpäin väännetään väkisin
-    else res = 0.30;                // vielä n. 1,7 kierrosta ennen kuin kierre pettää
+    else res = 0.30;                // vielä kymmenkunta naksahdusta ennen kuin kierre pettää
     var before = b.turn;
-    b.turn = Math.max(0, b.turn + rev*BOLT_PER_REV*res);
-    // naksahdusääni noin joka 1/5 kierros, jotta väännöllä on tuntuma
-    wrenchClickAcc += Math.abs(d);
-    if(wrenchClickAcc > 1.25){
-      wrenchClickAcc = 0;
-      playRatchet(b.turn > 1.06 ? 'creak' : (b.turn >= BOLT_TIGHT ? 'tight' : 'click'));
-    }
+    b.turn = Math.max(0, b.turn + dir*BOLT_PER_NOTCH*res);
+    playRatchet(b.turn > 1.06 ? 'creak' : (b.turn >= BOLT_TIGHT ? 'tight' : 'click'));
     if(before < BOLT_TIGHT && b.turn >= BOLT_TIGHT){
       playRatchet('seat');
-      wrenchSay('Pultti pitää. Vielä pari astetta niin se on täydessä kireydessä.');
+      wrenchSay('Pultti pitää. Muutama naksahdus lisää niin se on täydessä kireydessä.');
     }
-    if(b.turn > BOLT_STRIP) wrenchStrip(b);
+    if(b.turn > BOLT_STRIP){ wrenchStrip(b); return; }
+    wrenchCheckDone(b);
   }
   function wrenchStrip(b){
     b.stripped = true;
@@ -12606,9 +12659,15 @@
     boltGroup.scale.copy(moped.scale);
     boltGroup.visible = true;
 
+    // Säteenheitto lukee matrixWorldia, jonka renderöinti päivittää vasta tämän jälkeen. Ilman
+    // näitä kahta riviä tähtäin osoittaisi sinne missä kamera oli EDELLISELLÄ ruudulla - 60 fps:llä
+    // sitä ei huomaa, mutta nykivällä koneella pultin valinta laahaisi selvästi jäljessä.
+    camera.updateMatrixWorld(true);
+    boltGroup.updateMatrixWorld(true);
+
     // tähtäys
     var prev = wrenchTarget;
-    wrenchTarget = wrenchTurning ? wrenchTurning : wrenchPick();
+    wrenchTarget = wrenchPick();
     if(prev !== wrenchTarget){
       if(prev && prev.ring) prev.ring.visible = false;
       if(wrenchTarget && wrenchTarget.ring) wrenchTarget.ring.visible = true;
@@ -12617,14 +12676,18 @@
 
     // työkalu käteen: kameran eteen oikealle, pieni keinunta ja pyörähdys väännön mukaan
     wrenchBob += dt*(mv||stf ? 7.5 : 1.6);
+    if(wrenchNotchTimer > 0){
+      wrenchNotchTimer -= dt;
+      if(wrenchNotchTimer <= 0) wrenchTurning = null;   // nykäisy ohi, avain takaisin lepoon
+    }
     toolView.position.copy(camera.position);
     toolView.quaternion.copy(camera.quaternion);
     toolView.translateX(0.22);
     toolView.translateY(-0.20 + Math.sin(wrenchBob)*0.008);
-    toolView.translateZ(-0.46 + (wrenchTurning ? -0.06 : 0));
+    toolView.translateZ(-0.46 + (wrenchNotchTimer > 0 ? -0.06 : 0));
     var tm = toolMeshes[wrenchTool];
     if(tm){
-      tm.rotation.z = wrenchTurning ? wrenchSpinView : Math.sin(wrenchBob*0.5)*0.05;
+      tm.rotation.z = (wrenchNotchTimer > 0) ? wrenchSpinView : Math.sin(wrenchBob*0.5)*0.05;
       tm.rotation.x = -0.28;
     }
 
@@ -12684,8 +12747,8 @@
     if(wrenchTipEl){
       wrenchTipEl.textContent = wrenchMsgTime > 0 ? wrenchMsgText
         : (wrenchPending && !wrenchSeated ? 'E asettaa osan paikalleen · Q vaihtaa työkalua · Esc pois'
-        : (garageShelf.length ? 'Hiiri pohjaan pultin kohdalla ja pyöritä · E ottaa seuraavan osan hyllyltä · Q työkalu · G kierre · Esc pois'
-        : 'Hiiri pohjaan pultin kohdalla ja pyöritä · myötäpäivä kiristää · Q työkalu · G korjaa kierre · Esc pois'));
+        : (garageShelf.length ? 'Rulla ylös kiristää, alas löysää · E ottaa seuraavan osan hyllyltä · Q työkalu · G kierre · Esc pois'
+        : 'Osoita pulttia ja pyöritä hiiren rullaa · ylös kiristää, alas löysää · Q työkalu · G korjaa kierre · Esc pois'));
     }
     // sivulista: osien kiinnitystilanne
     if(wrenchListEl){
