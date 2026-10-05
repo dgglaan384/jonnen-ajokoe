@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
 <style>
@@ -69,6 +74,16 @@
     padding:16px 20px;text-align:center;opacity:0;transition:opacity .4s ease;max-width:280px;
   }
   .stall.show{opacity:1;}
+  /* Vikapalkki: pysyy ruudulla niin kauan kuin mopossa on vika, toisin kuin ohikiitävä toast */
+  .brokenBar{
+    position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(96px + env(safe-area-inset-bottom,0px));
+    background:rgba(120,28,22,0.82);border:1px solid rgba(255,150,120,0.5);
+    border-radius:10px;padding:7px 14px;pointer-events:none;max-width:86vw;
+    font:700 12.5px/1.45 'Karla',sans-serif;color:#ffe9e2;text-align:center;
+  }
+  .brokenBar[hidden]{display:none;}
+  .brokenBar b{color:#ffd0a8;}
   .stall .big{font:600 26px/1.1 'Teko',sans-serif;color:var(--accent);}
   .stall p{margin:6px 0 0;font:600 13px/1.5 'Karla',sans-serif;}
 
@@ -306,12 +321,81 @@
   .miniStrikes i{width:16px;height:6px;border-radius:3px;background:rgba(251,246,233,0.2);}
   .miniStrikes i.on{background:#d8402c;}
   .boltHint{font:400 11.5px/1.45 'Karla',sans-serif;opacity:.6;margin-top:6px;}
+  /* ---- tehtäväkortti ---- */
+  /* Kortti oli vasemmassa ylänurkassa suoraan pelin otsikon päällä. Siirretty ylös keskelle,
+     missä on tilaa: otsikko on vasemmalla, napit oikealla. */
+  .objCard{
+    position:absolute;left:50%;transform:translateX(-50%);
+    top:calc(14px + env(safe-area-inset-top,0px));width:268px;max-width:84vw;
+    background:var(--panel-bg);border:1px solid var(--panel-line);border-left:3px solid var(--accent);
+    border-radius:11px;padding:9px 12px 10px;pointer-events:none;
+  }
+  .objCard[hidden]{display:none;}
+  .objHead{font:700 9px/1 'Karla',sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:.55;}
+  .objGoal{font:700 14.5px/1.25 'Karla',sans-serif;margin:5px 0 7px;}
+  .objRow{display:flex;align-items:center;gap:7px;}
+  .objArrow{width:17px;height:17px;flex:0 0 auto;position:relative;transition:transform .12s linear;}
+  .objArrow:before{
+    content:'';position:absolute;left:50%;top:50%;margin:-8px 0 0 -6px;
+    border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:13px solid var(--accent);
+  }
+  .objWhere{font:600 12px/1.2 'Karla',sans-serif;flex:1 1 auto;}
+  .objDist{font:700 12px/1.2 'Karla',sans-serif;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .objHow{font:400 11px/1.4 'Karla',sans-serif;opacity:.65;margin-top:6px;}
+  /* ---- välikohtaus ---- */
+  .cutscene{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;
+            pointer-events:auto;background:rgba(0,0,0,0.25);}
+  .cutscene[hidden]{display:none;}
+  .cutBar{height:13vh;background:#07090a;flex:0 0 auto;}
+  .cutBody{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+           padding:0 24px 30px;text-align:center;}
+  .cutTitle{font:700 26px/1.1 'Teko',sans-serif;letter-spacing:.04em;text-transform:uppercase;
+            color:var(--cream);text-shadow:0 2px 12px rgba(0,0,0,0.8);margin-bottom:10px;}
+  .cutText{font:400 15px/1.55 'Karla',sans-serif;color:var(--cream);max-width:620px;
+           text-shadow:0 2px 10px rgba(0,0,0,0.9);margin:0 0 16px;}
+  .cutNext{font:700 12px/1 'Karla',sans-serif;letter-spacing:.06em;color:var(--cream);
+           background:var(--accent);border:0;border-radius:9px;padding:10px 20px;cursor:pointer;}
+  /* ---- keskustelu ---- */
+  .dialogue{
+    position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    width:min(560px, 92vw);background:var(--panel-bg);border:1px solid var(--panel-line);
+    border-radius:14px;padding:14px 16px 13px;pointer-events:auto;
+  }
+  .dialogue[hidden]{display:none;}
+  .dlgName{font:700 11px/1 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);}
+  .dlgLine{font:400 14px/1.5 'Karla',sans-serif;margin:8px 0 12px;min-height:42px;}
+  .dlgChoices{display:flex;flex-direction:column;gap:6px;}
+  .dlgChoice{
+    font:600 12.5px/1.3 'Karla',sans-serif;text-align:left;color:var(--cream);
+    background:rgba(251,246,233,0.09);border:1px solid var(--panel-line);border-radius:8px;
+    padding:8px 11px;cursor:pointer;transition:background .13s;
+  }
+  .dlgChoice:hover{background:rgba(251,246,233,0.18);}
+  .dlgClose{opacity:.6;margin-top:3px;}
+  /* ---- moninpelin ryhmäkoodi ---- */
+  .mpRoom{border:1px solid var(--panel-line);border-radius:11px;padding:11px 12px 12px;margin:10px 0 12px;}
+  .mpCodeBig{display:flex;align-items:center;gap:10px;justify-content:center;margin:11px 0 2px;
+             background:rgba(10,12,10,0.45);border-radius:9px;padding:8px 10px;}
+  .mpCodeBig[hidden]{display:none;}
+  .mpCodeBig span{font:700 9.5px/1 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.6;}
+  .mpCodeBig b{font:700 23px/1 'Karla',sans-serif;letter-spacing:.12em;color:var(--accent);}
   /* ---- nopeusrajoitus mittarin kulmassa ---- */
+  /* Rajoitusmerkki oli mittarin päällä ja peitti neulan - nyt se on omassa sarakkeessaan
+     mittarin vieressä, missä se ei peitä mitään. */
+  .dashSide{display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:flex-end;flex:0 0 auto;}
   .limitSign{
-    position:absolute;right:-2px;top:-2px;width:40px;height:40px;border-radius:50%;
-    background:#f4f1e8;border:4.5px solid #c0392b;display:flex;align-items:center;justify-content:center;
+    width:42px;height:42px;border-radius:50%;flex:0 0 auto;
+    background:#f4f1e8;border:5px solid #c0392b;display:flex;align-items:center;justify-content:center;
     box-shadow:0 2px 7px rgba(0,0,0,0.45);transition:transform .18s, border-color .18s;
   }
+  .gearBox{
+    display:flex;flex-direction:column;align-items:center;gap:1px;min-width:42px;
+    background:rgba(10,12,10,0.5);border:1px solid var(--panel-line);border-radius:9px;padding:3px 7px 4px;
+  }
+  .gearBox[hidden]{display:none;}
+  .gearBox span{font:700 8.5px/1 'Karla',sans-serif;letter-spacing:.09em;text-transform:uppercase;opacity:.6;}
+  .gearBox b{font:700 17px/1 'Karla',sans-serif;}
+  .gearBox.redline b{color:#ff6b55;}
   .limitSign[hidden]{display:none;}
   .limitSign b{font:700 16px/1 'Karla',sans-serif;color:#17171a;}
   .limitSign.over{border-color:#e2bb2b;transform:scale(1.14);}
@@ -527,6 +611,8 @@
     mix-blend-mode:multiply;
   }
 </style>
+</head>
+<body>
 
 <div id="app">
   <div class="vignette"></div>
@@ -616,7 +702,10 @@
         <div class="gaugeCenter">
           <div class="value" id="speedVal">0<small>km/h</small></div>
         </div>
+      </div>
+      <div class="dashSide">
         <div class="limitSign" id="limitSign" hidden><b id="limitVal">60</b></div>
+        <div class="gearBox" id="gearBox" hidden><span>Vaihde</span><b id="gearVal">1</b></div>
       </div>
       <div class="dashCol">
         <div class="gauge">
@@ -643,7 +732,7 @@
     <div class="missionTracker" id="missionTracker"></div>
     <div class="wheelieCombo" id="wheelieCombo"><small>Keula</small><span id="wheelieComboText">x1</span></div>
     <div class="toast" id="toast"><div class="big" id="toastBig"></div><p id="toastText"></p></div>
-    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Kartta: <b>M</b> · Puhelin: <b>TAB</b></div>
+    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b></div>
     <div class="miniMapWrap" id="miniMapWrap">
       <canvas id="miniMap" width="196" height="196"></canvas>
       <div class="miniMapFoot">Koko kartta: <b>M</b></div>
@@ -653,7 +742,35 @@
       <canvas id="bigMapCanvas" width="360" height="640"></canvas>
       <div class="bigMapFoot">Sulje: <b>M</b></div>
     </div>
+    <!-- Tehtäväkortti: uusi pelaaja näkee heti mitä tehdään, missä ja millä napilla -->
+    <div class="objCard" id="objCard" hidden>
+      <div class="objHead" id="objHead">Tehtävä · päivä 1/30</div>
+      <div class="objGoal" id="objGoal">Kasaa mopo</div>
+      <div class="objRow">
+        <i class="objArrow" id="objArrow"></i>
+        <span class="objWhere" id="objWhere">Autotalli</span>
+        <b class="objDist" id="objDist">120 m</b>
+      </div>
+      <div class="objHow" id="objHow">Mene työpöydän luo ja paina E</div>
+    </div>
+    <!-- Välikohtaus -->
+    <div class="cutscene" id="cutscene" hidden>
+      <div class="cutBar top"></div>
+      <div class="cutBody">
+        <div class="cutTitle" id="cutTitle">Otsikko</div>
+        <p class="cutText" id="cutText">Teksti</p>
+        <button class="cutNext" id="cutNext" type="button">Jatka ▸</button>
+      </div>
+      <div class="cutBar bottom"></div>
+    </div>
+    <!-- Keskustelu valinnoilla -->
+    <div class="dialogue" id="dialogue" hidden>
+      <div class="dlgName" id="dlgName">Nimi</div>
+      <p class="dlgLine" id="dlgLine">Repliikki</p>
+      <div class="dlgChoices" id="dlgChoices"></div>
+    </div>
     <div class="mountHint" id="mountHint" hidden>Paina <b>E</b> noustaksesi mopoon</div>
+    <div class="brokenBar" id="brokenBar" hidden></div>
     <div class="stall" id="stall"><div class="big">Bensa loppui</div><p>Työnnä mopo talliin tai paina R täyttääksesi tankin.</p></div>
     <div class="crash" id="crashOverlay"><div class="big">💥 KAADUIT!</div><p>Keula meni liian ylös. Heräät kotipihalla - mopo ja osat ovat tallessa.</p></div>
     <div class="jail" id="jailOverlay"><div class="big" id="jailBig">🚔 PIDÄTETTY</div><p id="jailText">Kolmas kerta - suoraan linnaan.</p></div>
@@ -701,7 +818,7 @@
       <div class="wrenchList" id="wrenchList"></div>
       <div class="wrenchBar">
         <span id="wrenchTool">🔧 Kiintoavain 12 mm</span>
-        <span id="wrenchTip">Osoita pulttia ja pyöritä hiiren rullaa.</span>
+        <span id="wrenchTip">Osoita pulttia · rulla tai ↑/R kiristää, ↓/F löysää.</span>
       </div>
     </div>
     <div class="mopedPanel" id="mopedPanel" hidden>
@@ -763,6 +880,25 @@
       <div class="setRow">
         <span>Nimimerkki</span>
         <input class="mpInput" id="mpNickInput" type="text" maxlength="16" placeholder="Jonne" spellcheck="false">
+      </div>
+      <!-- Ryhmäkoodi suoraan pelissä: näin moninpeli toimii myös ilman launcheria, eli Macilla,
+           Linuxilla ja puhelimella - riittää että avaa saman HTML-tiedoston. -->
+      <div class="mpRoom" id="mpRoomBox">
+        <div class="setRow">
+          <span>Huonepalvelin</span>
+          <input class="mpInput" id="mpServerInput" type="text" spellcheck="false" placeholder="https://jonnen-lobby.onrender.com">
+        </div>
+        <button class="wideBtn" id="mpCreateRoom" type="button">Luo ryhmä (hostaa)</button>
+        <div class="mpCodeBig" id="mpRoomCodeWrap" hidden>
+          <span>Ryhmäkoodi</span>
+          <b id="mpRoomCode">------</b>
+          <button class="tuneBtn" id="mpCopyRoom" type="button">Kopioi</button>
+        </div>
+        <div class="setRow" style="margin-top:10px">
+          <span>Liity koodilla</span>
+          <input class="mpInput" id="mpJoinCode" type="text" maxlength="16" spellcheck="false" placeholder="kaverin ryhmäkoodi">
+        </div>
+        <button class="wideBtn" id="mpJoinRoom" type="button">Liity ryhmään</button>
       </div>
       <button class="wideBtn" id="mpManualToggle" type="button" hidden>Näytä koodinvaihto</button>
       <div id="mpManual">
@@ -1144,9 +1280,9 @@
       fxaaOn:{value:0.0},
       texel:{value:new THREE.Vector2(1,1)},
       bloomStrength:{value:0.30},
-      contrast:{value:1.07},
-      saturation:{value:1.14},
-      vignette:{value:0.45},
+      contrast:{value:1.04},
+      saturation:{value:1.07},
+      vignette:{value:0.32},
       lift:{value:new THREE.Vector3(0.000, 0.010, 0.030)},
       gain:{value:new THREE.Vector3(1.030, 1.000, 0.962)}
     },
@@ -1846,6 +1982,10 @@
   var loopHalfWidth = 620;
   // poikittaistiet kehän laidasta laitaan: ilman näitä leveälle alueelle ei pääsisi kuin pellon yli
   var crossRoadZs = [-1120, -520, 520, 1120];
+  // Kartta näytti yhdeltä pitkältä tieltä josta kaikki muu haarautui. Kaksi lisää pohjois-etelä-
+  // tietä keskilinjan ja kehän puoliväliin tekee tiestöstä oikean ruudukon: viisi pystytietä
+  // (-620, -310, 0, 310, 620) ja kuusi poikittaista. Silloin reittejä on monta eikä yhtä selkärankaa.
+  var midRoadXs = [-310, 310];
   var loopZMax = 1580;
   var loopZMin = -1580;
   var loopRoadMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(true), roughness:0.95, metalness:0});
@@ -1873,6 +2013,17 @@
     crossRoad.receiveShadow = true;
     scene.add(crossRoad);
   });
+  // ---- keskimmäiset pohjois-etelä-tiet ----
+  midRoadXs.forEach(function(mx){
+    roadPaths.push([{x:mx, z:-1560}, {x:mx, z:1560}]);
+    addRoadCorridor(mx, -1560, mx, 1560, 4.5);
+    var mr = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(9, 3120), true, 3120), loopRoadMat);
+    mr.rotation.x = -Math.PI/2;
+    mr.position.set(mx, roadLayerY('loop') - 0.003, 0);
+    mr.receiveShadow = true;
+    scene.add(mr);
+  });
+
   // ---- poikittaistiet ----
   // Neljä itä-länsi-suuntaista soratietä yhdistävät kehän sivut, jolloin uudelle leveälle
   // alueelle on oikea reitti. Nämä menevät samaan roadPaths-listaan kuin muutkin tiet, joten
@@ -4272,6 +4423,8 @@
   function doSleep(){
     dayIndex = (dayIndex + 1) % 7;
     dayTime = 0.30;
+    advanceSummerDay();   // nukuttu yö kuluttaa yhden kesäpäivän
+    rollDailyEvent();
     foodBoostLeft = 0;
     if(fuel < 25) fuel = 25;
     // yön yli nukkuminen palauttaa kunnon, mutta aamulla on nälkä
@@ -4299,21 +4452,43 @@
     {id:'karkkipussi', name:'Karkkipussi', desc:'Ansaittu herkku pitkän ajopäivän päätteeksi.', price:2, owned:false},
     {id:'kalastuslupa', name:'Kalastuslupa', desc:'Viikon lupa järvelle - onki ilmestyy mopon kylkeen muistoksi.', price:6, owned:false},
     {id:'ilmansuodatin', name:'Ilmansuodatin', desc:'Avoin suodatin: Derbi hengittää ja vetää selvästi kovempaa.', price:95, owned:false},
-    {id:'onnenkolikko', name:'Onnenkolikko', desc:'Kiiltävä muistokolikko avaimenperässä - pelkkää flexailua.', price:5, owned:false}
+    {id:'onnenkolikko', name:'Onnenkolikko', desc:'Kiiltävä muistokolikko avaimenperässä - pelkkää flexailua.', price:5, owned:false},
+    // ---- varaosat reppuun ----
+    // Näitä voi ostaa useamman, ja ne kuluvat käytössä. Ilman niitä tienpäällä sattunut vika
+    // tarkoittaa mopon työntämistä kotiin - siksi näiden ostaminen ETUKÄTEEN kannattaa.
+    {id:'varatulppa',   name:'Varasytytystulppa', gen:'varasytytystulpan', desc:'Reppuun. Vaihtuu tien päällä G:llä jos tulppa karstoittuu.', price:4, owned:false, consumable:true, count:0},
+    {id:'ketjulukko',   name:'Ketjulukko',        gen:'ketjulukon',         desc:'Reppuun. Katkenneen ketjun saa jatkettua tien päällä G:llä.', price:6, owned:false, consumable:true, count:0},
+    {id:'paikkaussarja',name:'Paikkaussarja',     gen:'paikkaussarjan',     desc:'Reppuun. Puhjenneen renkaan paikkaus tien päällä G:llä.', price:9, owned:false, consumable:true, count:0}
   ];
+  function storeItemById(id){
+    for(var si2=0; si2<storeItems.length; si2++) if(storeItems[si2].id === id) return storeItems[si2];
+    return null;
+  }
+  function spareCount(id){ var it = storeItemById(id); return it ? (it.count||0) : 0; }
+  function useSpare(id){
+    var it = storeItemById(id);
+    if(!it || (it.count||0) <= 0) return false;
+    it.count--;
+    if(it.count <= 0) it.owned = false;
+    if(inventoryOpen) renderInventory();
+    return true;
+  }
   var storeOpen = false;
   function renderStoreItems(){
     storeMoneyEl.textContent = Math.round(money);
     storeItemsListEl.innerHTML = '';
     storeItems.forEach(function(it){
-      var btnLabel = it.owned ? 'Ostettu' : ('Osta '+it.price+' €');
-      var btnDisabled = it.owned || money < it.price;
+      var itPrice = shopPrice(it.price);   // maine näkyy myös kyläkaupan hinnoissa
+      // kulutustavaraa voi ostaa monta, kertaostos vain kerran
+      var btnLabel = (it.consumable || !it.owned) ? ('Osta '+itPrice+' €') : 'Ostettu';
+      var btnDisabled = (!it.consumable && it.owned) || money < itPrice || (it.consumable && (it.count||0) >= 5);
+      if(it.consumable && (it.count||0) >= 5) btnLabel = 'Reppu täynnä (5)';
       var row = document.createElement('div');
       row.className = 'partRow';
       row.innerHTML =
         '<div class="partHead">' +
           '<span class="partName">'+it.name+'</span>' +
-          '<span class="partTier'+(it.owned?' tuned':'')+'">'+(it.owned?'Omistat':'Kaupassa')+'</span>' +
+          '<span class="partTier'+(it.owned?' tuned':'')+'">'+(it.consumable ? ('Repussa '+(it.count||0)) : (it.owned?'Omistat':'Kaupassa'))+'</span>' +
         '</div>' +
         '<div class="partDesc">'+it.desc+'</div>' +
         '<div class="partActions">' +
@@ -4321,9 +4496,11 @@
         '</div>';
       var btn = row.querySelector('.repairBtn');
       btn.addEventListener('click', function(){
-        if(it.owned || money < it.price) return;
-        money -= it.price;
+        var pNow = shopPrice(it.price);
+        if((!it.consumable && it.owned) || money < pNow || (it.consumable && (it.count||0) >= 5)) return;
+        money -= pNow;
         it.owned = true;
+        if(it.consumable) it.count = (it.count||0) + 1;
         updateMoneyDisplay();
         if(it.id === 'essanssi') essanssiMesh.visible = true;
         if(it.id === 'aurinkolasit') sunglassesMesh.visible = true;
@@ -4831,6 +5008,8 @@
     {x1:-loopHalfWidth, z1:crossRoadZs[1], x2:loopHalfWidth, z2:crossRoadZs[1], r:24},
     {x1:-loopHalfWidth, z1:crossRoadZs[2], x2:loopHalfWidth, z2:crossRoadZs[2], r:24},
     {x1:-loopHalfWidth, z1:crossRoadZs[3], x2:loopHalfWidth, z2:crossRoadZs[3], r:24},
+    {x1:midRoadXs[0], z1:-1560, x2:midRoadXs[0], z2:1560, r:24},
+    {x1:midRoadXs[1], z1:-1560, x2:midRoadXs[1], z2:1560, r:24},
     // Tasoitusjanat ovat SUORIA, mutta tiet mutkittelevat: siksi jokaisen janan säteen on oltava
     // vähintään tien mutkan syvyys + tien puolileveys + reilu marginaali, tai mäki työntyisi tien
     // läpi mutkan kohdalla. Pitkillä maanteillä (bend 26-30) säde on siksi 44-48.
@@ -6438,6 +6617,396 @@
   // Geometria on tässä vaiheessa jo indeksitön (ks. paintCharacterModel), joten kolmiot voi jakaa
   // suoraan kolmen kärkipisteen ryhminä ilman indeksitaulukon purkamista.
   var playerLimbs = null;
+
+  // ==========================================================================
+  // ---- NIVELPAINOTETTU HAHMO (skinning) ----
+  // Hahmomallissa ei ole luurankoa, joten raajat saatiin liikkumaan leikkaamalla malli
+  // seitsemäksi erilliseksi kappaleeksi. Se toimi, mutta jäykkä kappale REPEÄÄ irti
+  // vartalosta kun sitä kääntää: olkapäähän ja lonkkaan aukeaa rako josta näkee hahmon
+  // sisään. Mitä enemmän raajaa kääntää, sitä pahempi - siksi mopon satulassa, missä
+  // reittä käännetään 60 astetta, jälki oli rumin.
+  //
+  // Nyt malli pysyy YHTENÄ meshinä ja sille rakennetaan luuranko. Jokaiselle kärkipisteelle
+  // lasketaan painot: nivelen lähellä piste kuuluu osittain sekä raajaan että sen emoluuhun,
+  // jolloin pinta taipuu nivelen yli eikä repeä. Sama tekniikka antaa myös kyynärnivelen,
+  // jota ei aiemmin ollut lainkaan.
+  //
+  // Luuranko: juuri → lantio → selkä → olkavarret → kyynärvarret
+  //                          → reidet → sääret
+  // Luiden nimet ovat samat kuin vanhat nivelryhmät (armL, legL, shinL ...), joten kaikki
+  // olemassa oleva animaatiokoodi toimii sellaisenaan - luu on Object3D kuten ryhmäkin.
+  // ==========================================================================
+
+  var charHipY = 0.88;          // lonkkien korkeus hahmon omassa mittakaavassa (riderHipY käyttää)
+  var armRestZ = 0;             // paljonko olkavartta pitää kääntää sisään, jotta A-asento oikenee
+  var skinnedTemplate = null;   // {geom, mat, bonePlan, hipY} - tehdas uusille hahmoille
+
+  function buildSkinnedCharacter(root){
+    root.updateMatrixWorld(true);
+    var box = new THREE.Box3().setFromObject(root);
+    var minY = box.min.y, hgt = Math.max(0.0001, box.max.y - minY);
+    var cxp = (box.min.x + box.max.x)/2, czp = (box.min.z + box.max.z)/2;
+    var halfW = Math.max(0.0001, (box.max.x - box.min.x)/2);
+
+    var meshes = [];
+    root.traverse(function(o){ if(o.isMesh && o.geometry && o.geometry.attributes.position) meshes.push(o); });
+    if(!meshes.length) return null;
+
+    // ---- 1. kaikki meshit yhdeksi taulukoksi lopullisessa koordinaatistossa ----
+    var P = [], C = [], Z = [];
+    var v = new THREE.Vector3();
+    for(var mi=0; mi<meshes.length; mi++){
+      var mo = meshes[mi];
+      var ap = mo.geometry.attributes.position;
+      var ac = mo.geometry.attributes.color;
+      var az = mo.geometry.attributes.zone;
+      var idx = mo.geometry.index;
+      var count = idx ? idx.count : ap.count;
+      for(var i=0; i<count; i++){
+        var si = idx ? idx.getX(i) : i;
+        v.set(ap.getX(si), ap.getY(si), ap.getZ(si)).applyMatrix4(mo.matrixWorld);
+        P.push(v.x - cxp, v.y - minY, v.z - czp);
+        if(ac) C.push(ac.getX(si), ac.getY(si), ac.getZ(si)); else C.push(1,1,1);
+        if(az) Z.push(az.getX(si), az.getY(si), az.getZ(si)); else Z.push(0,0,0);
+      }
+    }
+    var n = P.length/3;
+
+    // ---- 2. luokittelu kärkipisteittäin ----
+    // Sama sääntö kuin ennen, mutta pisteelle eikä kolmiolle: painotus tarvitsee pistetarkkuuden.
+    // 0 selkä(+pää), 1 olkavarsiL, 2 olkavarsiR, 3 reisiL, 4 reisiR, 5 sääriL, 6 sääriR,
+    // 7 kyynärvarsiL, 8 kyynärvarsiR
+    var KIND = new Uint8Array(n);
+    var b = {};   // osien ääriarvot nivelpisteiden laskemiseen
+    function bump(k, x, y, z){
+      if(!b[k]) b[k] = {minX:1e9,maxX:-1e9,minY:1e9,maxY:-1e9,sumX:0,sumZ:0,cnt:0};
+      var o = b[k];
+      if(x<o.minX)o.minX=x; if(x>o.maxX)o.maxX=x;
+      if(y<o.minY)o.minY=y; if(y>o.maxY)o.maxY=y;
+      o.sumX+=x; o.sumZ+=z; o.cnt++;
+    }
+    for(var p=0; p<n; p++){
+      var px = P[p*3], py = P[p*3+1], pz = P[p*3+2];
+      var yn = py/hgt, dx = px/halfW;
+      var armThr = 0.30 + Math.max(0, 0.78 - yn) * 0.95;
+      var kind;
+      if(Math.abs(dx) > armThr && yn >= 0.40 && yn < 0.86) kind = (dx < 0) ? 1 : 2;
+      else if(yn < 0.215) kind = (dx < 0) ? 5 : 6;
+      else if(yn < 0.46)  kind = (dx < 0) ? 3 : 4;
+      else kind = 0;
+      KIND[p] = kind;
+      bump(kind, px, py, pz);
+    }
+
+    // ---- 3. nivelpisteet mitatuista ääriarvoista ----
+    var hipY   = b[3] ? b[3].maxY : (b[4] ? b[4].maxY : hgt*0.46);
+    var kneeY  = hgt*0.215;
+    function limbJoint(k, inner){
+      var o = b[k];
+      if(!o) return null;
+      return new THREE.Vector3(inner ? (k===1 ? o.maxX : o.minX) : o.sumX/o.cnt,
+                               o.maxY - hgt*0.02, 0);
+    }
+    var shoulderL = limbJoint(1, true) || new THREE.Vector3(-halfW*0.6, hgt*0.80, 0);
+    var shoulderR = limbJoint(2, true) || new THREE.Vector3( halfW*0.6, hgt*0.80, 0);
+    var armBotL = b[1] ? b[1].minY : hgt*0.42;
+    var armBotR = b[2] ? b[2].minY : hgt*0.42;
+    var elbowL = new THREE.Vector3(shoulderL.x, (shoulderL.y + armBotL)*0.5, 0);
+    var elbowR = new THREE.Vector3(shoulderR.x, (shoulderR.y + armBotR)*0.5, 0);
+    var hipL = new THREE.Vector3(b[3] ? b[3].sumX/b[3].cnt : -halfW*0.35, hipY, 0);
+    var hipR = new THREE.Vector3(b[4] ? b[4].sumX/b[4].cnt :  halfW*0.35, hipY, 0);
+
+    // kyynärvarsi: käsipisteet kyynärpään alapuolella siirtyvät omalle luulleen
+    for(var q=0; q<n; q++){
+      if(KIND[q] === 1 && P[q*3+1] < elbowL.y) KIND[q] = 7;
+      else if(KIND[q] === 2 && P[q*3+1] < elbowR.y) KIND[q] = 8;
+    }
+
+    // ---- 3b. kaula: etsitään KAPEIN vaakaviipale pään ja hartioiden väliltä ----
+    // Kaulan paikkaa ei voi arvata korkeusprosenttina, koska se riippuu mallista. Sen sijaan
+    // mitataan leveysprofiili: hartioista ylöspäin malli kapenee kaulaksi ja levenee taas pääksi,
+    // joten kapein viipale ON kaula. Tämän ansiosta hahmo voi kääntää päätään erikseen.
+    var SLICES = 48, sliceW = new Float64Array(SLICES);
+    for(var sp0=0; sp0<n; sp0++){
+      var siS = Math.min(SLICES-1, Math.floor(P[sp0*3+1]/hgt*SLICES));
+      var axS = Math.abs(P[sp0*3]);
+      if(axS > sliceW[siS]) sliceW[siS] = axS;
+    }
+    var neckI = -1, neckW = 1e9;
+    for(var sw0=Math.floor(SLICES*0.72); sw0<Math.floor(SLICES*0.94); sw0++){
+      if(sliceW[sw0] < neckW){ neckW = sliceW[sw0]; neckI = sw0; }
+    }
+    var neckY = (neckI >= 0) ? (neckI+0.5)/SLICES*hgt : hgt*0.88;
+    for(var hq=0; hq<n; hq++){ if(KIND[hq] === 0 && P[hq*3+1] >= neckY) KIND[hq] = 9; }
+    // SILMÄTASO mitataan pään LEVEIMMÄSTÄ vaakaviipaleesta: ihmisen kallo on levein ohimoiden
+    // ja poskipäiden kohdalla, mikä osuu käytännössä silmien tasolle. Tämä on paljon luotettavampi
+    // maamerkki kuin leuan etsiminen - leuka sulautuu kaulaan eikä erotu leveysprofiilista.
+    // Päälaelta silmätasolle on n. 45 % pään korkeudesta, mistä pään korkeus ja leuka seuraavat.
+    var eyeI = -1, eyeW = 0;
+    for(var ei2=neckI+1; ei2<SLICES; ei2++){ if(sliceW[ei2] > eyeW){ eyeW = sliceW[ei2]; eyeI = ei2; } }
+    var eyeLvl = (eyeI >= 0) ? (eyeI+0.5)/SLICES*hgt : hgt*0.95;
+
+    // ---- 3c. A-asento: kuinka kaukana sivulla kädet ovat mallinnettu ----
+    // Hahmomalli on tehty kädet viistosti sivulle (ns. A-asento), koska niin on helpoin mallintaa.
+    // Pelissä se näyttää siltä kuin hahmo odottaisi halausta. Mitataan kulma kämmenen ja olkapään
+    // välistä, niin se voidaan oikaista animaatiossa - käsivarret roikkuvat sivuilla kuten ihmisellä.
+    (function(){
+      var lowY = 1e9, ai;
+      for(ai=0; ai<n; ai++){ if(KIND[ai] === 7 && P[ai*3+1] < lowY) lowY = P[ai*3+1]; }
+      if(lowY > 1e8) return;
+      var band = lowY + hgt*0.035, sumX = 0, cnt = 0;
+      for(ai=0; ai<n; ai++){ if(KIND[ai] === 7 && P[ai*3+1] <= band){ sumX += P[ai*3]; cnt++; } }
+      if(!cnt) return;
+      var handX = sumX/cnt;
+      var dyA = shoulderL.y - lowY;
+      if(dyA <= 0.0001) return;
+      // 0.78 = ei oikaista aivan pystyyn, muuten kädet uppoaisivat vartaloon
+      armRestZ = Math.max(0, Math.min(0.80, Math.atan2(shoulderL.x - handX, dyA) * 0.78));
+    })();
+
+    // ---- 4. luusuunnitelma ----
+    // index, nimi, emo, paikka EMOON NÄHDEN, ja se nivelpiste jonka ympäri painotus pehmennetään
+    var JOINT_BLEND = hgt*0.075;    // n. 13 cm 1,75 m hahmolla
+    var plan = [
+      {name:'root',  parent:-1, pos:new THREE.Vector3(0,0,0),                         joint:null},
+      {name:'hips',  parent:0,  pos:new THREE.Vector3(0, hipY, 0),                    joint:null},
+      {name:'spine', parent:1,  pos:new THREE.Vector3(0,0,0),                         joint:new THREE.Vector3(0, hipY, 0)},
+      {name:'armL',  parent:2,  pos:shoulderL.clone().sub(new THREE.Vector3(0,hipY,0)), joint:shoulderL.clone()},
+      {name:'foreL', parent:3,  pos:elbowL.clone().sub(shoulderL),                    joint:elbowL.clone()},
+      {name:'armR',  parent:2,  pos:shoulderR.clone().sub(new THREE.Vector3(0,hipY,0)), joint:shoulderR.clone()},
+      {name:'foreR', parent:5,  pos:elbowR.clone().sub(shoulderR),                    joint:elbowR.clone()},
+      {name:'legL',  parent:1,  pos:hipL.clone().sub(new THREE.Vector3(0,hipY,0)),    joint:hipL.clone()},
+      {name:'shinL', parent:7,  pos:new THREE.Vector3(0, kneeY - hipY, 0),            joint:new THREE.Vector3(hipL.x, kneeY, 0)},
+      {name:'legR',  parent:1,  pos:hipR.clone().sub(new THREE.Vector3(0,hipY,0)),    joint:hipR.clone()},
+      {name:'shinR', parent:9,  pos:new THREE.Vector3(0, kneeY - hipY, 0),            joint:new THREE.Vector3(hipR.x, kneeY, 0)},
+      // Kaula on ohut, joten sen pehmennysvyöhyke on paljon kapeampi kuin olkapään tai lonkan -
+      // muuten pään kääntäminen vetäisi mukanaan puolet hartioista.
+      {name:'head',  parent:2,  pos:new THREE.Vector3(0, neckY - hipY, 0),            joint:new THREE.Vector3(0, neckY, 0), blend: hgt*0.028}
+    ];
+    var BONE = {spine:2, armL:3, foreL:4, armR:5, foreR:6, legL:7, shinL:8, legR:9, shinR:10, head:11};
+    var KIND_BONE = [BONE.spine, BONE.armL, BONE.armR, BONE.legL, BONE.legR,
+                     BONE.shinL, BONE.shinR, BONE.foreL, BONE.foreR, BONE.head];
+
+    // ---- 5. painot: nivelen lähellä piste jakautuu luun ja sen emon kesken ----
+    // Juuri nivelessä suhde on 50/50, ja JOINT_BLEND päässä piste kuuluu kokonaan omalle luulleen.
+    // Tämä on se mikä saa pinnan TAIPUMAAN nivelen yli sen sijaan että se repeäisi.
+    var skinIdx = new Uint16Array(n*4);
+    var skinWgt = new Float32Array(n*4);
+    var jv = new THREE.Vector3();
+    for(var w=0; w<n; w++){
+      var bone = KIND_BONE[KIND[w]];
+      var parent = plan[bone].parent;
+      var joint = plan[bone].joint;
+      var wSelf = 1, wPar = 0;
+      if(joint && parent >= 0){
+        jv.set(P[w*3] - joint.x, P[w*3+1] - joint.y, P[w*3+2] - joint.z);
+        var d = jv.length();
+        var t = Math.min(1, d / (plan[bone].blend || JOINT_BLEND));
+        wSelf = 0.5 + 0.5*t;
+        wPar  = 1 - wSelf;
+      }
+      skinIdx[w*4]   = bone;
+      skinIdx[w*4+1] = (parent >= 0) ? parent : bone;
+      skinWgt[w*4]   = wSelf;
+      skinWgt[w*4+1] = wPar;
+    }
+
+    var geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    geom.setAttribute('color',    new THREE.Float32BufferAttribute(C, 3));
+    geom.setAttribute('zone',     new THREE.Float32BufferAttribute(Z, 3));
+    geom.setAttribute('skinIndex',  new THREE.Uint16BufferAttribute(skinIdx, 4));
+    geom.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWgt, 4));
+    geom.computeVertexNormals();
+
+    // ---- 6. kasvojen mitat: mihin silmät, nenä ja suu asetetaan ----
+    // Pinnan Z mitataan SÄTEELLÄ oikeasta geometriasta, ei arvata: kasvot ovat kalteva pinta,
+    // joten kiinteä syvyys upottaisi silmät päähän tai jättäisi ne leijumaan ilmaan.
+    var faceInfo = null;
+    try{
+      var headTop = -1e9, headHalfW = 0, hcR=0, hcG=0, hcB=0, hcN=0, hhR=0, hhG=0, hhB=0, hhN=0;
+      for(var fi=0; fi<n; fi++){
+        if(KIND[fi] !== 9) continue;
+        var fy = P[fi*3+1], fx = Math.abs(P[fi*3]), fz = P[fi*3+2];
+        if(fy > headTop) headTop = fy;
+        if(fx > headHalfW) headHalfW = fx;
+      }
+      var headH = Math.max(0.0001, (headTop - eyeLvl)/0.45);   // päälaelta silmiin = 45 % pään korkeudesta
+      var chinY = headTop - headH;
+      for(var fj=0; fj<n; fj++){
+        if(KIND[fj] !== 9) continue;
+        var gy = P[fj*3+1], gz = P[fj*3+2], gx = Math.abs(P[fj*3]);
+        if(gz > 0 && gx < headHalfW*0.5 && gy < headTop - headH*0.35){
+          hcR += C[fj*3]; hcG += C[fj*3+1]; hcB += C[fj*3+2]; hcN++;   // ihon väri poskelta
+        }
+        if(gy > headTop - headH*0.18){
+          hhR += C[fj*3]; hhG += C[fj*3+1]; hhB += C[fj*3+2]; hhN++;   // hiusten väri päälaelta
+        }
+      }
+      geom.computeBoundingSphere();
+      var probeMesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial());
+      probeMesh.updateMatrixWorld(true);
+      var rc = new THREE.Raycaster();
+      var rcO = new THREE.Vector3(), rcD = new THREE.Vector3(0,0,-1);
+      function faceZAt(x, y, fallback){
+        rcO.set(x, y, headHalfW*6 + 1);
+        rc.set(rcO, rcD);
+        var hits = rc.intersectObject(probeMesh, false);
+        return hits.length ? hits[0].point.z : fallback;
+      }
+      // Mittasuhteet leuasta päälaelle laskettuna, ihmiskasvojen todellisten suhteiden mukaan:
+      // silmät hieman puolenvälin yläpuolella, nenänpää n. 40 % ja suu n. 25 % korkeudella.
+      var eyeY   = eyeLvl, eyeX = headHalfW*0.36;
+      var browY  = eyeY + headH*0.072;   // mallin hiusraja tulee matalalle, joten kulmat jäävät muuten piiloon
+      var noseY  = eyeY - headH*0.150;
+      var mouthY = eyeY - headH*0.270;
+      var zGuess = headHalfW*0.9;
+      faceInfo = {
+        neckY: neckY, chinY: chinY, top: headTop, h: headH, halfW: headHalfW,
+        skin: new THREE.Color(hcN?hcR/hcN:0.85, hcN?hcG/hcN:0.72, hcN?hcB/hcN:0.60),
+        hair: new THREE.Color(hhN?hhR/hhN:0.25, hhN?hhG/hhN:0.19, hhN?hhB/hhN:0.13),
+        eyeY: eyeY, eyeX: eyeX,
+        eyeZ:   faceZAt(eyeX, eyeY, zGuess),
+        browY:  browY,
+        browZ:  faceZAt(eyeX, browY, zGuess),
+        noseY:  noseY,
+        noseZ:  faceZAt(0, noseY, zGuess),
+        mouthY: mouthY,
+        mouthZ: faceZAt(0, mouthY, zGuess)
+      };
+    }catch(fe){ console.warn('Kasvojen mittaus epäonnistui, hahmo jää ilmeettömäksi:', fe); faceInfo = null; }
+
+    skinnedTemplate = {geom: geom, plan: plan, hipY: hipY, face: faceInfo, prof: {w: Array.prototype.slice.call(sliceW), n: SLICES, hgt: hgt}};
+    charHipY = hipY;
+    return skinnedTemplate;
+  }
+
+  // ==========================================================================
+  // ---- KASVOT ----
+  // Hahmomallin pää on pelkkä sileä kappale: ei silmiä, ei suuta. Se on suurin yksittäinen syy
+  // siihen että hahmo näyttää nukelta eikä ihmiseltä. Kasvot rakennetaan pieninä kappaleina
+  // pään luun lapsiksi, jolloin ne seuraavat päätä kun se kääntyy, ja silmät voivat räpsyä.
+  // ==========================================================================
+  var FACE_GEOM = null;
+  function faceGeomCache(){
+    if(!FACE_GEOM) FACE_GEOM = {
+      eye: new THREE.SphereGeometry(1, 10, 7),
+      bar: new THREE.BoxGeometry(1, 1, 1),
+      nose: new THREE.ConeGeometry(1, 1, 4)
+    };
+    return FACE_GEOM;
+  }
+  // Palauttaa {group, eyeL, eyeR} pään luun koordinaatistossa (origo kaulanivelessä).
+  function buildFace(f){
+    if(!f) return null;
+    var G = faceGeomCache();
+    var g = new THREE.Group();
+    var h = f.h;
+    var skin = f.skin.clone().offsetHSL(0, 0, -0.04);
+    var dark = new THREE.Color(0.10, 0.07, 0.06);
+    var mEyeWhite = new THREE.MeshStandardMaterial({color: new THREE.Color(0.93,0.92,0.88), roughness:0.35});
+    var mPupil    = new THREE.MeshStandardMaterial({color: new THREE.Color(0.11,0.09,0.08), roughness:0.25});
+    var mIris     = new THREE.MeshStandardMaterial({color: new THREE.Color(0.21,0.28,0.31), roughness:0.35});
+    var mHair     = new THREE.MeshStandardMaterial({color: f.hair, roughness:0.95, flatShading:true});
+    var mMouth    = new THREE.MeshStandardMaterial({color: new THREE.Color(0.42,0.20,0.18), roughness:0.7, flatShading:true});
+    var mSkin     = new THREE.MeshStandardMaterial({color: skin, roughness:0.9, flatShading:true});
+    var base = f.neckY;   // kasvot ovat pään luun lapsia, ja luu istuu kaulanivelessä
+    var eyes = [];
+    for(var si=0; si<2; si++){
+      var sgn = si ? 1 : -1;
+      var eg = new THREE.Group();
+      // Silmä UPOTETAAN pintaan: vain pieni kalotti jää näkyviin. Jos silmämuna pullistuu ulos,
+      // hahmo näyttää saadiltaan pelokkaalta - tämä on se raja jolla kasvot näyttävät ihmisen.
+      eg.position.set(sgn*f.eyeX, f.eyeY - base, f.eyeZ - h*0.030);
+      var ball = new THREE.Mesh(G.eye, mEyeWhite);
+      ball.scale.set(h*0.058, h*0.042, h*0.034);
+      eg.add(ball);
+      var iris = new THREE.Mesh(G.eye, mIris);
+      iris.scale.set(h*0.030, h*0.030, h*0.018);
+      iris.position.set(sgn*h*0.004, 0, h*0.022);
+      eg.add(iris);
+      var pup = new THREE.Mesh(G.eye, mPupil);
+      pup.scale.set(h*0.014, h*0.014, h*0.010);
+      pup.position.set(sgn*h*0.004, 0, h*0.032);
+      eg.add(pup);
+      g.add(eg); eyes.push(eg);
+      // kulmakarva: ohut hiusten värinen palkki, ulkoreuna hieman ylempänä
+      var brow = new THREE.Mesh(G.bar, mHair);
+      brow.scale.set(h*0.165, h*0.024, h*0.030);
+      brow.position.set(sgn*f.eyeX, f.browY - base, f.browZ - h*0.002);
+      brow.rotation.z = -sgn*0.15;
+      g.add(brow);
+      // korva
+      var ear = new THREE.Mesh(G.eye, mSkin);
+      ear.scale.set(h*0.022, h*0.060, h*0.038);
+      ear.position.set(sgn*f.halfW*1.00, f.eyeY - base - h*0.02, -h*0.050);
+      g.add(ear);
+    }
+    // nenä: lyhyt nelisivuinen kärki, ei nokkaa
+    var nose = new THREE.Mesh(G.nose, mSkin);
+    nose.scale.set(h*0.050, h*0.085, h*0.050);
+    nose.rotation.x = Math.PI*0.5;
+    nose.rotation.y = Math.PI*0.25;
+    nose.position.set(0, f.noseY - base, f.noseZ - h*0.012);
+    g.add(nose);
+    // suu
+    var mouth = new THREE.Mesh(G.bar, mMouth);
+    mouth.scale.set(h*0.195, h*0.028, h*0.028);
+    mouth.position.set(0, f.mouthY - base, f.mouthZ - h*0.012);
+    g.add(mouth);
+    g.traverse(function(o){ if(o.isMesh) o.castShadow = false; });
+    return {group: g, eyeL: eyes[0], eyeR: eyes[1]};
+  }
+
+  // Tehdas: jokainen hahmo tarvitsee OMAN luurankonsa (kloonaus jakaisi saman, jolloin kaikki
+  // hahmot liikkuisivat identtisesti). Geometria sen sijaan voidaan jakaa - paitsi jos hahmolla
+  // on oma väritys, jolloin se kloonataan.
+  function makeSkinnedFigure(ownColors){
+    if(!skinnedTemplate) return null;
+    var plan = skinnedTemplate.plan;
+    var bones = [], i;
+    for(i=0; i<plan.length; i++){
+      var bone = new THREE.Bone();
+      bone.name = plan[i].name;
+      bone.position.copy(plan[i].pos);
+      bones.push(bone);
+      if(plan[i].parent >= 0) bones[plan[i].parent].add(bone);
+    }
+    var geom = ownColors ? skinnedTemplate.geom.clone() : skinnedTemplate.geom;
+    var mat = new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.9, flatShading: true, side: THREE.DoubleSide
+    });
+    mat.skinning = true;    // three r128 vaatii tämän lipun, muuten luut eivät vaikuta mihinkään
+    var mesh = new THREE.SkinnedMesh(geom, mat);
+    mesh.castShadow = true;
+    // Posessa mallin ääriviivat eivät vastaa lepoasentoa, joten automaattinen rajaus leikkaisi
+    // hahmon pois näkyvistä väärissä kulmissa.
+    mesh.frustumCulled = false;
+    mesh.add(bones[0]);
+    mesh.updateMatrixWorld(true);
+    mesh.bind(new THREE.Skeleton(bones));
+
+    var figure = new THREE.Group();
+    figure.add(mesh);
+    var limbs = {};
+    var planNames = plan.map(function(x){ return x.name; });
+    ['armL','armR','foreL','foreR','legL','legR','shinL','shinR','head','spine','hips'].forEach(function(nm){
+      var bi = planNames.indexOf(nm);
+      if(bi >= 0) limbs[nm] = mesh.skeleton.bones[bi];
+    });
+    // kasvot pään luun lapsiksi: kääntyvät pään mukana ja räpsyvät omalla rytmillään
+    if(limbs.head && skinnedTemplate.face){
+      try{
+        var fb = buildFace(skinnedTemplate.face);
+        if(fb){ limbs.head.add(fb.group); limbs.eyeL = fb.eyeL; limbs.eyeR = fb.eyeR; }
+      }catch(fe2){ console.warn('Kasvojen rakennus epäonnistui:', fe2); }
+    }
+    figure.userData.hipY = skinnedTemplate.hipY;
+    figure.userData.skinned = true;
+    figure.userData.mesh = mesh;
+    return {figure: figure, limbs: limbs};
+  }
+
   function buildLimbedFigure(root){
     root.updateMatrixWorld(true);
     var box = new THREE.Box3().setFromObject(root);
@@ -6447,8 +7016,12 @@
     var meshes = [];
     root.traverse(function(o){ if(o.isMesh && o.geometry && o.geometry.attributes.position) meshes.push(o); });
     if(!meshes.length) return null;
-    // osat: 0 vartalo+pää, 1 vasen käsi, 2 oikea käsi, 3 vasen jalka, 4 oikea jalka
-    var PARTS = 5;
+    // Osat: 0 vartalo+pää, 1 vasen käsi, 2 oikea käsi, 3 vasen reisi, 4 oikea reisi,
+    // 5 vasen sääri, 6 oikea sääri.
+    // POLVI: aiemmin jalka oli yksi jäykkä kappale, jolloin mopon satulassa jalat törröttivät
+    // suorina eteen eikä asento näyttänyt istumiselta. Nyt sääri on oma nivelensä reiden
+    // alla, joten polvi taipuu - sekä satulassa että kävellessä.
+    var PARTS = 7;
     var pos = [], col = [], zon = [], bounds = [], i, k;
     for(i=0; i<PARTS; i++){
       pos.push([]); col.push([]); zon.push([]);
@@ -6477,7 +7050,8 @@
         // menivät käsiksi ja repesivät irti vartalosta heilahduksen mukana.
         var armThr = 0.30 + Math.max(0, 0.78 - yn) * 0.95;
         if(Math.abs(dx) > armThr && yn >= 0.40 && yn < 0.86) part = (dx < 0) ? 1 : 2;
-        else if(yn < 0.46) part = (dx < 0) ? 3 : 4;
+        else if(yn < 0.215) part = (dx < 0) ? 5 : 6;      // sääri ja jalkaterä
+        else if(yn < 0.46)  part = (dx < 0) ? 3 : 4;      // reisi
         else part = 0;
         var tri = [va, vb, vc];
         for(k=0; k<3; k++){
@@ -6495,7 +7069,8 @@
     }
     var figure = new THREE.Group();
     var limbs = {};
-    var names = ['torso','armL','armR','legL','legR'];
+    var names = ['torso','armL','armR','legL','legR','shinL','shinR'];
+    var pivots = [];
     for(i=0; i<PARTS; i++){
       if(!pos[i].length) continue;
       var g = new THREE.BufferGeometry();
@@ -6511,6 +7086,8 @@
       if(i === 1){ jx = b.maxX; jy = b.maxY - hgt*0.02; jz = 0; }
       else if(i === 2){ jx = b.minX; jy = b.maxY - hgt*0.02; jz = 0; }
       else if(i === 3 || i === 4){ jx = (b.minX+b.maxX)/2; jy = b.maxY; jz = 0; }
+      // sääri kiertyy polvesta eli oman osansa ylälaidasta
+      else if(i === 5 || i === 6){ jx = (b.minX+b.maxX)/2; jy = b.maxY; jz = 0; }
       if(i !== 0) g.translate(-jx, -jy, -jz);
       g.computeVertexNormals();
       var mesh = new THREE.Mesh(g, mat);
@@ -6532,7 +7109,20 @@
           pivot.add(mesh);
         }
         pivot.name = names[i];   // nimi kloonausta varten (etäpelaajan hahmo)
-        figure.add(pivot);
+        pivots[i] = {obj:pivot, jx:jx, jy:jy, jz:jz};
+        if(i === 5 || i === 6){
+          // Sääri ripustetaan reiden alle, jolloin polven kierto tapahtuu reiden mukana.
+          // Paikka on reiden nivelen SUHTEEN, koska pivot on nyt reiden lapsi.
+          var thigh = pivots[(i === 5) ? 3 : 4];
+          if(thigh){
+            pivot.position.set(jx - thigh.jx, jy - thigh.jy, jz - thigh.jz);
+            thigh.obj.add(pivot);
+          } else {
+            figure.add(pivot);
+          }
+        } else {
+          figure.add(pivot);
+        }
         limbs[names[i]] = pivot;
       }
     }
@@ -6544,8 +7134,16 @@
       try{ paintCharacterModel(charBuilt); }
       catch(ce){ console.warn('Pelaajahahmon värityksen laskenta epäonnistui, malli jää perusväriseksi:', ce); }
       var limbBuild = null;
-      try{ limbBuild = buildLimbedFigure(charBuilt); }
-      catch(le){ console.warn('Hahmon raajojen erottelu epäonnistui, käytetään yhtenäistä mallia:', le); }
+      // Ensisijaisesti nivelpainotettu luuranko (pinta taipuu nivelen yli). Jos se jostain
+      // syystä epäonnistuu, pudotaan vanhaan palasiksi leikkaavaan tapaan, joka toimii aina.
+      try{
+        if(buildSkinnedCharacter(charBuilt)) limbBuild = makeSkinnedFigure(false);
+        if(limbBuild) console.log('Pelaajahahmo: nivelpainotettu luuranko käytössä.');
+      }catch(se){ console.warn('Nivelpainotus epäonnistui, käytetään palasiin leikattua hahmoa:', se); limbBuild = null; }
+      if(!limbBuild){
+        try{ limbBuild = buildLimbedFigure(charBuilt); }
+        catch(le){ console.warn('Hahmon raajojen erottelu epäonnistui, käytetään yhtenäistä mallia:', le); }
+      }
       if(limbBuild){
         playerModelTemplate = limbBuild.figure;
         playerLimbs = limbBuild.limbs;
@@ -6703,24 +7301,140 @@
   var RIDER_POSE = {
     // splay = jalkojen haara sivulle, armSplay = kädet ulos kahvoille. Ilman näitä jalat
     // menivät suoraan tankin läpi ja kädet osoittivat keskelle ohjaustankoa.
-    proc:        {y:1.02, z:-0.18, leg:-0.39, arm:-0.86, lean:0.26, splay:0.26, armSplay:0.20, stand:false},
-    scoba:       {y:0.82, z:-0.30, leg:-0.72, arm:-1.00, lean:0.30, splay:0.20, armSplay:0.22, stand:false},
-    monkey:      {y:0.80, z:-0.15, leg:-0.61, arm:-1.00, lean:0.28, splay:0.28, armSplay:0.20, stand:false},
-    kickscooter: {y:0.44, z:0.34,  leg:-0.92, arm:-1.04, lean:0.30, splay:0.16, armSplay:0.18, stand:false},
-    derbi:       {y:0.80, z:-0.12, leg:-0.52, arm:-0.92, lean:0.30, splay:0.26, armSplay:0.22, stand:false}
+    // knee = polven taitto (sääri taaksepäin reiteen nähden). Ilman sitä jalka on suora kapula.
+    // Oikeassa istuma-asennossa reisi on lähes vaakasuorassa eteen ja sääri lähes pystyssä alas,
+    // joten knee on suunnilleen -leg eli se oikaisee säären takaisin maata kohti.
+    // Kulmat ovat MAAILMAN kulmia niin, että 0 = suoraan alas ja negatiivinen = eteen.
+    // Reiden maailmankulma on leg+lean, säären leg+lean+knee. Aiemmat arvot kallistivat reittä
+    // vain n. 30 astetta, jolloin jalat roikkuivat suorina alas ja hahmo näytti seisovan mopon
+    // päällä. Satuloiden korkeudet on MITATTU malleista (keskilinjan korkeusprofiili), ja
+    // reisi on nyt n. 55-70 astetta eteen ja sääri lähes pystyssä - eli oikea istuma-asento.
+    // elbow = kyynarpaan taitto. Nivelpainotus toi kyynarnivelen, jota ei aiemmin ollut:
+    // ilman sita kasivarsi oli yksi suora kapula ja kadet menivat ohjaustangon ohi tai lapi.
+    // Positiivinen arvo tuo kaden takaisin kuskia kohti, eli kyynarpaa jaa ulos ja ranne osuu kahvalle.
+    proc:        {y:1.00, z:-0.16, leg:-1.05, arm:-0.95, knee:1.25, lean:0.22, splay:0.20, armSplay:0.17, elbow:0.42, stand:false},
+    scoba:       {y:0.90, z:-0.42, leg:-1.30, arm:-0.88, knee:1.45, lean:0.20, splay:0.15, armSplay:0.19, elbow:0.46, stand:false},
+    monkey:      {y:0.84, z:-0.26, leg:-1.12, arm:-1.00, knee:1.28, lean:0.22, splay:0.22, armSplay:0.17, elbow:0.40, stand:false},
+    kickscooter: {y:0.50, z:0.02,  leg:-1.42, arm:-0.95, knee:1.50, lean:0.24, splay:0.13, armSplay:0.15, elbow:0.50, stand:false},
+    derbi:       {y:0.88, z:-0.14, leg:-1.15, arm:-1.02, knee:1.32, lean:0.22, splay:0.20, armSplay:0.18, elbow:0.38, stand:false}
   };
+  // ==========================================================================
+  // ---- LEPOANIMAATIO JA ILME ----
+  // Paikallaan seisova hahmo on se mikä paljastaa pelin "nukkemaisuuden": jos mikään ei liiku,
+  // ihminen näyttää patsaalta. Oikea ihminen hengittää, siirtää painoa jalalta toiselle,
+  // räpyttelee ja katsoo ympärilleen. Nämä ovat pieniä liikkeitä - juuri siksi ne toimivat.
+  // Kaikki tässä on PÄÄLLE lisättävää: kävelyanimaatio ajaa samoja luita, ja lepoliike
+  // häivytetään pois sitä mukaa kun hahmo lähtee liikkeelle (idleAmt).
+  // ==========================================================================
+  var idleT = 0;              // lepoanimaation oma kello
+  // HUOM: nimet alkavat eyeBlink-, koska blinkPhase on jo varattu mopon suuntavilkuille.
+  var eyeBlinkT = 1.5;        // aika seuraavaan räpäytykseen
+  var eyeBlinkPhase = 0;      // 0 = silmä auki, 1 = kiinni
+  var headYaw = 0, headPitch = 0, headYawWant = 0, headPitchWant = 0;
+  var headLookT = 0;          // milloin katse siirtyy seuraavaan kohteeseen
+  function updateBlink(dt, limbs){
+    eyeBlinkT -= dt;
+    if(eyeBlinkT <= 0){ eyeBlinkPhase = 1; eyeBlinkT = 2.2 + Math.random()*4.0; }
+    // räpäytys on nopea: silmä menee kiinni ja aukeaa n. 0,12 sekunnissa
+    eyeBlinkPhase = Math.max(0, eyeBlinkPhase - dt*8.5);
+    var open = 1 - Math.sin(Math.min(1, eyeBlinkPhase)*Math.PI)*0.94;
+    if(limbs && limbs.eyeL) limbs.eyeL.scale.y = open;
+    if(limbs && limbs.eyeR) limbs.eyeR.scale.y = open;
+  }
+  // Katseen kohde: lähin jutteluetäisyydellä oleva kyläläinen, muuten oma mopo, muuten
+  // hidas katseen harhailu. Kun hahmo katsoo jotakin, pelaaja huomaa sen heti.
+  function pickLookTarget(){
+    var best = null, bestD = 64;   // 8 m
+    if(typeof npcCharacters !== 'undefined'){
+      for(var i=0; i<npcCharacters.length; i++){
+        var np = npcCharacters[i];
+        if(np.indoor !== !!inStore) continue;
+        var dx = np.pos.x - player.position.x, dz = np.pos.z - player.position.z;
+        var d2 = dx*dx + dz*dz;
+        if(d2 < bestD){ bestD = d2; best = np.pos; }
+      }
+    }
+    if(!best && !inStore && moped){
+      var mx = moped.position.x - player.position.x, mz = moped.position.z - player.position.z;
+      if(mx*mx + mz*mz < 36) best = moped.position;
+    }
+    return best;
+  }
+  function updateIdlePose(dt, idleAmt, limbs){
+    idleT += dt;
+    if(!limbs) return;
+    // 1. hengitys: rintakehä nousee ja laskee n. 15 kertaa minuutissa
+    var breath = Math.sin(idleT*1.55);
+    // 2. painonsiirto: hyvin hidas keinunta puolelta toiselle, eri jaksonpituus kuin hengityksellä
+    //    jottei liike ala näyttää koneelliselta
+    var shift = Math.sin(idleT*0.43);
+    var microA = Math.sin(idleT*2.7)*0.4 + Math.sin(idleT*1.1)*0.6;  // pientä elävää värinää
+    var A = idleAmt;
+    if(limbs.spine){
+      limbs.spine.rotation.x = breath*0.018*A;
+      limbs.spine.rotation.z = shift*0.030*A;
+      limbs.spine.rotation.y = -shift*0.045*A;
+    }
+    if(limbs.hips){
+      limbs.hips.rotation.z = -shift*0.022*A;
+      limbs.hips.position.y = charHipY + breath*0.004*A;
+    }
+    // kädet eivät roiku täysin suorina eivätkä täysin paikallaan
+    // armRestZ oikaisee mallin A-asennon joka ruudulla - myös kävellessä, jolloin A on 0
+    if(limbs.armL) limbs.armL.rotation.z =  armRestZ + (-0.055 + shift*0.016)*A;
+    if(limbs.armR) limbs.armR.rotation.z = -armRestZ + ( 0.055 - shift*0.016)*A;
+    // kyynärpää LISÄTÄÄN kävelyn päälle: kävelysykli on jo asettanut oman arvonsa tälle ruudulle
+    if(limbs.foreL) limbs.foreL.rotation.x += (0.19 + microA*0.012)*A;
+    if(limbs.foreR) limbs.foreR.rotation.x += (0.19 - microA*0.012)*A;
+    // 3. katse
+    headLookT -= dt;
+    if(headLookT <= 0){
+      headLookT = 1.6 + Math.random()*2.8;
+      var tgt = pickLookTarget();
+      if(tgt){
+        // kohteen suunta hahmon omassa kehyksessä: malli katsoo +Z:aan
+        var ang = Math.atan2(tgt.x - player.position.x, tgt.z - player.position.z) - playerHeading;
+        while(ang > Math.PI) ang -= Math.PI*2;
+        while(ang < -Math.PI) ang += Math.PI*2;
+        headYawWant = Math.max(-0.85, Math.min(0.85, ang));
+        headPitchWant = -0.05;
+      } else {
+        headYawWant = (Math.random()-0.5)*0.75;
+        headPitchWant = (Math.random()-0.5)*0.22;
+      }
+    }
+    headYaw   += (headYawWant*A   - headYaw)   * Math.min(1, dt*3.2);
+    headPitch += (headPitchWant*A - headPitch) * Math.min(1, dt*3.2);
+    if(limbs.head){
+      limbs.head.rotation.y = headYaw;
+      limbs.head.rotation.x = headPitch + breath*0.010*A;
+      limbs.head.rotation.z = shift*0.020*A;
+    }
+  }
   function riderHipY(){
+    // Nivelpainotetussa hahmossa reisiluu on lantion lapsi, joten sen position.y on lähes nolla.
+    // Oikea lonkkakorkeus talletetaan erikseen luurankoa rakennettaessa.
+    if(skinnedTemplate) return charHipY;
     return (playerLimbs && playerLimbs.legL) ? playerLimbs.legL.position.y : 0.88;
   }
   function makeRiderFigure(){
     var g = new THREE.Group();
     var limbs = null;
-    if(playerModelTemplate){
+    // Nivelpainotettu hahmo EI kloonaudu: SkinnedMesh.clone jakaisi saman luurangon, jolloin
+    // kuski, tarakkalainen ja kävelijä liikkuisivat täsmälleen samalla tavalla. Siksi jokaiselle
+    // rakennetaan oma luuranko samasta geometriasta.
+    var skinFig = (typeof makeSkinnedFigure === 'function') ? makeSkinnedFigure(false) : null;
+    if(skinFig){
+      limbs = skinFig.limbs;
+      g.add(skinFig.figure);
+    } else if(playerModelTemplate){
       var fig = playerModelTemplate.clone(true);
       limbs = {
         armL: fig.getObjectByName('armL'),
         armR: fig.getObjectByName('armR'),
         legL: fig.getObjectByName('legL'),
+        shinL: fig.getObjectByName('shinL'),
+        shinR: fig.getObjectByName('shinR'),
         legR: fig.getObjectByName('legR')
       };
       g.add(fig);
@@ -6761,8 +7475,16 @@
     var sp = pose.splay || 0, asp = pose.armSplay || 0;
     if(L.legL){ L.legL.rotation.x = pose.leg + lean; L.legL.rotation.z = -sp; }
     if(L.legR){ L.legR.rotation.x = pose.leg + lean; L.legR.rotation.z =  sp; }
-    if(L.armL){ L.armL.rotation.x = pose.arm + lean; L.armL.rotation.z = -asp; }
-    if(L.armR){ L.armR.rotation.x = pose.arm + lean; L.armR.rotation.z =  asp; }
+    // polvi: sääri taittuu reiden alta alas, jolloin jalka asettuu jalkatapille
+    var kn = (pose.knee !== undefined) ? pose.knee : 0;
+    if(L.shinL) L.shinL.rotation.x = kn;
+    if(L.shinR) L.shinR.rotation.x = kn;
+    if(L.armL){ L.armL.rotation.x = pose.arm + lean; L.armL.rotation.z =  armRestZ - asp; }
+    if(L.armR){ L.armR.rotation.x = pose.arm + lean; L.armR.rotation.z = -armRestZ + asp; }
+    // kyynarnivel: olemassa vain nivelpainotetussa hahmossa, joten tarkistetaan erikseen
+    var el = (pose.elbow !== undefined) ? pose.elbow : 0;
+    if(L.foreL) L.foreL.rotation.x = el;
+    if(L.foreR) L.foreR.rotation.x = el;
   }
   // Jos GLB-mallit eivät latautuneet, näkyvissä on proseduraalinen mopo vaikka valittuna
   // olisi "scoba" - silloin satulan paikka on eri ja asento pitää ottaa proc-riviltä.
@@ -6785,6 +7507,7 @@
       applyRiderPose(riderEntry, riderPoseFor(equippedMopedId));
     }
     if(!riderEntry.group.visible) return;
+    updateBlink(dt, riderEntry.limbs);   // kuski räpyttelee samalla tavalla kuin kävelijä
     // Kaasukahva: oikea ranne kiertyy ja kyynärpää nousee kun kaasutetaan, ja ylävartalo
     // nojaa hieman enemmän eteen. Pieni liike, mutta ilman sitä kuski näyttää patsaalta.
     var want = (input && input.fwd && !crashed && engineRunning) ? 1 : 0;
@@ -6793,10 +7516,12 @@
     var L = riderEntry.limbs;
     if(L && L.armR){
       L.armR.rotation.x = pose.arm + pose.lean - 0.14*throttleTwist;
-      L.armR.rotation.z = (pose.armSplay || 0) + 0.12*throttleTwist;
+      L.armR.rotation.z = -armRestZ + (pose.armSplay || 0) + 0.12*throttleTwist;
+      if(L.foreR) L.foreR.rotation.x = (pose.elbow || 0) + 0.16*throttleTwist;
     }
     if(L && L.armL){
       L.armL.rotation.x = pose.arm + pose.lean - 0.05*throttleTwist;
+      if(L.foreL) L.foreL.rotation.x = (pose.elbow || 0) + 0.06*throttleTwist;
     }
     riderEntry.group.rotation.x = -(pose.lean + 0.07*throttleTwist);
   }
@@ -6806,7 +7531,7 @@
   // sijaintinsa ON kuljettajan mopon sijainti, joka tulee verkosta. Oma kävelevä hahmo
   // piilotetaan ja tilalle asetetaan tämä ryhmä. Se toimii kuin mopon lapsiryhmä, paitsi että
   // mopo on toisen pelaajan koneella - siksi ryhmän paikka ja suunta asetetaan käsin joka ruudulla.
-  var PILLION_POSE = {y:0.80, z:-0.70, leg:-0.52, arm:-0.10, lean:0.18, splay:0.30, armSplay:0.10, stand:false};
+  var PILLION_POSE = {y:0.86, z:-0.72, leg:-1.00, arm:-0.18, knee:1.20, lean:0.16, splay:0.26, armSplay:0.12, elbow:0.55, stand:false};
   var PILLION_REACH = 3.2;       // kuinka läheltä kyytiin pääsee
   var pillionOn = null;          // kenen kyydissä ollaan (etäpelaajan tunniste) tai null
   var pillionEntry = makeRiderFigure();
@@ -7042,7 +7767,8 @@
   }
   function repairCostFor(p){
     var rate = p.tierIndex > 0 ? 1.8 : 1.2;
-    return Math.round((100 - p.condition) * rate);
+    // maine vaikuttaa hintaan: tallin ukko antaa tutulle alennusta ja rettelöitsijälle ylihintaa
+    return Math.max(1, Math.round((100 - p.condition) * rate * (typeof villagePriceFactor === 'function' ? villagePriceFactor() : 1)));
   }
   function partById(id){
     for(var pb=0; pb<parts.length; pb++){ if(parts[pb].id === id) return parts[pb]; }
@@ -7092,9 +7818,9 @@
         '<div class="partBar"><i style="width:'+p.condition+'%"></i></div>' +
         '<div class="partActions">' +
           '<button class="repairBtn"'+(missing<=0 || kitOnShelf || money<cost ? ' disabled' : '')+'>'+repairLabel+'</button>' +
-          (next ? '<button class="tuneBtn"'+(tierOnShelf || money<next.price || !tierAvailable(next) ? ' disabled' : '')+'>'+
+          (next ? '<button class="tuneBtn"'+(tierOnShelf || money<shopPrice(next.price) || !tierAvailable(next) ? ' disabled' : '')+'>'+
                     (!tierAvailable(next) ? next.label+' · vaatii Monkeyn'
-                      : (tierOnShelf ? 'Hyllyllä' : next.label+' '+next.price+' €'))+'</button>' : '') +
+                      : (tierOnShelf ? 'Hyllyllä' : next.label+' '+shopPrice(next.price)+' €'))+'</button>' : '') +
         '</div>';
       var repairBtn = row.querySelector('.repairBtn');
       repairBtn.addEventListener('click', function(){
@@ -7110,8 +7836,9 @@
       if(tuneBtn){
         tuneBtn.addEventListener('click', function(){
           var nx = p.tiers[p.tierIndex+1];
-          if(!nx || money < nx.price || shelfHas(p.id, 'tier') || !tierAvailable(nx)) return;
-          money -= nx.price;
+          var nxPrice = shopPrice(nx ? nx.price : 0);
+          if(!nx || money < nxPrice || shelfHas(p.id, 'tier') || !tierAvailable(nx)) return;
+          money -= nxPrice;
           upgradesBought++; // lasketaan ostohetkellä, jotta tarinan "osta tuunausosa" etenee heti
           updateMoneyDisplay();
           addToShelf(p.id, 'tier', p.tierIndex+1);
@@ -7494,6 +8221,15 @@
         p.condition = resultCondition;
       }
       resultCondition = Math.round(p.condition);
+      // Kun vioittunut osa vaihdetaan tai korjataan, vika poistuu: tämä on se syy miksi
+      // leikanneen mopon kanssa KANNATTAA raahautua kotiin asti.
+      if(breakdown){
+        var bk = breakdownKindById(breakdown.kind);
+        if(bk && bk.part === p.id && p.condition > bk.raja){
+          clearBreakdown();
+          showToast(false, '🔧 Vika korjattu', p.name + ' on taas kunnossa. Mopo lähtee käyntiin.', 4000);
+        }
+      }
     }
     for(var gi=0; gi<garageShelf.length; gi++){
       if(garageShelf[gi] === it){ garageShelf.splice(gi,1); break; }
@@ -7816,7 +8552,9 @@
       money += pay;
       updateMoneyDisplay();
       weldsDone++;
+      repVillageAdd(3);
       jobsCompletedCount++;
+      repVillageAdd(4);   // tehty työ näkyy kylän silmissä
       miniFinish('Sauma valmis. Laatu ' + Math.round(q*100) + ' % · +' + pay + ' €', q);
     }
   }
@@ -7944,6 +8682,7 @@
     refreshEngineLoop();
     // ja osoitetaan renkaiden pyöritys käytössä olevan mallin omiin pyöriin
     activeWheels = scobaOn ? scobaWheels : (kickOn ? kickWheels : (monkeyOn ? monkeyWheels : null));
+    gearNow = 0;   // uusi mopo lähtee aina ykkösvaihteelta
     // jokaisella mopolla on oma vaurionsa - ajetaan tämän mallin lommot sen omaan geometriaan
     if(typeof damageByMoped !== 'undefined' && damageByMoped) damageRebuild();
   }
@@ -7966,10 +8705,73 @@
   }
   // 88BR-sylinterisarja on oma lisänsä kolmen perusviritysosan päälle: kaikki neljä yhdessä
   // antavat käyttäjän toivomat 250 km/h (120 vakiona, 210 kolmella osalla, 250 kun 88BR on kiinni).
+  // HUD tarvitsee saman huippunopeuden kuin ajologiikka, mutta ajosilmukan muuttujat ovat
+  // sen oman lohkon sisällä - tämä laskee saman luvun erikseen mittarinäyttöä varten.
+  function dashMaxSpeed(){
+    if(equippedMopedId === 'derbi') return derbiTopSpeedKmh()/3.6;
+    return maxSpeed;
+  }
   function derbiHas88br(){
     var c = partById('sylinteri');
     return !!(c && c.installed && c.tiers[c.tierIndex] && c.tiers[c.tierIndex].br88);
   }
+  // ==========================================================================
+  // ---- VAIHTEISTO ----
+  // Skootterit ovat oikeasti automaatteja, mutta käyttäjä halusi vaihteet kaikkiin paitsi
+  // Ekaskootteriin. Jokaisella vaihteella on oma osuutensa huippunopeudesta: ykkösellä pääsee
+  // kolmannekseen, nelosella täyteen. Liian isolla vaihteella matalalla kierroksella moottori
+  // nitkuttaa (bog) eikä vedä, ja kierrosrajalla veto loppuu kokonaan - eli vaihdetta pitää
+  // oikeasti vaihtaa eikä vain pitää kaasua pohjassa.
+  // ==========================================================================
+  var GEAR_TOP = [0.30, 0.54, 0.78, 1.00];   // kunkin vaihteen huippunopeus osuutena maksimista
+  var gearNow = 0;                            // 0 = ykkösvaihde
+  var gearShiftCooldown = 0;
+  function gearsOn(){ return equippedMopedId !== 'scoba'; }
+  function gearCount(){ return gearsOn() ? GEAR_TOP.length : 1; }
+  // vaihteen huippunopeus m/s
+  function gearMaxSpeed(effMax){
+    if(!gearsOn()) return effMax;
+    return effMax * GEAR_TOP[Math.max(0, Math.min(GEAR_TOP.length-1, gearNow))];
+  }
+  // 0..1+ "kierrosluku" nykyisellä vaihteella
+  function gearRev(effMax){
+    var gm = gearMaxSpeed(effMax);
+    if(gm < 0.01) return 0;
+    return Math.abs(speed) / gm;
+  }
+  // kuinka hyvin moottori vetää juuri nyt
+  function gearPower(effMax){
+    if(!gearsOn()) return 1;
+    var rev = gearRev(effMax);
+    var bog = Math.min(1, 0.35 + rev*2.6);        // liian iso vaihde matalalla: nitkuttaa
+    var top = Math.max(0, 1 - rev*rev*0.92);      // kierrosrajalla veto loppuu
+    return bog * top;
+  }
+  function shiftGear(dir){
+    if(!gearsOn()) return;
+    if(gearShiftCooldown > 0) return;
+    var next = gearNow + dir;
+    if(next < 0 || next >= gearCount()) return;
+    gearNow = next;
+    gearShiftCooldown = 0.28;
+    // kytkinpotku: ääni katkeaa hetkeksi vaihtaessa, kuten oikealla mopolla
+    if(typeof engineMisfireDip !== 'undefined') engineMisfireDip = 0.55;
+    playGearClunk();
+    if(gearBoxEl) gearValEl.textContent = (gearNow+1);
+  }
+  function playGearClunk(){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(240, t);
+    o.frequency.exponentialRampToValueAtTime(90, t + 0.09);
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+    o.connect(g).connect(sfxOut());
+    o.start(t); o.stop(t + 0.13);
+  }
+
   function derbiTopSpeedKmh(){
     var v = 120 + (210 - 120)*(derbiUpgradeCount()/3);
     if(derbiHas88br()) v += 40;
@@ -8045,7 +8847,7 @@
     var ownedStoreItems = storeItems.filter(function(it){ return it.owned; });
     if(ownedStoreItems.length){
       ownedStoreItems.forEach(function(it){
-        html += '<div class="invRow"><span class="invName">'+it.name+'</span><span class="invVal">Omistat ✓</span></div>';
+        html += '<div class="invRow"><span class="invName">'+it.name+'</span><span class="invVal">'+(it.consumable ? ((it.count||0)+' kpl') : 'Omistat ✓')+'</span></div>';
       });
     } else {
       html += '<div class="invRow"><span class="invName">Ei vielä ostoksia</span><span class="invVal">—</span></div>';
@@ -8061,6 +8863,19 @@
   function handleInteract(){
     if(crashed) return;
     if(mode === 'jail') return; // cutscenen aikana ei voi nousta mopoon/avata paneeleita
+    // päivän tapahtuma tarkistetaan ensin: se on aina paikkaan sidottu eikä ole minkään
+    // muun toiminnon tiellä, koska kohteet ovat kartan POI-pisteitä eivätkä rakennuksia
+    if(tryDailyEvent()) return;
+    // Ajokokeen vastaanottaja menee mopoon nousemisen edelle: konttorin pihaan parkkeerattu
+    // mopo on väistämättä lähellä, ja E:n pitää silloin tarkoittaa koetta eikä kyytiin nousua.
+    if(mode !== 'riding' && !examRun && examAvailable()){
+      for(var exi=0; exi<npcCharacters.length; exi++){
+        var exn = npcCharacters[exi];
+        if(!exn.exam) continue;
+        var exdx = exn.pos.x - player.position.x, exdz = exn.pos.z - player.position.z;
+        if(Math.sqrt(exdx*exdx + exdz*exdz) <= exn.radius){ startExam(); return; }
+      }
+    }
     if(mode === 'pillion'){ leavePillion(false); return; }
     if(mode === 'riding'){
       mode = 'walking';
@@ -8083,6 +8898,8 @@
       if(pcand){ enterPillion(pcand); return; }
     }
     if(Math.sqrt(dxm*dxm+dzm*dzm) <= mountRadius){
+      // leikannutta tai ketjutonta mopoa ei voi ajaa: E vaihtaa työntämisen päälle ja pois
+      if(mopedDead() || pushingMoped){ togglePushMoped(); return; }
       if(!mopedAssembled()){
         showToast(false, 'Mopo on osina', 'Kasaa osat autotallin työpöydällä ('+installedCount()+'/'+parts.length+' valmiina).', 3000);
         return;
@@ -8109,6 +8926,7 @@
     var dxt = talli.position.x - player.position.x;
     var dzt = talli.position.z - player.position.z;
     if(Math.sqrt(dxt*dxt+dzt*dzt) <= talliRadius){
+      if(!repairOpen && !placeOpen('talli')){ closedToast('talli'); return; }
       repairOpen = !repairOpen;
       repairPanel.hidden = !repairOpen;
       if(repairOpen){ renderParts(); missionPanel.hidden = true; tunePanel.hidden = true; inventoryPanel.hidden = true; inventoryOpen = false; closeMopedShop(); }
@@ -8117,6 +8935,7 @@
     var dxs = mopedShop.position.x - player.position.x;
     var dzs = mopedShop.position.z - player.position.z;
     if(Math.sqrt(dxs*dxs+dzs*dzs) <= mopedShopRadius){
+      if(!mopedShopOpen && !placeOpen('mopokauppa')){ closedToast('mopokauppa'); return; }
       mopedShopOpen = !mopedShopOpen;
       mopedPanelEl.hidden = !mopedShopOpen;
       if(mopedShopOpen){ renderMopeds(); missionPanel.hidden = true; tunePanel.hidden = true; inventoryPanel.hidden = true; inventoryOpen = false; closeRepair(); }
@@ -8147,6 +8966,7 @@
       var dxkd = kauppaIsoDoorPos.x - player.position.x;
       var dzkd = kauppaIsoDoorPos.z - player.position.z;
       if(Math.sqrt(dxkd*dxkd+dzkd*dzkd) <= kauppaIsoDoorRadius){
+        if(!placeOpen('kauppa')){ closedToast('kauppa'); return; }
         enterStore();
         return;
       }
@@ -8193,6 +9013,7 @@
       if(npcC.indoor) continue; // sisätilan hahmot käsitellään kaupan omassa haarassa
       var dxn = npcC.pos.x - player.position.x, dzn = npcC.pos.z - player.position.z;
       if(Math.sqrt(dxn*dxn+dzn*dzn) <= npcC.radius){
+        if(npcC.exam){ startExam(); return; }
         chatWithNpc(npcC);
         return;
       }
@@ -8220,12 +9041,24 @@
   window.addEventListener('keydown', function(e){
     if(!gameStarted) return;
     var k = e.key.toLowerCase();
+    // Välikohtaus ja keskustelu vievät näppäimet itselleen, jottei mopo lähde karkuun kesken puheen
+    if(typeof cutsceneActive !== 'undefined' && cutsceneActive){
+      if(k===' ' || k==='enter' || k==='escape'){ e.preventDefault(); cutsceneNext(); }
+      return;
+    }
+    if(typeof dlgOpen !== 'undefined' && dlgOpen){
+      if(k==='escape' || k==='e'){ e.preventDefault(); closeDialogue(); }
+      return;
+    }
     if(k==='arrowup'||k==='w') input.fwd = true;
     if(k==='arrowdown'||k==='s') input.back = true;
     if(k==='arrowleft'||k==='a') input.left = true;
     if(k==='arrowright'||k==='d') input.right = true;
     // ruuvitila ottaa näppäimet itselleen: E asettaa osan, Q vaihtaa työkalua, G korjaa kierteen
     if(wrenchMode){
+      // kiristys näppäimillä: nuolet eivät saa samalla liikuttaa hahmoa
+      if(k==='arrowup' || k==='r'){ input.fwd = false; wrenchKeyTighten = true; e.preventDefault(); return; }
+      if(k==='arrowdown' || k==='f'){ input.back = false; wrenchKeyLoosen = true; e.preventDefault(); return; }
       if(k==='escape'){ exitWrenchMode(); return; }
       if(k==='e' && !e.repeat){ wrenchSeatPart(); return; }
       if(k==='q' && !e.repeat){ wrenchCycleTool(); return; }
@@ -8233,7 +9066,7 @@
       if(k==='1'){ wrenchSelectTool('kiintoavain'); return; }
       if(k==='2'){ wrenchSelectTool('ruuvimeisseli'); return; }
       if(k==='3'){ wrenchSelectTool('tulppa-avain'); return; }
-      if(k===' '||k==='f'||k==='r'||k==='m'||k==='tab'){ e.preventDefault(); return; }
+      if(k===' '||k==='m'||k==='tab'){ e.preventDefault(); return; }
       setFirstInput();
       return;
     }
@@ -8254,6 +9087,10 @@
     if(k==='f' && !e.repeat){ kickStart(); }
     if(k==='e' && !e.repeat){ handleInteract(); }
     if(k==='m' && !e.repeat){ toggleBigMap(); }
+    if(k==='g' && !e.repeat){ roadsideRepair(); }   // hätäkorjaus repun varaosalla
+    // vaihteet: X ylös, Z alas (vain mopoilla joissa on vaihteisto)
+    if(k==='x' && !e.repeat && mode === 'riding'){ shiftGear(1); }
+    if(k==='z' && !e.repeat && mode === 'riding'){ shiftGear(-1); }
     if(k==='escape' && garageOpen){ closeGarage(); }
     if(k==='escape' && !tunePanel.hidden){ tunePanel.hidden = true; }
     if(k==='escape'){ closeAudioPanel(); }
@@ -8263,6 +9100,10 @@
   window.addEventListener('keyup', function(e){
     if(!gameStarted) return;
     var k = e.key.toLowerCase();
+    if(wrenchMode){
+      if(k==='arrowup' || k==='r') wrenchKeyTighten = false;
+      if(k==='arrowdown' || k==='f') wrenchKeyLoosen = false;
+    }
     if(k==='arrowup'||k==='w') input.fwd = false;
     if(k==='arrowdown'||k==='s') input.back = false;
     if(k==='arrowleft'||k==='a') input.left = false;
@@ -8345,7 +9186,7 @@
     engineSource.loop = true;
     engineGain = audioCtx.createGain();
     engineGain.gain.value = 0;
-    engineSource.connect(engineGain).connect(sfxOut());
+    engineSource.connect(engineGain).connect(engineToneNode() || sfxOut());
     engineSource.start(0);
   }
   // Monkeyllä on oma moottoriääni. Silmukka on yksi jatkuvasti pyörivä lähde, joten mopoa
@@ -8378,6 +9219,319 @@
   var engineIdleGain = 0.34, engineThrottleGain = 0.62;
   var kickBuffer = null;
   var kickCooldown = 0;
+
+  // ==========================================================================
+  // ---- MOOTTORIN ÄÄNI: KIERROKSET, PAKOPUTKI JA YSKIMINEN ----
+  // Ajoääni oli yksi silmukassa pyörivä mp3-näyte, jonka VOIMAKKUUTTA säädettiin kaasun mukaan.
+  // Se kuulosti samalta ykkösvaihteella ja neljännellä, rämällä ja viritetyllä mopolla - eli
+  // äänestä ei saanut mitään tietoa siitä mitä mopo tekee. Nyt samaa näytettä käytetään yhä
+  // (synteettinen "bittimoottori" oli aiemmin kokeiltu ja todettu huonoksi), mutta:
+  //   1. SOITTONOPEUS seuraa kierroslukua. Vaihtaessa kierrokset putoavat ja ääni laskee,
+  //      kuten oikeassa mopossa. Tämä on se yksi muutos joka tekee äänestä informatiivisen.
+  //   2. ALIPÄÄSTÖSUODIN värittää äänen osien mukaan: tehoputki avaa, iso sylinteri madaltaa,
+  //      rämä mopo kuulostaa tukkoiselta.
+  //   3. RÄTINÄ kun kaasun päästää isoilta kierroksilta - kaksitahtisen tunnusmerkki.
+  //   4. YSKIMINEN kun kaasutin on säätämättä ja osat retuperällä: ääni nykäisee ja veto katkeaa
+  //      hetkeksi. Se on vihje siitä että kaasutin kannattaisi käydä säätämässä.
+  // ==========================================================================
+  var engineRev = 0;            // 0..1.15, pehmennetty kierrosluku pelkkää ääntä varten
+  var engineFreeRev = 0;        // paikallaan kaasuttaminen: kierrokset nousevat ilman vauhtia
+  var enginePrevThrottle = false;
+  var engineMisfireT = 2.5;     // aika seuraavaan yskäisyyn
+  var engineMisfireDip = 0;     // 0..1, kuinka paljon ääni on juuri nyt nykäisyn takia alhaalla
+  var engineFilter = null;
+  var crackleBuffer = null;
+  function engineToneNode(){
+    if(!audioCtx) return null;
+    if(!engineFilter){
+      engineFilter = audioCtx.createBiquadFilter();
+      engineFilter.type = 'lowpass';
+      engineFilter.frequency.value = 4200;
+      engineFilter.Q.value = 0.7;
+      engineFilter.connect(sfxOut());
+    }
+    return engineFilter;
+  }
+  // Moottorin "terveys" 0..1: osien keskikunto, jota tuore kaasuttimen säätö parantaa.
+  function engineHealth(){
+    var sum = 0;
+    for(var ehi=0; ehi<parts.length; ehi++) sum += parts[ehi].condition;
+    var c = parts.length ? (sum/parts.length)/100 : 1;
+    if(carbTuneLeft > 0) c = Math.min(1, c + 0.28*carbTune);
+    return c;
+  }
+  function engineRateFor(rev){
+    var base = 0.72 + rev*0.86;
+    if(kilpaPipeOwned && exhaustMode === 'kilpa') base *= 1.055;   // tehoputki soi kireämmin
+    if(derbiHas88br()) base *= 0.955;                              // iso sylinteri soi matalammalta
+    return Math.max(0.58, Math.min(1.88, base));
+  }
+  function engineCutoffFor(rev, health){
+    var f = 1500 + rev*3400;
+    if(kilpaPipeOwned && exhaustMode === 'kilpa') f *= 1.35;       // avoin putki päästää ylä-äänet läpi
+    f *= 0.72 + health*0.38;                                       // rämä mopo kuulostaa tukkoiselta
+    return Math.max(650, Math.min(9000, f));
+  }
+  function crackleBuf(){
+    if(crackleBuffer || !audioCtx) return crackleBuffer;
+    var n = Math.floor(audioCtx.sampleRate*0.09);
+    var b = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    var d = b.getChannelData(0);
+    for(var i=0; i<n; i++){ var e = Math.pow(1 - i/n, 3); d[i] = (Math.random()*2-1)*e; }
+    crackleBuffer = b;
+    return b;
+  }
+  // Rätinä: muutama lyhyt kaistanpäästösuodatettu kohina kaasun päästön jälkeen.
+  function playExhaustCrackle(strength){
+    if(muted || !audioCtx || strength <= 0.05) return;
+    var buf = crackleBuf();
+    if(!buf) return;
+    var t = audioCtx.currentTime;
+    var pops = 2 + Math.floor(Math.random()*4);
+    var loud = (kilpaPipeOwned && exhaustMode === 'kilpa') ? 1.5 : 1;
+    for(var i=0; i<pops; i++){
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = 0.7 + Math.random()*1.1;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 900 + Math.random()*1500;
+      bp.Q.value = 1.6;
+      var g = audioCtx.createGain();
+      var at = t + i*(0.04 + Math.random()*0.08);
+      var peak = Math.max(0.004, 0.075*strength*loud*(0.5 + Math.random()*0.7));
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(peak, at + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.09);
+      src.connect(bp).connect(g).connect(sfxOut());
+      src.start(at); src.stop(at + 0.13);
+    }
+  }
+  // Yskäisy: matala tömähdys, joka kuuluu kun moottori nykäisee.
+  function playEngineMisfire(){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(115, t);
+    o.frequency.exponentialRampToValueAtTime(44, t + 0.13);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.085, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
+    o.connect(g).connect(sfxOut());
+    o.start(t); o.stop(t + 0.19);
+  }
+  // Kutsutaan joka ruudulla ajotilassa. rev = gearRev(), eli vauhti suhteessa vaihteen huippuun.
+  function updateEngineAudio(dt, throttle, rawRev){
+    // paikallaan kaasuttaminen: kierrokset nousevat vaikka mopo ei liiku
+    var want = throttle ? 1 : 0;
+    engineFreeRev += (want - engineFreeRev) * Math.min(1, dt*(throttle ? 3.4 : 2.2));
+    var target = Math.min(1.15, Math.max(rawRev, throttle ? 0.22 + engineFreeRev*0.40 : rawRev*0.92));
+    if(!engineRunning) target = 0;
+    // kierrokset nousevat nopeasti ja laskevat hitaammin, kuten oikealla moottorilla
+    engineRev += (target - engineRev) * Math.min(1, dt*(target > engineRev ? 7.5 : 3.2));
+
+    // rätinä kun kaasu päästetään isoilta kierroksilta
+    if(enginePrevThrottle && !throttle && engineRunning && engineRev > 0.42) playExhaustCrackle(Math.min(1, engineRev));
+    enginePrevThrottle = throttle;
+
+    // yskiminen: vain jos kaasutin on säätämättä ja osat retuperällä
+    var health = engineHealth();
+    engineMisfireDip = Math.max(0, engineMisfireDip - dt*5.5);
+    if(engineRunning && health < 0.50){
+      engineMisfireT -= dt*(throttle ? 1.5 : 0.6);
+      if(engineMisfireT <= 0){
+        // harvakseltaan: yskäisy on vihje huollosta, ei jatkuva häiriö
+        engineMisfireT = 4.0 + Math.random()*9.0 + health*14.0;
+        engineMisfireDip = 1;
+        playEngineMisfire();
+      }
+    }
+
+    if(!audioCtx) return;
+    var tA = audioCtx.currentTime;
+    if(engineSource && engineSource.playbackRate){
+      engineSource.playbackRate.setTargetAtTime(engineRateFor(engineRev) * (1 - engineMisfireDip*0.22), tA, 0.05);
+    }
+    var fn = engineToneNode();
+    if(fn) fn.frequency.setTargetAtTime(engineCutoffFor(engineRev, health), tA, 0.08);
+    if(engineGain){
+      var base = (muted || !engineRunning) ? 0
+        : engineIdleGain + (engineThrottleGain - engineIdleGain) * Math.min(1, (throttle ? 0.45 : 0) + engineRev*0.72);
+      engineGain.gain.setTargetAtTime(base * (1 - engineMisfireDip*0.55), tA, throttle ? 0.07 : 0.22);
+    }
+  }
+
+  // ==========================================================================
+  // ---- HAJOAMINEN KESKEN AJON ----
+  // Tähän asti huono kunto vaikutti vain kiihtyvyyteen ja käynnistymiseen: mopo ei koskaan
+  // pettänyt kesken matkan. Se on juuri se mikä My Summer Carissa tekee huollosta jännittävää -
+  // laiminlyönti kostautuu kaukana kotoa, ei tallin ovella.
+  //
+  // Jokainen vikatyyppi on sidottu YHTEEN osaan ja laukeaa vasta kun se osa on todella loppu.
+  // Todennäköisyys skaalautuu sillä kuinka kovaa mopoa juuri nyt rääkkää (kierrokset, keulinta),
+  // joten varovasti ajamalla rämälläkin pääsee kotiin. Osa vioista voidaan korjata tien päällä,
+  // JOS varaosa on ostettu etukäteen kyläkaupasta - se tekee kaupassa käynnistä hyödyllisen
+  // myös silloin kun mikään ei ole vielä rikki.
+  // ==========================================================================
+  var breakdown = null;          // {kind, since} tai null
+  var brokenTyre = false;        // rengasrikko kulkee erikseen: mopo kulkee, mutta huonosti
+  var breakdownCheckT = 0;
+  var BREAKDOWN_KINDS = [
+    {id:'kiinnileikkaus', part:'sylinteri', raja:12, pushOnly:true, tarvike:null,
+     nimi:'🔥 Moottori leikkasi kiinni',
+     teksti:'Sylinteri on loppu ja mäntä tarttui. Mopo ei lähde käyntiin ennen kuin sylinteri on korjattu tallilla. Työnnä mopo kotiin (E).'},
+    {id:'ketjuPoikki', part:'ketju', raja:10, pushOnly:true, tarvike:'ketjulukko',
+     nimi:'⛓️ Ketju katkesi',
+     teksti:'Ketju lensi poikki eikä takapyörä vedä. Ketjulukolla sen korjaa tien päällä (G), muuten mopo pitää työntää kotiin (E).'},
+    {id:'tulppaKuoli', part:'sytytystulppa', raja:14, pushOnly:false, tarvike:'varatulppa',
+     nimi:'⚡ Sytytystulppa karstoittui',
+     teksti:'Mopo sammui kesken ajon. Varatulpalla pääsee jatkamaan heti (G) - muuten polkaise ja toivo parasta.'},
+    {id:'jarrutPetti', part:'jarrut', raja:8, pushOnly:false, tarvike:null,
+     nimi:'🛑 Jarrut pettivät',
+     teksti:'Jarrupalat ovat loppu. Mopo kulkee mutta ei juuri pysähdy - aja varovasti tallille.'}
+  ];
+  function breakdownKindById(id){
+    for(var i=0; i<BREAKDOWN_KINDS.length; i++) if(BREAKDOWN_KINDS[i].id === id) return BREAKDOWN_KINDS[i];
+    return null;
+  }
+  // Mopo ei liiku omin voimin: leikannut moottori tai poikki oleva ketju.
+  function mopedDead(){
+    if(!breakdown) return false;
+    var k = breakdownKindById(breakdown.kind);
+    return !!(k && k.pushOnly);
+  }
+  function breakdownBrakeFactor(){ return (breakdown && breakdown.kind === 'jarrutPetti') ? 0.22 : 1; }
+  function breakdownSpeedFactor(){ return brokenTyre ? 0.55 : 1; }
+  function breakdownGripFactor(){ return brokenTyre ? 0.6 : 1; }
+  function triggerBreakdown(kind){
+    if(breakdown) return;
+    var k = breakdownKindById(kind);
+    if(!k) return;
+    breakdown = {kind: kind, since: 0};
+    if(k.pushOnly || kind === 'tulppaKuoli'){
+      engineRunning = false;
+      if(audioCtx && engineGain) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.08);
+    }
+    if(kind === 'kiinnileikkaus') playSeizeSound();
+    showToast(true, k.nimi, k.teksti, 7000);
+    updateBreakdownBanner();
+    saveGame();
+  }
+  function clearBreakdown(){
+    breakdown = null;
+    updateBreakdownBanner();
+    saveGame();
+  }
+  // Kiinnileikkauksen ääni: metallinen kirskahdus joka vaimenee nopeasti.
+  function playSeizeSound(){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain(), f = audioCtx.createBiquadFilter();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(420, t);
+    o.frequency.exponentialRampToValueAtTime(70, t + 0.55);
+    f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 3.2;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(f).connect(g).connect(sfxOut());
+    o.start(t); o.stop(t + 0.65);
+  }
+  // Kutsutaan ajotilassa joka ruudulla. stress = kuinka kovaa mopoa rääkätään juuri nyt.
+  function updateBreakdowns(dt, stress, offRoad, speedMs){
+    if(mode !== 'riding' || crashed) return;
+    breakdownCheckT += dt;
+    if(breakdownCheckT < 0.5) return;
+    var step = breakdownCheckT;
+    breakdownCheckT = 0;
+    // rengasrikko: vain sorasta/pellolta kovassa vauhdissa
+    if(!brokenTyre && offRoad && speedMs > 8.5){
+      if(Math.random() < 0.016*step*(speedMs/10)){
+        brokenTyre = true;
+        showToast(true, '💨 Rengas puhkesi', 'Sorasta tuli reikä. Mopo kulkee hitaasti ja vetää sivuun. Paikkaussarjalla sen korjaa tien päällä (G).', 6500);
+        updateBreakdownBanner();
+        saveGame();
+        return;
+      }
+    }
+    if(breakdown) return;   // yksi vika kerrallaan riittää
+    for(var i=0; i<BREAKDOWN_KINDS.length; i++){
+      var k = BREAKDOWN_KINDS[i];
+      var p = partById(k.part);
+      if(!p || p.condition >= k.raja) continue;
+      // mitä lähempänä nollaa osa on, sitä herkemmin se pettää
+      var sev = 1 - p.condition/k.raja;
+      if(Math.random() < 0.055*sev*stress*step){ triggerBreakdown(k.id); return; }
+    }
+  }
+
+  // ---- MOPON TYÖNTÄMINEN ----
+  // Leikannutta moottoria tai poikki olevaa ketjua ei korjata tien päällä, joten mopo pitää saada
+  // jotenkin kotiin. Työntäminen on hidasta ja tylsää - ja juuri siksi se tuntuu rangaistukselta
+  // siitä että huolto jäi tekemättä. Mopo roikkuu pelaajan edessä ja seuraa kääntymistä.
+  var pushingMoped = false;
+  function togglePushMoped(){
+    if(pushingMoped){
+      pushingMoped = false;
+      showToast(false, 'Päästit mopon', 'Mopo jäi tähän.', 2000);
+      return;
+    }
+    var dxp = moped.position.x - player.position.x, dzp = moped.position.z - player.position.z;
+    if(Math.sqrt(dxp*dxp + dzp*dzp) > mountRadius) return;
+    pushingMoped = true;
+    showToast(false, 'Työnnät mopoa', 'Kulku on hidasta. Paina E uudestaan kun haluat päästää irti.', 3200);
+  }
+  function updatePushedMoped(){
+    if(!pushingMoped) return;
+    // mopo kulkee pelaajan edessä kahvoista kiinni pidettynä
+    var fx = Math.sin(playerHeading), fz = Math.cos(playerHeading);
+    moped.position.x = player.position.x + fx*1.15;
+    moped.position.z = player.position.z + fz*1.15;
+    moped.position.y = inStore ? 0 : terrainHeight(moped.position.x, moped.position.z);
+    heading = playerHeading;
+    moped.rotation.set(0, heading, 0);
+  }
+
+  // ---- KORJAUS TIEN PÄÄLLÄ (G) ----
+  // Repussa oleva varaosa korjaa yhden vian paikan päällä. Tämä on se hetki jolloin
+  // kyläkaupan kuuden euron ketjulukko maksaa itsensä takaisin.
+  function roadsideRepair(){
+    if(mode === 'riding' || crashed) return;
+    var dxr = moped.position.x - player.position.x, dzr = moped.position.z - player.position.z;
+    if(Math.sqrt(dxr*dxr + dzr*dzr) > mountRadius + 0.8){
+      showToast(false, 'Mene mopon viereen', 'Korjaus onnistuu vain mopon vierestä.', 2200);
+      return;
+    }
+    if(brokenTyre && spareCount('paikkaussarja') > 0){
+      useSpare('paikkaussarja');
+      brokenTyre = false;
+      showToast(false, '🔧 Rengas paikattu', 'Paikka pitää, mutta kestää vain tämän kesän. Mopo kulkee taas normaalisti.', 4000);
+      tyrePatched++;
+      updateBreakdownBanner();
+      saveGame();
+      return;
+    }
+    if(breakdown){
+      var k = breakdownKindById(breakdown.kind);
+      if(k && k.tarvike && spareCount(k.tarvike) > 0){
+        useSpare(k.tarvike);
+        var p = partById(k.part);
+        if(p) p.condition = Math.max(p.condition, 32);   // hätäkorjaus: toimii, muttei kuin uusi
+        clearBreakdown();
+        showToast(false, '🔧 Hätäkorjaus tehty', k.nimi.replace(/^[^ ]+ /, '') + ' korjattu tien päällä. Käy silti tallilla, tämä ei kestä ikuisesti.', 4600);
+        return;
+      }
+      if(k && k.tarvike){
+        showToast(true, 'Ei varaosaa repussa', 'Tähän tarvitaan ' + storeItemById(k.tarvike).name + ', jonka saa kyläkaupasta.', 4000);
+        return;
+      }
+      showToast(true, 'Tätä ei korjata tien päällä', 'Mopo pitää saada tallille. Paina E ja työnnä se kotiin.', 4200);
+      return;
+    }
+    showToast(false, 'Mopossa ei ole vikaa', 'Ei korjattavaa juuri nyt.', 2000);
+  }
+
   function startChanceNow(){
     var keyParts = ['sytytystulppa', 'sylinteri', 'akku'];
     var sum = 0, n = 0;
@@ -8410,6 +9564,12 @@
   }
   function kickStart(){
     if(!gameStarted || mode !== 'riding' || crashed) return;
+    // leikannut moottori tai poikki oleva ketju: polkaiseminen ei auta mitään
+    if(mopedDead()){
+      var kd = breakdownKindById(breakdown.kind);
+      showToast(true, kd ? kd.nimi : 'Mopo on rikki', 'Polkaiseminen ei auta. ' + (kd ? kd.teksti : ''), 4200);
+      return;
+    }
     if(engineRunning){ return; }
     if(kickCooldown > 0) return;
     ensureAudio();
@@ -8784,9 +9944,36 @@
   var fuel = 100;
   var stalled = false;
   var stallEl = document.getElementById('stall');
+  var brokenBarEl = document.getElementById('brokenBar');
+  // Vikapalkki kertoo koko ajan mikä on rikki ja millä sen saa korjattua - ilman sitä pelaaja
+  // ihmettelisi miksi mopo ei vedä, kun toast on jo ehtinyt kadota.
+  function updateBreakdownBanner(){
+    if(!brokenBarEl) return;
+    var osat = [];
+    if(breakdown){
+      var k = breakdownKindById(breakdown.kind);
+      if(k){
+        var apu;
+        if(k.tarvike && spareCount(k.tarvike) > 0) apu = 'paina <b>G</b> ja korjaa se';
+        else if(k.tarvike) apu = 'tarvitset ' + storeItemById(k.tarvike).gen + ' kyläkaupasta';
+        else if(k.pushOnly) apu = 'korjaus vain tallilla - työnnä mopo kotiin (<b>E</b>)';
+        else apu = 'korjaa tallilla';
+        osat.push(k.nimi + ' · ' + apu);
+      }
+    }
+    if(brokenTyre){
+      osat.push('💨 Rengas puhki · ' + (spareCount('paikkaussarja') > 0
+        ? 'paina <b>G</b> ja paikkaa' : 'tarvitset paikkaussarjan kyläkaupasta'));
+    }
+    if(!osat.length){ brokenBarEl.hidden = true; return; }
+    brokenBarEl.hidden = false;
+    brokenBarEl.innerHTML = osat.join('<br>');
+  }
   var speedVal = document.getElementById('speedVal');
   var limitSignEl = document.getElementById('limitSign');
   var limitValEl = document.getElementById('limitVal');
+  var gearBoxEl = document.getElementById('gearBox');
+  var gearValEl = document.getElementById('gearVal');
   var limitPoll = 0;
   // ---- mopon kojelauta: pyöreä nopeusmittari viisarilla ----
   // Piirretään kanvaasille kerran per kehys. Asteikko 0-80 km/h kiertää 240 astetta, ja ulkokehällä
@@ -8888,6 +10075,168 @@
   var jobTimer = 0;
   var jobsCompletedCount = 0; // kasvaa aina kun mikä tahansa työ suoritetaan loppuun - käytetään tarinan etenemiseen
 
+  // ==========================================================================
+  // ---- KESÄN AIKARAJA: 30 PÄIVÄÄ AJOKOKEESEEN ----
+  // Tähän asti pelissä ei ollut mitään syytä tehdä mitään tänään. Kun kesässä on laskettu
+  // määrä päiviä ja lopussa ajokoe, jokainen nukuttu yö maksaa jotakin: mopo ei korjaa itseään,
+  // rahat eivät kerry nukkuessa ja ajokokeen päivä tulee joka tapauksessa. Peli voi siis mennä
+  // myös pieleen - mutta ei umpikujaan: hylätystä kokeesta pääsee uusintaan seuraavana kesänä,
+  // jolloin kaikki saavutettu säilyy. Rangaistus on menetetty kesä, ei pelin alusta aloittaminen.
+  // ==========================================================================
+  var SUMMER_DAYS = 30;
+  var summerDay = 1;          // 1 = ensimmäinen kesäpäivä
+  var examDone = false;       // ajokoe suoritettu tänä kesänä
+  var examPassed = false;
+  var examScore = 0;
+  var summerNumber = 1;       // monesko kesä menossa (uusinta nostaa tätä)
+  var finesCount = 0;         // saatujen ylinopeussakkojen määrä - näkyy ajokokeessa
+  function summerDaysLeft(){ return Math.max(0, SUMMER_DAYS - summerDay + 1); }
+  // Ajokokeen arvostelu: jokainen kohta on asia jonka pelaaja on voinut tehdä kesän aikana,
+  // ja listasta näkee jälkikäteen TÄSMÄLLEEN mikä jäi tekemättä. Pelkkä "hylätty" olisi turhauttava.
+  function examReview(){
+    var items = [], score = 0;
+    function add(ok, pts, text){ items.push({ok:!!ok, pts:pts, text:text}); if(ok) score += pts; }
+    var assembled = mopedAssembled();
+    add(assembled, 24, 'Mopo kasassa ja ajokunnossa');
+    add(engineEverStarted, 6, 'Mopo saatu käyntiin');
+    add(partsInstalled >= 4, 12, 'Osia asennettu itse (vähintään 4)');
+    add(upgradesBought >= 2, 12, 'Tuunausosia ostettu (vähintään 2)');
+    var cond = 0;
+    for(var pc=0; pc<parts.length; pc++) cond += parts[pc].condition;
+    cond = parts.length ? cond/parts.length : 0;
+    add(cond >= 55, 12, 'Mopon keskikunto vähintään 55 % (nyt ' + Math.round(cond) + ' %)');
+    add(money >= 60, 10, 'Ajokoemaksuun rahaa (60 €)');
+    add((jobsCompletedCount + gigsCompleted) >= 5, 10, 'Kesätöitä tai keikkoja tehty (vähintään 5)');
+    var seen = 0;
+    for(var pi2=0; pi2<pois.length; pi2++) if(pois[pi2].visited) seen++;
+    add(seen >= Math.ceil(pois.length*0.6), 8, 'Kylä kierretty (' + seen + '/' + pois.length + ' paikkaa)');
+    add(refuelCount > 0, 6, 'Tankkaaminen opittu');
+    // Poliisimerkinnät vievät pisteitä: ylinopeudet eivät katoa mihinkään.
+    var sakkoSakko = Math.min(18, finesCount*6);
+    if(sakkoSakko > 0){ items.push({ok:false, pts:-sakkoSakko, text:'Ylinopeussakkoja ' + finesCount + ' kpl'}); score -= sakkoSakko; }
+    score = Math.max(0, Math.min(100, score));
+    return {score: score, items: items, assembled: assembled};
+  }
+  // Kesän viimeinen päivä meni eikä pelaaja käynyt kokeessa: automaattinen hylkäys.
+  // Itse koe AJETAAN (ks. startExam) - tämä on vain se tapaus jossa sinne ei menty lainkaan.
+  function runDrivingExam(){
+    if(examDone) return;
+    if(examRun) return;    // koe on parhaillaan käynnissä, annetaan sen ratketa itse
+    var rev = examReview();
+    examDone = true;
+    examScore = 0;
+    examPassed = false;
+    var lines = [
+      'Kesä on ohi, eikä Jonne käynyt ajokokeessa kertaakaan.',
+      'Naapurikylän konttorin ovi on lukossa ja lapussa lukee että tutkinnot jatkuvat ensi kesänä.',
+      'HYLÄTTY: et mennyt kokeeseen. Sen olisi voinut tehdä minä päivänä tahansa kesän aikana.'
+    ];
+    if(rev.score < 35) lines.push('Mopo ei muutenkaan olisi mennyt ennakkotarkastuksesta läpi (valmius ' + rev.score + '/100, vaaditaan 35).');
+    saveGame();
+    if(typeof playCutscene === 'function'){
+      playCutscene('ajokoeEiMennyt' + summerNumber, 'Kesä loppui', lines, function(){ startNewSummer(); });
+    } else {
+      showToast(true, 'Ajokoe jäi tekemättä', lines[lines.length-1], 7000);
+      startNewSummer();
+    }
+  }
+  // Uusinta: päiväkello alkaa alusta, kaikki omaisuus ja osaaminen säilyy.
+  function startNewSummer(){
+    summerNumber++;
+    summerDay = 1;
+    examDone = false;
+    finesCount = 0;
+    updateSummerDisplay();
+    saveGame();
+    showToast(false, 'Uusi kesä alkaa', 'Kesä ' + summerNumber + ': 30 päivää uusintaan. Mopo, rahat ja osat säilyivät.', 5600);
+  }
+  function advanceSummerDay(){
+    if(examDone) return;
+    summerDay++;
+    if(summerDay > SUMMER_DAYS){ updateSummerDisplay(); runDrivingExam(); return; }
+    updateSummerDisplay();
+    var left = summerDaysLeft();
+    if(left === 20 || left === 10 || left === 5 || left === 3 || left === 1){
+      var rev = examReview();
+      var puute = null;
+      for(var i=0; i<rev.items.length; i++) if(!rev.items[i].ok && rev.items[i].pts > 0){ puute = rev.items[i].text; break; }
+      showToast(true, (left === 1 ? 'Kesää jäljellä yksi päivä!' : 'Kesää jäljellä ' + left + ' päivää'),
+        'Ajokoe tehdään naapurikylän konttorilla (maksu ' + EXAM_FEE + ' €). Valmius nyt ' + rev.score + '/100, lähtöön vaaditaan 35.' +
+        (puute ? ' Seuraavaksi: ' + puute.toLowerCase() + '.' : ''), 6500);
+    }
+  }
+  function updateSummerDisplay(){
+    if(typeof objHeadEl !== 'undefined' && objHeadEl){
+      objHeadEl.textContent = examDone
+        ? 'Tehtävä · vapaa kesä'
+        : ('Tehtävä · päivä ' + Math.min(summerDay, SUMMER_DAYS) + '/' + SUMMER_DAYS);
+    }
+  }
+
+  // ==========================================================================
+  // ---- MAINE: VALINNOILLA ON SEURAUKSIA ----
+  // Tähän asti dialogin valinnat vaihtoivat vain vastausrepliikin: mitä tahansa sanoi, peli jatkui
+  // samanlaisena. Nyt kylässä on kaksi muistia.
+  //   repVillage (-100..100) = mitä kyläläiset ajattelevat Jonnesta. Vaikuttaa HINTOIHIN tallilla
+  //       ja kaupassa, ja siihen auttaako kukaan: hyvällä maineella saa alennusta ja vinkkejä,
+  //       huonolla ylihintaa ja tylyjä vastauksia.
+  //   repPolice (0..100) = kuinka tarkasti poliisi seuraa Jonnea. Nousee ylinopeuksista ja
+  //       keulinnasta kiinni jäädessä, laskee hitaasti kun ajaa siivosti. Vaikuttaa siihen
+  //       montako tutkapartiota tiellä on ja kuinka herkästi ne lähtevät perään.
+  // Molemmat tallentuvat, joten kesän aikana tehdyt valinnat kantavat seuraavaan päivään.
+  // ==========================================================================
+  var repVillage = 0;
+  var repPolice  = 0;
+  function repClamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function repVillageAdd(d, syy){
+    var before = repVillageLevel();
+    repVillage = repClamp(repVillage + d, -100, 100);
+    var after = repVillageLevel();
+    if(after !== before){
+      showToast(after < before, 'Maine kylässä: ' + repVillageLabel(),
+        syy || (after > before ? 'Kyläläiset suhtautuvat sinuun lämpimämmin.' : 'Kyläläiset alkavat karsastaa sinua.'), 4200);
+    }
+    if(typeof renderMissions === 'function' && missionPanel && !missionPanel.hidden) renderMissions();
+  }
+  function repPoliceAdd(d, syy){
+    var before = repPoliceLevel();
+    repPolice = repClamp(repPolice + d, 0, 100);
+    if(repPoliceLevel() !== before && d > 0){
+      showToast(true, 'Poliisi kiinnostui sinusta', syy || 'Tutkapartioita on nyt enemmän liikkeellä.', 4200);
+    }
+  }
+  function repVillageLevel(){
+    if(repVillage <= -45) return -2;
+    if(repVillage <= -15) return -1;
+    if(repVillage >=  45) return 2;
+    if(repVillage >=  15) return 1;
+    return 0;
+  }
+  function repPoliceLevel(){ return repPolice >= 70 ? 2 : (repPolice >= 35 ? 1 : 0); }
+  function repVillageLabel(){
+    var L = repVillageLevel();
+    return L === 2 ? 'kylän kundi' : L === 1 ? 'tunnettu' : L === 0 ? 'tavallinen jonne'
+         : L === -1 ? 'rettelöitsijä' : 'kylän riesa';
+  }
+  function repPoliceLabel(){
+    var L = repPoliceLevel();
+    return L === 2 ? 'erityistarkkailussa' : L === 1 ? 'merkitty' : 'puhtaat paperit';
+  }
+  // ---- SEURAUS 1: hinnat ----
+  // Hyvä maine = alennusta 15 % asti, huono = ylihintaa 15 % asti. Tämä tuntuu heti kassassa.
+  function villagePriceFactor(){ return 1 - (repVillage/100)*0.15; }
+  function shopPrice(base){ return Math.max(1, Math.round(base * villagePriceFactor())); }
+  // ---- SEURAUS 2: auttaako kukaan ----
+  function villagersHelp(){ return repVillageLevel() >= 1; }
+  function villagersSnub(){ return repVillageLevel() <= -2; }
+  // ---- SEURAUS 3: poliisin tarkkuus ----
+  function policeTrapCount(){ return 3 + repPoliceLevel(); }      // 3-5 tutkapartiota
+  function policeTolerance(){ return repPoliceLevel() >= 2 ? 2 : (repPoliceLevel() >= 1 ? 5 : 9); } // km/h armoa
+  // Siivosti ajettu yö laskee poliisin kiinnostusta - rikkeistä pääsee eroon ajamalla hiljaa.
+  function repDecayOvernight(){
+    if(repPolice > 0) repPolice = repClamp(repPolice - 8, 0, 100);
+  }
+
   // ---- päivä-yö-sykli ----
   var DAY_NAMES = ['Ma','Ti','Ke','To','Pe','La','Su'];
   var dayIndex = 0;   // 0 = maanantai
@@ -8896,7 +10245,7 @@
   function updateDayNight(dt){
     var prevDayTime = dayTime;
     dayTime += dt/dayLength;
-    if(dayTime >= 1){ dayTime -= 1; dayIndex = (dayIndex + 1) % 7; }
+    if(dayTime >= 1){ dayTime -= 1; dayIndex = (dayIndex + 1) % 7; advanceSummerDay(); }
     // Aamu koittaa noin klo 07. Jos poliisi sai rekisterinumeron edellisenä päivänä, partio
     // lähtee nyt kotiovelle (ks. arrestDue-tarkistus kävely-/ajosilmukassa).
     if(arrestPending && !arrestDue && prevDayTime < 0.29 && dayTime >= 0.29){
@@ -8908,7 +10257,10 @@
     // mittauspaikkoihin - samaa kohtaa ei siis opi väistämään.
     if(prevDayTime < 0.29 && dayTime >= 0.29){
       deliverPendingFines();
+      rollDailyEvent();   // uusi päivä, uusi pikku keikka kylällä
+      if(typeof syncRadarTrapCount === 'function') syncRadarTrapCount();
       placeRadarTraps();
+      repDecayOvernight();   // siivosti ajettu vuorokausi laskee poliisin kiinnostusta
     }
     var d = sampleDayStops(dayTime);
     paintSky(d.sky);
@@ -9469,6 +10821,17 @@
       ]
     },
     {
+      // Ajokokeen vastaanottaja seisoo naapurikylän konttorin pihassa koko kesän. E aloittaa kokeen.
+      name: 'Ajokokeen vastaanottaja',
+      exam: true,
+      pos: kylaPos.clone().add(new THREE.Vector3(8, 0, 6)),
+      radius: 3.6,
+      baseRotY: 3.0,
+      mesh: makeNpcFigure('normi', [0x1c1c22, 0x23232c, 0x4a5a74, 0xd6ab85, 0x4a4238], 1.79),
+      lineIndex: 0,
+      lines: ['Ajokoe otetaan vastaan tässä. Maksu ' + 60 + ' euroa.']
+    },
+    {
       name: 'Kalamies',
       pos: kalamiesPos,
       radius: 3.6,
@@ -9484,6 +10847,396 @@
       ]
     }
   ];
+  // ==========================================================================
+  // ---- KYLÄ ELÄÄ: PÄIVÄJÄRJESTYS, AUKIOLOAJAT JA PÄIVÄN TAPAHTUMA ----
+  // Kyläläiset seisoivat samassa kohdassa koko kesän, kaupat olivat auki keskellä yötä ja
+  // miitti oli pelkkä nimi kartalla. Se teki kylästä lavasteen. Nyt:
+  //   - jokaisella ulkohahmolla on päiväjärjestys: aamu, päivä ja ilta eri paikoissa, ja
+  //     hahmo KÄVELEE paikasta toiseen (ei teleporttaa), joten kylässä näkyy liikettä
+  //   - talli, mopokauppa ja kyläkauppa menevät yöksi kiinni
+  //   - miitti täyttyy illalla: Jussi ja Reiska siirtyvät huoltoaseman pihaan
+  //   - joka aamu arvotaan yksi päivän tapahtuma, joka näkyy puhelimessa ja palkitsee
+  //     rahalla ja maineella
+  // ==========================================================================
+  // Aikaikkunat ovat dayTime-yksikköinä (0 = keskiyö, 0.5 = keskipäivä). Klo h => h/24.
+  function npcSchedule(npc){
+    // Jokaiselle hahmolle 2-3 paikkaa. Ensimmäinen on hahmon oma perussijainti.
+    var home = npc.pos;
+    if(npc.name === 'Äiti'){
+      return [
+        {from: 6,  to: 10, pos: home, rot: npc.baseRotY},
+        {from: 10, to: 15, pos: kauppaIsoPos.clone().add(new THREE.Vector3(5, 0, 6)), rot: 1.2},
+        {from: 15, to: 24, pos: home, rot: npc.baseRotY},
+        {from: 0,  to: 6,  pos: home, rot: npc.baseRotY}
+      ];
+    }
+    if(npc.name === 'Jussi'){
+      return [
+        {from: 0,  to: 11, pos: home, rot: npc.baseRotY},
+        {from: 11, to: 17, pos: romuPos.clone().add(new THREE.Vector3(6, 0, -4)), rot: -0.8},
+        {from: 17, to: 24, pos: meetSpot.clone().add(new THREE.Vector3(-3.0, 0, 3.4)), rot: 2.1}   // iltamiitti
+      ];
+    }
+    if(npc.name === 'Romu-Reiska'){
+      return [
+        {from: 0,  to: 18, pos: home, rot: npc.baseRotY},
+        {from: 18, to: 23, pos: meetSpot.clone().add(new THREE.Vector3(2.6, 0, 4.0)), rot: 2.6},    // iltamiitti
+        {from: 23, to: 24, pos: home, rot: npc.baseRotY}
+      ];
+    }
+    if(npc.name === 'Kalamies'){
+      return [
+        {from: 4,  to: 21, pos: home, rot: npc.baseRotY},
+        {from: 21, to: 24, pos: rantaPos.clone().add(new THREE.Vector3(3, 0, -6)), rot: 0.4},
+        {from: 0,  to: 4,  pos: rantaPos.clone().add(new THREE.Vector3(3, 0, -6)), rot: 0.4}
+      ];
+    }
+    return null;   // sisätilan hahmot (Aku) pysyvät paikallaan
+  }
+  function scheduleSlotNow(sch, t){
+    var h = t*24;
+    for(var i=0; i<sch.length; i++){
+      if(h >= sch[i].from && h < sch[i].to) return sch[i];
+    }
+    return sch[0];
+  }
+  // Hahmo kävelee kohteeseen omaa vauhtiaan ja pysähtyy perille. Kävelyn ajan se nyökkii ja
+  // keinuu kevyesti - rangoton malli ei taivu, mutta liike riittää lukemaan kävelyksi.
+  function updateNpcRoutines(dt){
+    for(var i=0; i<npcCharacters.length; i++){
+      var npc = npcCharacters[i];
+      if(npc.indoor) continue;
+      if(!npc.sched){ npc.sched = npcSchedule(npc); npc.walkPhase = 0; }
+      if(!npc.sched) continue;
+      var slot = scheduleSlotNow(npc.sched, dayTime);
+      var tx = slot.pos.x, tz = slot.pos.z;
+      var dx = tx - npc.pos.x, dz = tz - npc.pos.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      if(d > 0.6){
+        // kaukaa tultaessa vauhti on reippaampi (kyläläinen ei kävele 200 metriä kuuteen minuuttiin),
+        // ja hidastuu luonnollisesti perille tultaessa
+        var sp = Math.min(d, (1.45 + Math.min(2.6, d/40))*dt);
+        npc.pos.x += dx/d*sp;
+        npc.pos.z += dz/d*sp;
+        npc.walking = true;
+        npc.walkPhase += dt*6.4;
+        npc.baseRotY = Math.atan2(dx, dz);   // kävelysuunta; updateNpcFacing kääntää pelaajaa kohti lähellä
+      } else {
+        npc.walking = false;
+        npc.targetRot = slot.rot;
+      }
+      npc.mesh.position.set(npc.pos.x, terrainHeight(npc.pos.x, npc.pos.z), npc.pos.z);
+      if(npc.walking){
+        // pieni pomppu ja keinunta: pelkkä paikanvaihto näyttäisi liukumiselta
+        npc.mesh.position.y += Math.abs(Math.cos(npc.walkPhase))*0.05 - 0.024;
+        npc.mesh.rotation.z = Math.sin(npc.walkPhase)*0.045;
+        npc.mesh.rotation.x = 0.045;
+      } else {
+        npc.mesh.rotation.z *= Math.max(0, 1 - dt*5);
+        npc.mesh.rotation.x *= Math.max(0, 1 - dt*5);
+        if(npc.targetRot !== undefined) npc.baseRotY = npc.targetRot;
+      }
+    }
+  }
+
+  // ---- AUKIOLOAJAT ----
+  var OPENING = {
+    talli:      {from: 8,  to: 19, nimi: 'Talli'},
+    mopokauppa: {from: 9,  to: 18, nimi: 'Mopokauppa'},
+    kauppa:     {from: 7,  to: 21, nimi: 'Kyläkauppa'}
+  };
+  function placeOpen(id){
+    var o = OPENING[id];
+    if(!o) return true;
+    var h = dayTime*24;
+    return h >= o.from && h < o.to;
+  }
+  function openingText(id){
+    var o = OPENING[id];
+    if(!o) return '';
+    return o.nimi + ' on kiinni · auki klo ' + (o.from < 10 ? '0' : '') + o.from + '-' + o.to;
+  }
+  function closedToast(id){
+    var o = OPENING[id];
+    if(!o) return;
+    var h = Math.floor(dayTime*24);
+    var odota = (h < o.from) ? (o.from - h) : (24 - h + o.from);
+    showToast(true, '🔒 ' + o.nimi + ' on kiinni',
+      'Auki klo ' + o.from + '-' + o.to + '. Aukeaa noin ' + odota + ' tunnin päästä - nuku yö tai tee jotain muuta.', 4200);
+  }
+
+  // ---- PÄIVÄN TAPAHTUMA ----
+  // Joka aamu arvotaan yksi pieni keikka kylällä. Se näkyy puhelimessa ja sen voi hoitaa
+  // menemällä paikalle ja painamalla E. Palkkio on rahaa ja mainetta.
+  var DAILY_EVENTS = [
+    {id:'avaimet', paikka:'Uimaranta', otsikko:'Jussi hukkasi avaimet',
+     teksti:'Jussi tiputti mopon avaimet uimarannan hiekkaan. Käy etsimässä ne.',
+     valmis:'Löysit avaimet hiekasta. Jussi on kiitollinen.', raha:18, maine:6},
+    {id:'romukuorma', paikka:'Romuttamo', otsikko:'Reiskalla on kiire',
+     teksti:'Romuttamolle tuli kuorma eikä Reiska ehdi lajitella yksin. Käy auttamassa.',
+     valmis:'Kuorma on lajiteltu. Reiska maksoi käteisellä.', raha:26, maine:7},
+    {id:'kauppareissu', paikka:'Kyläkauppa', otsikko:'Äiti pyysi kauppaan',
+     teksti:'Äiti unohti maidon. Käy hakemassa se kyläkaupalta.',
+     valmis:'Maito on haettu. Äiti antoi vaihtorahat.', raha:12, maine:8},
+    {id:'koira', paikka:'Naapurikylä', otsikko:'Naapurin koira karkasi',
+     teksti:'Naapurin koira juoksi naapurikylän suuntaan. Käy katsomassa löytyisikö se.',
+     valmis:'Koira löytyi ojan pohjalta ja lähti mukaan kotiin.', raha:15, maine:11},
+    {id:'hinaus', paikka:'Crossirata', otsikko:'Kaveri jäi jumiin',
+     teksti:'Joku jätti mopon seisomaan crossiradalle. Käy katsomassa mitä siinä on.',
+     valmis:'Sait mopon käyntiin. Kaveri lupasi palveluksen takaisin.', raha:22, maine:9}
+  ];
+  var dailyEvent = null;      // {id, done}
+  function poiByName(nm){
+    for(var i=0; i<pois.length; i++) if(pois[i].name === nm) return pois[i];
+    return null;
+  }
+  function dailyEventDef(){
+    if(!dailyEvent) return null;
+    for(var i=0; i<DAILY_EVENTS.length; i++) if(DAILY_EVENTS[i].id === dailyEvent.id) return DAILY_EVENTS[i];
+    return null;
+  }
+  function rollDailyEvent(hiljaa){
+    var e = DAILY_EVENTS[Math.floor(Math.random()*DAILY_EVENTS.length)];
+    dailyEvent = {id: e.id, done: false};
+    // pelin alussa ei räväytetä ilmoitusta päälle aloitusruudun ja välikohtauksen kanssa
+    if(!hiljaa) showToast(false, '📣 ' + e.otsikko, e.teksti + ' (' + e.paikka + ')', 6000);
+    if(typeof renderMissions === 'function' && missionPanel && !missionPanel.hidden) renderMissions();
+  }
+  // Kutsutaan kun pelaaja painaa E eikä mikään muu toiminto osunut kohdalle.
+  function tryDailyEvent(){
+    var e = dailyEventDef();
+    if(!e || dailyEvent.done) return false;
+    var poi = poiByName(e.paikka);
+    if(!poi) return false;
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = poi.pos.x - ref.x, dz = poi.pos.z - ref.z;
+    if(Math.sqrt(dx*dx + dz*dz) > poi.arriveRadius + 4) return false;
+    dailyEvent.done = true;
+    money += e.raha;
+    updateMoneyDisplay();
+    repVillageAdd(e.maine, e.valmis);
+    showToast(false, '✅ ' + e.otsikko, e.valmis + ' +' + e.raha + ' €', 5000);
+    saveGame();
+    return true;
+  }
+
+  // ==========================================================================
+  // ---- AJOKOE OIKEANA KOEAJONA ----
+  // Koko peli tähtää ajokokeeseen, mutta koe itse oli pelkkä tekstiruutu joka laski kuinka
+  // monta asiaa oli tehty. Nyt se AJETAAN: tutkinnonvastaanottaja nousee tarakalle, antaa
+  // ohjeet yksi kerrallaan ja kirjaa virhepisteet. Rajoitusmerkit, pysähtymiskohdat ja
+  // pellolle oikominen ratkaisevat tuloksen - eivät enää pelkät tilastot.
+  //
+  // Paperiarvio (examReview) ei katoa: se on ENNAKKOTARKASTUS. Jos mopo on liian retuperällä,
+  // vastaanottaja ei päästä edes lähtöön, ja lopullisessa arvosanassa se painaa neljänneksen.
+  // ==========================================================================
+  var EXAM_FEE = 60;
+  var examSpot = kylaPos.clone().add(new THREE.Vector3(8, 0, 6));   // ajokoekonttori naapurikylässä
+  var EXAM_ROUTE = [
+    {pos: kauppaIsoPos,  pysahdy:false, ohje:'Aja kyläkaupan ohi. Pidä rajoitukset.'},
+    {pos: meetSpot,      pysahdy:true,  ohje:'Huoltoaseman risteys: PYSÄHDY kokonaan.'},
+    {pos: romuPos,       pysahdy:false, ohje:'Jatka romuttamolle. Älä oikaise pellon yli.'},
+    {pos: macdonaldsPos, pysahdy:true,  ohje:'Mac Donaldsin liittymä: PYSÄHDY ennen kääntymistä.'},
+    {pos: examSpot,      pysahdy:true,  ohje:'Palaa konttorille ja pysäytä mopo.', maali:true}
+  ];
+  var EXAM_CP_RADIUS = 15;
+  var EXAM_TIME_LIMIT = 460;     // sekuntia: reilusti aikaa, mutta ei loputtomiin
+  var EXAM_FAIL_FAULTS = 26;     // tämän ylittävä virhepistemäärä kaataa kokeen
+  var examRun = null;            // {idx, faults, t, offT, note, noteT, stopped}
+  var examinerEntry = null;      // tutkinnonvastaanottaja tarakalla
+  // Vastaanottaja istuu kauempana takana kuin kaveri tarakalla, jottei hän mene kuskin sisään,
+  // ja hänellä on oma virastomainen ulkoasu - muuten kyydissä istuisi toinen pelaajan kopio.
+  var EXAMINER_POSE = {y:0.86, z:-0.98, leg:-0.96, arm:-0.14, knee:1.18, lean:0.10, splay:0.28, armSplay:0.10, elbow:0.60, stand:false};
+  var EXAMINER_LOOK = {height:0.62, build:0.58, skin:2, shirt:2, pants:1, hair:6};
+
+  function examReady(){
+    // ennakkotarkastus: liian rämällä mopolla ei lähdetä kokeeseen ollenkaan
+    return examReview().score >= 35;
+  }
+  function examAvailable(){
+    return !examDone && mopedAssembled();
+  }
+  function examNote(txt, sek){
+    if(!examRun) return;
+    examRun.note = txt;
+    examRun.noteT = sek || 4;
+  }
+  function examAddFault(n, txt){
+    if(!examRun) return;
+    examRun.faults += n;
+    if(txt) examNote(txt, 3.5);
+  }
+  function startExam(){
+    if(examDone){ showToast(false, 'Ajokoe on jo tehty', 'Tämän kesän koe on takana.', 3000); return; }
+    if(!mopedAssembled()){ showToast(true, 'Mopo on osina', 'Ajokokeeseen tullaan ajamalla, ei kävellen.', 3600); return; }
+    if(money < EXAM_FEE){ showToast(true, 'Ajokoemaksu ' + EXAM_FEE + ' €', 'Kassassa on ' + Math.round(money) + ' €. Käy tienaamassa ensin.', 4200); return; }
+    // koe ajetaan omalla mopolla, joten sen pitää olla paikalla
+    var dmx = moped.position.x - player.position.x, dmz = moped.position.z - player.position.z;
+    if(Math.sqrt(dmx*dmx + dmz*dmz) > 30){
+      showToast(true, 'Mopo ei ole täällä', 'Ajokokeeseen tullaan omalla mopolla. Hae se ja aja konttorin pihaan.', 4600);
+      return;
+    }
+    var rev = examReview();
+    if(!examReady()){
+      var puute = null;
+      for(var i=0; i<rev.items.length; i++) if(!rev.items[i].ok && rev.items[i].pts > 0){ puute = rev.items[i].text; break; }
+      showToast(true, 'Mopo ei ole koekelpoinen',
+        'Vastaanottaja kiersi mopon ja pudisti päätään. Valmius ' + rev.score + '/100, lähtöön vaaditaan 35.' +
+        (puute ? ' Seuraavaksi: ' + puute.toLowerCase() + '.' : ''), 6500);
+      return;
+    }
+    money -= EXAM_FEE;
+    updateMoneyDisplay();
+    // pelaaja mopon selkään ja koe käyntiin
+    if(mode !== 'riding'){
+      mode = 'riding';
+      player.visible = false;
+      ensureAudio();
+      startEngineLoop();
+      engineRunning = false;
+      kickAttempts = 0;
+    }
+    examRun = {idx: 0, faults: 0, t: 0, offT: 0, note: null, noteT: 0, stopOk: false, speedNoteT: 0};
+    showExaminer(true);
+    playCutscene('ajokoeAlku' + summerNumber, 'Ajokoe alkaa',
+      ['Tutkinnonvastaanottaja nousee tarakalle ja napsauttaa kypärän remmin kiinni.',
+       '"Aja normaalisti. Minä sanon mihin mennään. Nopeusrajoitukset ovat voimassa, ja risteyksissä pysähdytään kun käsken."',
+       'Virhepisteitä saa kertyä enintään ' + EXAM_FAIL_FAULTS + '. Aikaa on reilut seitsemän minuuttia.'],
+      function(){ examNote(EXAM_ROUTE[0].ohje, 6); });
+  }
+  function showExaminer(on){
+    if(on && !examinerEntry){
+      examinerEntry = makeRiderFigure();
+      // oma geometria, jotta värit eivät muuta pelaajan hahmoa
+      if(typeof cloneFigureGeometry === 'function') cloneFigureGeometry(examinerEntry.group);
+      if(typeof applyLookColors === 'function') applyLookColors(examinerEntry.group, EXAMINER_LOOK);
+      applyRiderPose(examinerEntry, EXAMINER_POSE);
+      var esc = (typeof lookScaleOf === 'function') ? lookScaleOf(EXAMINER_LOOK) : {y:1, xz:1};
+      examinerEntry.group.scale.set(esc.xz, esc.y, esc.xz);
+      moped.add(examinerEntry.group);
+    }
+    if(examinerEntry) examinerEntry.group.visible = !!on;
+  }
+  function examCurrent(){ return examRun ? EXAM_ROUTE[examRun.idx] : null; }
+  function updateExam(dt){
+    if(!examRun) return;
+    if(cutsceneActive) return;
+    examRun.t += dt;
+    if(examRun.noteT > 0) examRun.noteT -= dt;
+    if(examRun.speedNoteT > 0) examRun.speedNoteT -= dt;
+
+    if(examRun.t > EXAM_TIME_LIMIT){ finishExam(false, 'Aika loppui kesken.'); return; }
+    if(mode !== 'riding'){
+      // kesken kokeen mopolta pois hyppääminen on keskeytys
+      finishExam(false, 'Poistuit mopon selästä kesken kokeen.');
+      return;
+    }
+
+    var kmh = Math.abs(speed)*3.6;
+    // 1. ylinopeus
+    var raja = speedLimitAt(moped.position.x, moped.position.z);
+    if(raja > 0 && kmh > raja + 5){
+      examRun.faults += 2.2*dt;
+      if(examRun.speedNoteT <= 0){ examNote('Ylinopeus! Rajoitus on ' + raja + '.', 3); examRun.speedNoteT = 4; }
+    }
+    // 2. pellolle oikominen
+    if(raja === 0){
+      examRun.offT += dt;
+      if(examRun.offT > 2){
+        examRun.faults += 2.0*dt;
+        if(examRun.speedNoteT <= 0){ examNote('Pysy tiellä, tämä ei ole crossirata.', 3); examRun.speedNoteT = 4; }
+      }
+    } else examRun.offT = Math.max(0, examRun.offT - dt*2);
+    // 3. keulinta ajokokeessa
+    if(wheelieAngle > 0.05){
+      examRun.faults += 4.0*dt;
+      if(examRun.speedNoteT <= 0){ examNote('Laske se etupyörä alas. Heti.', 3); examRun.speedNoteT = 4; }
+    }
+
+    // 4. tarkistuspisteet
+    var cp = examCurrent();
+    if(!cp) return;
+    var dx = cp.pos.x - moped.position.x, dz = cp.pos.z - moped.position.z;
+    var d = Math.sqrt(dx*dx + dz*dz);
+    // Merkitään käynti pisteen lähellä HETI: alla olevat haarat poistuvat funktiosta ennen
+    // aikojaan, joten tämän pitää tapahtua ensin - muuten ohiajoa ei havaittaisi koskaan.
+    if(d <= EXAM_CP_RADIUS*1.4) examRun.wasNear = true;
+    if(d <= EXAM_CP_RADIUS){
+      if(cp.pysahdy){
+        // pysähtymiskohta: pitää oikeasti pysähtyä alueella
+        if(kmh < 4) examRun.stopOk = true;
+        if(d > EXAM_CP_RADIUS*0.75) return;   // odotetaan että ollaan kunnolla pisteessä
+        if(!examRun.stopOk) return;           // ei vielä pysähdytty - jatketaan odottamista
+      }
+      examAdvance();
+      return;
+    }
+    // Ohiajettu pysähtymiskohta: havaitaan kun piste jää selvästi taakse ilman että pysähdyttiin.
+    // Sakko annetaan vain kerran pistettä kohden, jottei edestakaisin ajaminen kasaa sitä loputtomiin.
+    if(cp.pysahdy && d > EXAM_CP_RADIUS*2.2 && examRun.wasNear && !examRun.stopPenalty){
+      examRun.stopPenalty = true;
+      examAddFault(12, 'Et pysähtynyt! Käänny takaisin.');
+      examRun.wasNear = false;
+    }
+  }
+  function examAdvance(){
+    examRun.stopOk = false;
+    examRun.wasNear = false;
+    examRun.stopPenalty = false;
+    var cp = EXAM_ROUTE[examRun.idx];
+    if(cp.maali){ finishExam(true, null); return; }
+    examRun.idx++;
+    examNote(EXAM_ROUTE[examRun.idx].ohje, 6);
+    playExamBeep();
+  }
+  function playExamBeep(){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.07, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g).connect(sfxOut());
+    o.start(t); o.stop(t + 0.25);
+  }
+  function finishExam(reached, syy){
+    if(!examRun) return;
+    var faults = Math.round(examRun.faults);
+    var rev = examReview();
+    // 75 % ajosuorituksesta, 25 % mopon ja kesän valmistelusta
+    var ajo = Math.max(0, 100 - faults*2.2);
+    var grade = Math.round(ajo*0.75 + rev.score*0.25);
+    var passed = reached && faults <= EXAM_FAIL_FAULTS && grade >= 55;
+    examRun = null;
+    showExaminer(false);
+    examDone = true;
+    examPassed = passed;
+    examScore = grade;
+    var lines;
+    if(passed){
+      lines = ['Vastaanottaja hyppää tarakalta ja ottaa lomakkeen esiin.',
+               'Virhepisteitä kertyi ' + faults + ' (raja ' + EXAM_FAIL_FAULTS + '). Ajo-osuus ' + Math.round(ajo) + '/100, mopon kunto ja kesän valmistelu ' + rev.score + '/100.',
+               'Arvosana ' + grade + '/100 - HYVÄKSYTTY. Kortti tulee postissa. Loppukesä on sun.'];
+      repVillageAdd(18, 'Koko kylä kuuli että Jonne sai kortin.');
+    } else if(!reached){
+      lines = ['Koe keskeytyi. ' + (syy || ''),
+               'Virhepisteitä ehti kertyä ' + faults + '.',
+               'HYLÄTTY. Uusinta ensi kesänä.'];
+    } else {
+      lines = ['Vastaanottaja hyppää tarakalta eikä sano pitkään aikaan mitään.',
+               'Virhepisteitä kertyi ' + faults + ' (raja ' + EXAM_FAIL_FAULTS + '). Ajo-osuus ' + Math.round(ajo) + '/100, mopon kunto ja kesän valmistelu ' + rev.score + '/100.',
+               'Arvosana ' + grade + '/100 - HYLÄTTY (läpi menee 55:llä). Uusinta ensi kesänä.'];
+    }
+    saveGame();
+    playCutscene('ajokoeTulos' + summerNumber + '_' + (passed ? 'ok' : 'ei'),
+      passed ? 'Ajokoe läpi!' : 'Ajokoe hylätty', lines, function(){
+        if(!passed) startNewSummer();
+        else showToast(false, 'Kortti taskussa', 'Peli jatkuu vapaana kesänä - mitään ei nollata.', 5200);
+      });
+  }
+
   npcCharacters.forEach(function(npc){
     // sisätilan hahmot seisovat huoneen lattialla (y=0), ulkona maaston korkeudella
     npc.mesh.position.set(npc.pos.x, npc.indoor ? 0 : terrainHeight(npc.pos.x, npc.pos.z), npc.pos.z);
@@ -9506,6 +11259,8 @@
   }
   function chatWithNpc(npc){
     if(npc.drink){ akuEnergyDrink(npc); return; }
+    // Yhden rivin toasti ei ollut keskustelu. Nyt aukeaa paneeli jossa voi oikeasti vastata.
+    if(typeof openDialogue === 'function' && typeof dlgEl !== 'undefined' && dlgEl){ openDialogue(npc); return; }
     var line = npc.lines[npc.lineIndex % npc.lines.length];
     npc.lineIndex++;
     npcChatCount++;
@@ -11097,6 +12852,25 @@
       } else {
         phoneStoryEl.innerHTML = '<div class="phoneStoryDone">Tarina läpi - kesä on sinun. 🏁</div>';
       }
+      // päivän tapahtuma omana rivinään
+      var de = dailyEventDef();
+      if(de){
+        phoneStoryEl.innerHTML +=
+          '<div class="phoneStoryHint" style="margin-top:7px">' +
+          (dailyEvent.done ? '✅ <b>' + de.otsikko + '</b> · hoidettu'
+                           : '📣 <b>' + de.otsikko + '</b> · ' + de.teksti + ' Paikka: <b>' + de.paikka + '</b> (+' + de.raha + ' €)') +
+          '</div>';
+      }
+      // kesän kello ja maine samaan näkymään: pelaaja näkee yhdellä silmäyksellä missä mennään
+      var hinta = Math.round((villagePriceFactor()-1)*100);
+      phoneStoryEl.innerHTML +=
+        '<div class="phoneStoryHint" style="margin-top:7px">' +
+        (examDone ? '🏁 Ajokoe tehty · arvosana ' + examScore + '/100'
+                  : '📅 Kesää jäljellä <b>' + summerDaysLeft() + '</b> päivää · valmius <b>' + examReview().score + '/100</b>') +
+        '<br>🤝 Maine kylässä: <b>' + repVillageLabel() + '</b>' +
+        (hinta !== 0 ? ' (osat ' + (hinta > 0 ? '+' : '') + hinta + ' %)' : '') +
+        '<br>🚓 Poliisi: <b>' + repPoliceLabel() + '</b> · mittausvara ' + policeTolerance() + ' km/h' +
+        '</div>';
     }
     // keikkalista
     missionsListEl.innerHTML = '';
@@ -11143,6 +12917,7 @@
     m.doneCount++;
     m.cooldownLeft = m.cooldown;
     gigsCompleted++;
+    repVillageAdd(3);   // lähettikeikat tunnetaan kylällä
     updateMoneyDisplay();
     showToast(false, 'Keikka valmis!', m.title + ' (+' + gigPay + ' €' + (foodBoostLeft > 0 ? ', täysi vatsa' : '') + ')');
     activeMission = null;
@@ -11214,6 +12989,7 @@
     var jobPay = Math.round(j.reward * (foodBoostLeft > 0 ? 1.5 : 1));
     money += jobPay;
     jobsCompletedCount++;
+    repVillageAdd(4);   // tehty työ näkyy kylän silmissä
     updateMoneyDisplay();
     if(inventoryOpen) renderInventory();
     showToast(false, 'Työ valmis!', j.name+' (+'+jobPay+' €'+(foodBoostLeft > 0 ? ', täysi vatsa' : '')+')', 2200);
@@ -11342,7 +13118,7 @@
     },
     {
       short: 'Ajokoe odottaa',
-      text: 'Mopo on kunnossa, kassa kunnossa ja koko kylä nähty. Jonne on valmis ajokokeeseen. Onnittelut!',
+      text: 'Mopo on kunnossa, kassa kunnossa ja koko kylä nähty. Aja naapurikylän ajokoekonttorille ja tee koe - vastaanottaja nousee tarakalle ja ajetaan lenkki kylän läpi.',
       check: function(){ return false; } // viimeinen vaihe - jää näkyviin, ei etene enää pidemmälle
     }
   ];
@@ -11351,9 +13127,20 @@
     while(storyIndex < storyStages.length-1 && storyStages[storyIndex].check()){
       storyIndex++;
       showToast(false, 'Kesä jatkuu...', storyStages[storyIndex].text, 4200);
+      if(typeof storyCutsceneFor === 'function') storyCutsceneFor(storyStages[storyIndex]);
     }
   }
   function updateTracker(){
+    if(examRun){
+      // ajokoe menee kaiken muun edelle: ohje, virhepisteet ja jäljellä oleva aika
+      missionTrackerEl.classList.add('show');
+      var jl = Math.max(0, Math.ceil(EXAM_TIME_LIMIT - examRun.t));
+      var ohje = (examRun.noteT > 0 && examRun.note) ? examRun.note : (examCurrent() ? examCurrent().ohje : '');
+      missionTrackerEl.innerHTML = '🪪 AJOKOE ' + (examRun.idx+1) + '/' + EXAM_ROUTE.length +
+        ' · virhepisteet <b>' + Math.round(examRun.faults) + '</b>/' + EXAM_FAIL_FAULTS +
+        ' · <b>' + Math.floor(jl/60) + ':' + ('0'+(jl%60)).slice(-2) + '</b><br>' + ohje;
+      return;
+    }
     if(activeMission) return; // updateMission on jo päivittänyt tämän kehyksen tracker-tekstin
     if(activeJob){
       missionTrackerEl.classList.add('show');
@@ -11361,11 +13148,8 @@
       missionTrackerEl.innerHTML = '🔧 '+activeJob.name+' · pysy paikallasi · <b>'+Math.ceil(jobLeft)+'</b> s';
       return;
     }
-    if(storyStages[storyIndex]){
-      missionTrackerEl.classList.add('show');
-      missionTrackerEl.innerHTML = '📖 '+storyStages[storyIndex].short;
-      return;
-    }
+    // Tarinavaihe näkyy nyt omassa tehtäväkortissaan (objCard), joten sitä ei toisteta
+    // enää tässä palkissa - muuten sama teksti luki ruudulla kahdesti.
     missionTrackerEl.classList.remove('show');
   }
   // puhelimen avaus: sama toiminto napista ja TAB-näppäimestä
@@ -11389,6 +13173,7 @@
     if(crashed) return;
     crashed = true;
     speed = 0;
+    if(examRun) finishExam(false, 'Kaadoit mopon kesken kokeen.');
     if(activeMission) failMission(activeMission);
     if(audioCtx && engineGain){
       engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.08);
@@ -11735,7 +13520,7 @@
       var mopedData = {};
       mopedModels.forEach(function(m){ mopedData[m.id] = m.owned; });
       var storeData = {};
-      storeItems.forEach(function(it){ storeData[it.id] = it.owned; });
+      storeItems.forEach(function(it){ storeData[it.id] = it.consumable ? (it.count||0) : it.owned; });
       var missionData = {};
       missions.forEach(function(m){ missionData[m.id] = m.doneCount; });
       var poiData = {};
@@ -11775,6 +13560,7 @@
         upgradesBought: upgradesBought,
         poisVisited: poiData,
         npcChatCount: npcChatCount,
+        cutSeen: cutSeen,
         dartsThrowCount: dartsThrowCount,
         fishCaught: fishCaught,
         biggestFish: biggestFish,
@@ -11789,6 +13575,17 @@
         qualityLevel: qualityLevel,
         partsInstalled: partsInstalled,
         engineEverStarted: engineEverStarted,
+        summerDay: summerDay,
+        repVillage: repVillage,
+        repPolice: repPolice,
+        breakdown: breakdown ? breakdown.kind : null,
+        brokenTyre: brokenTyre,
+        dailyEvent: dailyEvent,
+        summerNumber: summerNumber,
+        examDone: examDone,
+        examPassed: examPassed,
+        examScore: examScore,
+        finesCount: finesCount,
         shelfItems: garageShelf.map(function(si){ return {partId:si.partId, kind:si.kind, tierIndex:si.tierIndex}; })
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
@@ -11807,6 +13604,18 @@
       if(typeof save.muted === 'boolean') muted = save.muted;
       if(typeof save.jumpBest === 'number') jumpBest = save.jumpBest;
       if(typeof save.dayIndex === 'number') dayIndex = ((save.dayIndex|0) % 7 + 7) % 7;
+      if(typeof save.summerDay === 'number') summerDay = Math.max(1, Math.min(SUMMER_DAYS, save.summerDay|0));
+      if(typeof save.repVillage === 'number') repVillage = repClamp(save.repVillage, -100, 100);
+      if(typeof save.repPolice === 'number') repPolice = repClamp(save.repPolice, 0, 100);
+      if(typeof save.breakdown === 'string' && breakdownKindById(save.breakdown)) breakdown = {kind: save.breakdown, since: 0};
+      if(typeof save.brokenTyre === 'boolean') brokenTyre = save.brokenTyre;
+      if(save.dailyEvent && typeof save.dailyEvent.id === 'string') dailyEvent = {id: save.dailyEvent.id, done: !!save.dailyEvent.done};
+      updateBreakdownBanner();
+      if(typeof save.summerNumber === 'number') summerNumber = Math.max(1, save.summerNumber|0);
+      if(typeof save.examDone === 'boolean') examDone = save.examDone;
+      if(typeof save.examPassed === 'boolean') examPassed = save.examPassed;
+      if(typeof save.examScore === 'number') examScore = save.examScore;
+      if(typeof save.finesCount === 'number') finesCount = Math.max(0, save.finesCount|0);
       if(save.charLook && typeof save.charLook === 'object'){
         var clk = ['height','build','skin','shirt','pants','hair'];
         for(var ci2=0; ci2<clk.length; ci2++){
@@ -11889,7 +13698,12 @@
       }
       if(save.storeOwned){
         storeItems.forEach(function(it){
-          if(typeof save.storeOwned[it.id] === 'boolean') it.owned = save.storeOwned[it.id];
+          var v = save.storeOwned[it.id];
+          if(it.consumable){
+            // kulutustavarat tallentuvat lukumääränä, vanhat tallenteet totuusarvona
+            if(typeof v === 'number'){ it.count = Math.max(0, Math.min(5, v|0)); it.owned = it.count > 0; }
+            else if(typeof v === 'boolean'){ it.owned = v; it.count = v ? 1 : 0; }
+          } else if(typeof v === 'boolean') it.owned = v;
         });
       }
       if(save.missionsCompleted){
@@ -11910,6 +13724,7 @@
         });
       }
       if(typeof save.npcChatCount === 'number') npcChatCount = save.npcChatCount;
+      if(save.cutSeen && typeof save.cutSeen === 'object') cutSeen = save.cutSeen;
       if(typeof save.dartsThrowCount === 'number') dartsThrowCount = save.dartsThrowCount;
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
       if(typeof save.biggestFish === 'number') biggestFish = save.biggestFish;
@@ -12003,6 +13818,8 @@
       if(playerLimbs.armR) playerLimbs.armR.rotation.x = 0;
       if(playerLimbs.legL) playerLimbs.legL.rotation.x = 0;
       if(playerLimbs.legR) playerLimbs.legR.rotation.x = 0;
+      if(playerLimbs.shinL) playerLimbs.shinL.rotation.x = 0;
+      if(playerLimbs.shinR) playerLimbs.shinR.rotation.x = 0;
     }
     if(activeJob){ activeJob = null; jobTimer = 0; }
     player.rotation.y = playerHeading;
@@ -12033,6 +13850,17 @@
     policeCatchCount = 0;
     pendingFines.length = 0;
     placeRadarTraps();
+    // viat, varaosat, kesän kello ja maine takaisin alkuun
+    breakdown = null;
+    brokenTyre = false;
+    pushingMoped = false;
+    dailyEvent = null;
+    if(examRun){ examRun = null; showExaminer(false); }
+    updateBreakdownBanner();
+    storeItems.forEach(function(it){ if(it.consumable){ it.count = 0; it.owned = false; } });
+    summerDay = 1; summerNumber = 1; examDone = false; examPassed = false; examScore = 0; finesCount = 0;
+    repVillage = 0; repPolice = 0;
+    updateSummerDisplay();
     damageByMoped = {}; damageLevelBy = {}; damagePullBy = {};
     damageRebuild();
     plateOn = true;
@@ -12119,6 +13947,7 @@
     talliEverVisited = false;
     storyIndex = 0;
     npcChatCount = 0;
+    cutSeen = {};
     npcCharacters.forEach(function(npc){ npc.lineIndex = 0; });
     dartsThrowCount = 0;
     lastDartTier = -1;
@@ -12318,6 +14147,11 @@
   // pultin kireysasteikko: 0 = irti, 1 = täysi kireys, yli 1.34 = kierre menee
   var BOLT_TIGHT = 0.85;      // tästä ylöspäin pultti "pitää"
   var BOLT_PER_NOTCH = 0.10;  // paljonko yksi hiiren rullan naksahdus kiristää kevyessä vaiheessa
+  // Näppäinohjaus: läppärillä ilman hiirtä rullaa ei välttämättä ole lainkaan, joten pultit
+  // pitää voida kiristää myös näppäimistöltä. Nuoli ylös / R kiristää, nuoli alas / F löysää.
+  // Pohjassa pidettäessä naksahdus tulee 0,14 s välein, eli täysi kireys n. 1,7 sekunnissa.
+  var wrenchKeyTighten = false, wrenchKeyLoosen = false, wrenchKeyTimer = 0;
+  var WRENCH_KEY_RATE = 0.14;
   var BOLT_STRIP = 1.34;      // tästä yli = kierre menee
 
   // Pulttien paikat annetaan SUHTEELLISINA mopon näkyvän mallin ääriviivoihin (0..1), jolloin
@@ -12761,11 +14595,12 @@
     }catch(err){ /* ei haittaa */ }
     wrenchSay(wrenchPending
       ? 'Aseta osa paikalleen: katso vihreää haamua ja paina E.'
-      : 'Katso pulttia ja pyöritä hiiren rullaa: ylös kiristää, alas löysää.');
+      : 'Katso pulttia ja kiristä: hiiren rulla tai nuoli ylös / R. Löysää nuoli alas / F.');
   }
   function exitWrenchMode(){
     if(!wrenchMode) return;
     wrenchMode = false;
+    wrenchKeyTighten = false; wrenchKeyLoosen = false; wrenchKeyTimer = 0;
     wrenchTurning = null; wrenchLooking = false; wrenchTarget = null;
     wrenchPending = null; wrenchSeated = false;
     boltGroup.visible = false;
@@ -12859,6 +14694,24 @@
     }
     wrenchTurnNotch(b, (e.deltaY < 0) ? 1 : -1);   // rulla ylös = kiristä
   }, {passive:false});
+
+  // Näppäinten pito: sama naksahdus kuin rullalla, mutta tasaisella tahdilla. Ensimmäinen
+  // naksahdus tulee heti painalluksesta, jottei lyhyt näpäytys tunnu kuolleelta.
+  function wrenchKeyTick(dt){
+    var dir = wrenchKeyTighten ? 1 : (wrenchKeyLoosen ? -1 : 0);
+    if(!dir){ wrenchKeyTimer = 0; return; }
+    wrenchKeyTimer -= dt;
+    if(wrenchKeyTimer > 0) return;
+    wrenchKeyTimer = WRENCH_KEY_RATE;
+    var b = wrenchTarget;
+    if(!b){ wrenchSay('Osoita ensin pulttia - tähtäin muuttuu keltaiseksi kun pultti on kohdalla.'); return; }
+    if(!wrenchToolMatches(b)){
+      wrenchSay('Väärä työkalu - tarvitset: ' + wrenchToolName(wrenchToolNeeded(b)) + ' (Q vaihtaa).');
+      playRatchet('miss');
+      return;
+    }
+    wrenchTurnNotch(b, dir);
+  }
 
   // yksi rullan naksahdus yhteen pulttiin
   function wrenchTurnNotch(b, dir){
@@ -12997,7 +14850,8 @@
   function updateWrench(dt){
     // liike: W/S eteen-taakse katseen suuntaan, A/D sivuaskel
     var mv = (input.fwd?1:0) - (input.back?1:0);
-    var stf = (input.right?1:0) - (input.left?1:0);
+    // A/D olivat väärin päin: D vei vasemmalle. Sivuaskeleen merkki käännetty.
+    var stf = (input.left?1:0) - (input.right?1:0);
     var sy = Math.sin(wrenchYaw), cy = Math.cos(wrenchYaw);
     if(mv || stf){
       var sp = 1.5;
@@ -13046,6 +14900,7 @@
       wrenchNotchTimer -= dt;
       if(wrenchNotchTimer <= 0) wrenchTurning = null;   // nykäisy ohi, avain takaisin lepoon
     }
+    wrenchKeyTick(dt);   // näppäimellä kiristys, jos nuoli tai R/F on pohjassa
     toolView.position.copy(camera.position);
     toolView.quaternion.copy(camera.quaternion);
     toolView.translateX(0.22);
@@ -13113,8 +14968,8 @@
     if(wrenchTipEl){
       wrenchTipEl.textContent = wrenchMsgTime > 0 ? wrenchMsgText
         : (wrenchPending && !wrenchSeated ? 'E asettaa osan paikalleen · Q vaihtaa työkalua · Esc pois'
-        : (garageShelf.length ? 'Rulla ylös kiristää, alas löysää · E ottaa seuraavan osan hyllyltä · Q työkalu · G kierre · Esc pois'
-        : 'Osoita pulttia ja pyöritä hiiren rullaa · ylös kiristää, alas löysää · Q työkalu · G korjaa kierre · Esc pois'));
+        : (garageShelf.length ? 'Rulla tai ↑/R kiristää, ↓/F löysää · E ottaa seuraavan osan hyllyltä · Q työkalu · Esc pois'
+        : 'Osoita pulttia · rulla tai ↑ / R kiristää, ↓ / F löysää · Q työkalu · G korjaa kierre · Esc pois'));
     }
     // sivulista: osien kiinnitystilanne
     if(wrenchListEl){
@@ -13298,12 +15153,17 @@
       var effMaxSpeed = maxSpeed*topSpeedMult;
       // Derbillä huippunopeus on kiinteä eikä riipu muiden osien kertoimista
       if(equippedMopedId === 'derbi') effMaxSpeed = derbiTopSpeedKmh()/3.6;
+      effMaxSpeed *= breakdownSpeedFactor();     // puhjennut rengas hidastaa reilusti
+      gripMult *= breakdownGripFactor();
 
-      var throttle = input.fwd && !stalled && engineRunning;
+      // rikkoutunut mopo: leikannut moottori tai poikki oleva ketju eivät vedä lainkaan
+      var throttle = input.fwd && !stalled && engineRunning && !mopedDead();
       var braking = input.back;
 
+      if(gearShiftCooldown > 0) gearShiftCooldown -= dt;
+      var gPower = gearPower(effMaxSpeed);
       if(throttle){
-        speed += accel*condAccel*accelMult*dt;
+        speed += accel*condAccel*accelMult*gPower*dt;
         fuel -= dt*0.46; // kulutus kevennetty uudestaan (1.05 -> 0.46): tankkaus vaatii nyt ajon huoltoasemalle, joten tankin pitää riittää pitkälle
         for(var wi=0; wi<parts.length; wi++){
           var wp = parts[wi];
@@ -13319,7 +15179,7 @@
           wp.condition = Math.max(0, wp.condition - 0.11*wearMult*boltWearMult(wp)*dt);
         }
       } else if(braking){
-        speed -= brake*brakeMult*dt;
+        speed -= brake*brakeMult*breakdownBrakeFactor()*dt;   // pettäneet jarrut eivät juuri pysäytä
       } else {
         if(speed>0) speed = Math.max(0, speed-friction*dt);
         else if(speed<0) speed = Math.min(0, speed+friction*dt);
@@ -13327,7 +15187,9 @@
       if(fuel<=0){ fuel = 0; stalled = true; }
       stallEl.classList.toggle('show', stalled);
 
-      speed = Math.max(-maxReverse, Math.min(effMaxSpeed, speed));
+      // vaihde rajaa huippunopeuden: ykkösellä ei pääse täysiä vaikka kaasu olisi pohjassa
+      var gearCap = gearMaxSpeed(effMaxSpeed);
+      speed = Math.max(-maxReverse, Math.min(gearCap, speed));
 
       // keulinta: Ctrl nostaa etupyörää, liian pitkälle menevä keula kaataa mopon taaksepäin
       if(input.wheelie && !stalled && stoppieAngle < 0.05){
@@ -13464,13 +15326,15 @@
       camLook.lerp(lookTarget, 1-Math.pow(0.0005,dt));
       camera.lookAt(camLook);
 
-      if(audioCtx && engineGain){
-        // ainoa ajoääni on ladattu mp3-sample: pysyy koko ajan silmukassa päällä ("ei katoa") - kaasulla (W)
-        // kuuluu voimakkaana, ja kun päästää irti, se laskee hiljaisemmalle mutta ei sammu kokonaan.
-        // Synteettinen "bittimusiikki"-moottoriääni ja pakoputken rätinä on poistettu käytöstä kokonaan.
-        var engineTarget = (muted || !engineRunning) ? 0 : (throttle ? engineThrottleGain : engineIdleGain);
-        engineGain.gain.setTargetAtTime(engineTarget, audioCtx.currentTime, throttle ? 0.08 : 0.3);
-      }
+      // Ajoääni on yhä sama ladattu mp3-näyte silmukassa, mutta sen soittonopeus, sävy ja
+      // voimakkuus seuraavat nyt kierroslukua, vaihdetta ja osien kuntoa (ks. updateEngineAudio).
+      updateEngineAudio(dt, throttle, gearRev(effMaxSpeed));
+      // Hajoaminen: rääkkäyskerroin kasvaa kierroksista ja keulinnasta, joten varovasti ajamalla
+      // rämälläkin pääsee kotiin - mutta kaasu pohjassa ajaminen kostautuu.
+      var rasitus = 0.35 + gearRev(effMaxSpeed)*0.95 + (wheelieAngle > 0.05 ? 0.5 : 0) + (throttle ? 0.25 : 0);
+      updateBreakdowns(dt, rasitus, speedLimitAt(moped.position.x, moped.position.z) === 0, Math.abs(speed));
+      // puhjennut rengas vetää sivuun: pieni jatkuva ohjausvirhe jota pitää korjata
+      if(brokenTyre && Math.abs(speed) > 1.2) heading += 0.22*dt*(speed > 0 ? 1 : -1);
 
     } else if(mode === 'jail'){
       updateJailCutscene(dt);
@@ -13511,10 +15375,12 @@
       var turnInput2 = (input.left?1:0) - (input.right?1:0);
       playerHeading += turnInput2 * 2.6 * dt;
       var moveDir = (input.fwd?1:0) - (input.back?1:0);
-      walkSpeedNow = moveDir * playerSpeed;   // moninpeliä varten: kaverin hahmo kävelee samaa tahtia
+      // mopoa työntäessä kulku on reilusti hitaampaa - se on osa rangaistusta
+      var pushMult = pushingMoped ? 0.52 : 1;
+      walkSpeedNow = moveDir * playerSpeed * pushMult;   // moninpeliä varten: kaverin hahmo kävelee samaa tahtia
       if(moveDir !== 0){
-        player.position.x += Math.sin(playerHeading)*playerSpeed*moveDir*dt;
-        player.position.z += Math.cos(playerHeading)*playerSpeed*moveDir*dt;
+        player.position.x += Math.sin(playerHeading)*playerSpeed*pushMult*moveDir*dt;
+        player.position.z += Math.cos(playerHeading)*playerSpeed*pushMult*moveDir*dt;
       }
       player.rotation.y = playerHeading;
       resolveCollisions(player.position, 0.28);
@@ -13527,6 +15393,7 @@
       // kohdalla) - lattia on kiinteästi tasainen 0, muuten pelaaja "keinuisi" sisätilan ulkopuolisen
       // proseduraalisen mäkifunktion mukaan (voi vaihdella useita metrejä muutaman askeleen aikana).
       player.position.y = inStore ? 0 : terrainHeight(player.position.x, player.position.z);
+      updatePushedMoped();   // työnnettävä mopo seuraa pelaajaa
 
       // ---- kävelyanimaatio ----
       // Hahmomalli on yksi jäykkä mesh ilman luurankoa, joten raajoja ei voi taivuttaa. Sen sijaan
@@ -13550,12 +15417,24 @@
         if(playerLimbs.armR) playerLimbs.armR.rotation.x = -swing*0.62*backw;
         if(playerLimbs.legL) playerLimbs.legL.rotation.x = -swing*0.52*backw;
         if(playerLimbs.legR) playerLimbs.legR.rotation.x =  swing*0.52*backw;
+        // Polvi taittuu kun jalka tulee eteen ja suoristuu kun se työntää taakse - tämä on se
+        // mikä erottaa kävelyn saksimisesta. Sääri ei voi taipua eteenpäin, siksi max(0, ...).
+        if(playerLimbs.shinL) playerLimbs.shinL.rotation.x = Math.max(0, swing*backw)*0.85;
+        if(playerLimbs.shinR) playerLimbs.shinR.rotation.x = Math.max(0, -swing*backw)*0.85;
+        // Kyynarpaa: kadet eivat roiku suorina kapuloina vaan ovat hieman koukussa, ja koukku
+        // syvenee kun kasi heilahtaa eteen - tama on se mika erottaa kavelyn marssimisesta.
+        if(playerLimbs.foreL) playerLimbs.foreL.rotation.x = (0.16 + Math.max(0, swing*backw)*0.40)*wA;
+        if(playerLimbs.foreR) playerLimbs.foreR.rotation.x = (0.16 + Math.max(0, -swing*backw)*0.40)*wA;
       }
       playerVisual.position.y = (Math.abs(Math.cos(wPh))*0.045 - 0.021) * wA;
       playerVisual.position.x = Math.sin(wPh)*0.018*wA;
       playerVisual.rotation.z = -Math.sin(wPh)*0.045*wA;
       playerVisual.rotation.y = Math.sin(wPh)*0.055*wA;
       playerVisual.rotation.x = (0.05 + Math.cos(wPh*2)*0.014)*wA;
+      // Lepoanimaatio: voimistuu sitä mukaa kun kävely hiipuu, jolloin hahmo ei jähmety
+      // patsaaksi sillä sekunnilla kun näppäin päästetään irti.
+      updateIdlePose(dt, 1 - wA, playerLimbs);
+      updateBlink(dt, playerLimbs);
       // askelääni aina kun kävelyvaihe ylittää puolikkaan syklin eli jalka osuu maahan
       if(wA > 0.35 && Math.floor(wPh/Math.PI) !== Math.floor(prevWalkPhase/Math.PI)) playFootstep();
 
@@ -13691,23 +15570,25 @@
         mountHintEl.innerHTML = garageShelf.length
           ? 'Paina <b>E</b>: asenna osat hyllyltä (' + garageShelf.length + ')'
           : 'Paina <b>E</b> avataksesi autotallin hyllyn';
-      } else if(nearMoped){
+      } else if(nearMoped || pushingMoped){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = mopedAssembled()
-          ? 'Paina <b>E</b> noustaksesi mopoon'
+        if(pushingMoped) mountHintEl.innerHTML = 'Työnnät mopoa - paina <b>E</b> päästääksesi irti';
+        else if(mopedDead()) mountHintEl.innerHTML = 'Mopo ei käy - paina <b>E</b> työntääksesi se kotiin' + (breakdown && breakdownKindById(breakdown.kind).tarvike && spareCount(breakdownKindById(breakdown.kind).tarvike) > 0 ? ' tai <b>G</b> korjataksesi' : '');
+        else mountHintEl.innerHTML = mopedAssembled()
+          ? ('Paina <b>E</b> noustaksesi mopoon' + ((brokenTyre && spareCount('paikkaussarja') > 0) ? ' · <b>G</b> paikkaa rengas' : ''))
           : 'Mopo on osina (' + installedCount() + '/' + parts.length + ') - kasaa se työpöydällä';
       } else if(!inStore && pillionCandidate()){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b> noustaksesi kaverin tarakalle';
       } else if(nearTalli){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = 'Paina <b>E</b> avataksesi kaupan';
+        mountHintEl.innerHTML = placeOpen('talli') ? 'Paina <b>E</b> avataksesi kaupan' : ('🔒 ' + openingText('talli'));
       } else if(nearMopedShop){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = 'Paina <b>E</b> avataksesi mopokaupan';
+        mountHintEl.innerHTML = placeOpen('mopokauppa') ? 'Paina <b>E</b> avataksesi mopokaupan' : ('🔒 ' + openingText('mopokauppa'));
       } else if(nearKauppaIsoDoor){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = 'Paina <b>E</b> mennäksesi kauppaan sisään';
+        mountHintEl.innerHTML = placeOpen('kauppa') ? 'Paina <b>E</b> mennäksesi kauppaan sisään' : ('🔒 ' + openingText('kauppa'));
       } else if(nearKauppaExit){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b> poistuaksesi kaupasta';
@@ -13738,7 +15619,10 @@
               : 'Paina <b>E</b> onkiaksesi');
       } else if(nearNpc){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = 'Paina <b>E</b>: jutustele (' + nearNpc.name + ')';
+        mountHintEl.innerHTML = nearNpc.exam
+          ? (examDone ? 'Ajokoe on jo tehty tänä kesänä'
+                      : 'Paina <b>E</b>: aloita ajokoe (' + EXAM_FEE + ' €) · valmius ' + examReview().score + '/100')
+          : ('Paina <b>E</b>: jutustele (' + nearNpc.name + ')');
       } else if(nearGrilli){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b>: syö grillissä (' + grilliCost + ' €)';
@@ -13775,6 +15659,17 @@
       limitPoll = 0.35;
       radarLastLimit = (mode === 'riding') ? speedLimitAt(moped.position.x, moped.position.z) : 0;
     }
+    if(gearBoxEl){
+      if(mode === 'riding' && gearsOn()){
+        gearBoxEl.hidden = false;
+        gearValEl.textContent = (gearNow+1);
+        // punainen kun kierrosraja lähellä: vaihde pitää vaihtaa ylös
+        var revNow = gearRev(dashMaxSpeed());
+        gearBoxEl.className = 'gearBox' + (revNow > 0.93 ? ' redline' : '');
+      } else {
+        gearBoxEl.hidden = true;
+      }
+    }
     if(limitSignEl){
       if(mode === 'riding' && radarLastLimit > 0){
         limitSignEl.hidden = false;
@@ -13797,6 +15692,8 @@
 
     updateMission(dt, mode === 'riding' ? moped.position : player.position);
     updateJobs(dt, mode === 'riding' ? moped.position : player.position);
+    updateExam(dt);          // ajokoe käynnissä: virhepisteet, ohjeet ja tarkistuspisteet
+    updateNpcRoutines(dt);   // kyläläiset kävelevät päiväjärjestyksensä mukaan
     updateNpcFacing(dt, mode === 'riding' ? moped.position : player.position);
     updateFishing(dt);
     updateBoosts(dt);
@@ -13809,6 +15706,8 @@
     updateBoltLoosening(dt);   // vajaaksi jääneet pultit aukeavat ajon tärinästä
     updateRadar(dt);           // tienvarren tutkapartiot mittaavat nopeutta
     updateWorldChunks();       // vain lähellä ja katseen suunnassa olevat maisemaruudut piirretään
+    updateObjectiveCard();     // mitä tehdään, missä ja millä napilla
+    updateBeacon(dt);          // valopylväs kohteen päälle
     if(kickCooldown > 0) kickCooldown = Math.max(0, kickCooldown - dt);
     blinkPhase += dt;
     updateMaps(dt);
@@ -13932,6 +15831,20 @@
 
     var activePos = mode === 'riding' ? moped.position : player.position;
     var activeHeading = mode === 'riding' ? heading : playerHeading;
+
+    // ajokokeen aikana nuoli osoittaa seuraavaan tarkistuspisteeseen, ei lähimpään nähtävyyteen
+    if(examRun && examCurrent()){
+      var ecp = examCurrent();
+      var eTo = ecp.pos.clone().sub(activePos);
+      var eD = Math.sqrt(eTo.x*eTo.x + eTo.z*eTo.z);
+      waypointEl.classList.remove('arrived');
+      waypointEl.style.opacity = '1';
+      wpArrow.style.display = '';
+      wpArrow.style.transform = 'rotate(' + (activeHeading - Math.atan2(eTo.x, eTo.z)) + 'rad)';
+      wpLabel.innerHTML = (ecp.pysahdy ? '🛑 Pysähdy · ' : 'Ajokoe · ') + '<b>' + Math.round(eD) + '</b> m';
+      renderWithPost();
+      return;
+    }
 
     var nearest = null, nearestDist = Infinity, nearestTo = null;
     for(var pi=0; pi<pois.length; pi++){
@@ -14167,12 +16080,21 @@
     // kävelijä
     var walkGroup = new THREE.Group();
     var limbs = null;
-    if(playerModelTemplate){
+    // Etäpelaajalla on oma ulkonäkönsä, joten geometria kloonataan (ownColors = true) -
+    // muuten kaikkien pelaajien värit menisivät samaan jaettuun geometriaan.
+    var rSkin = (typeof makeSkinnedFigure === 'function') ? makeSkinnedFigure(true) : null;
+    if(rSkin){
+      limbs = rSkin.limbs;
+      walkGroup.add(rSkin.figure);
+      dressRemote(walkGroup);
+    } else if(playerModelTemplate){
       var fig = playerModelTemplate.clone(true);
       limbs = {
         armL: fig.getObjectByName('armL'),
         armR: fig.getObjectByName('armR'),
         legL: fig.getObjectByName('legL'),
+        shinL: fig.getObjectByName('shinL'),
+        shinR: fig.getObjectByName('shinR'),
         legR: fig.getObjectByName('legR')
       };
       walkGroup.add(fig);
@@ -14362,6 +16284,12 @@
           if(a.limbs.armR) a.limbs.armR.rotation.x = -swing*0.62;
           if(a.limbs.legL) a.limbs.legL.rotation.x = -swing*0.52;
           if(a.limbs.legR) a.limbs.legR.rotation.x =  swing*0.52;
+          if(a.limbs.shinL) a.limbs.shinL.rotation.x = Math.max(0, swing)*0.85;
+          if(a.limbs.shinR) a.limbs.shinR.rotation.x = Math.max(0, -swing)*0.85;
+          if(a.limbs.foreL) a.limbs.foreL.rotation.x = 0.17 + Math.max(0, swing)*0.40*amt;
+          if(a.limbs.foreR) a.limbs.foreR.rotation.x = 0.17 + Math.max(0, -swing)*0.40*amt;
+          if(a.limbs.armL) a.limbs.armL.rotation.z =  armRestZ;
+          if(a.limbs.armR) a.limbs.armR.rotation.z = -armRestZ;
         }
         a.walk.position.y = (Math.abs(Math.cos(r.walkPhase))*0.045 - 0.021)*amt;
       }
@@ -14842,8 +16770,9 @@
       var qs = (window.location.hash || '') + '&' + (window.location.search || '');
       if(/[#&?]host=1/.test(qs)){
         netSetStatus('Luodaan ryhmää palvelimelle... (ilmainen palvelin voi herätä hitaasti, odota hetki)');
-        netStartHosting('').then(function(){
-          netSetStatus('Ryhmä on auki listalla. Kaverit voivat liittyä launcherista. Paina Pelaa.', 'ok');
+        netStartHosting('').then(function(j){
+          if(typeof mpShowRoomCode === 'function') mpShowRoomCode(j && j.room ? j.room : netRoomId);
+          netSetStatus('Ryhmä on auki listalla. Kaverit voivat liittyä launcherista tai koodilla. Paina Pelaa.', 'ok');
         }).catch(function(e){
           netSetStatus('Ryhmän luonti epäonnistui: ' + (e && e.message ? e.message : e), 'err');
         });
@@ -14884,11 +16813,22 @@
     if(hudEl) hudEl.style.visibility = 'hidden';
   }
   function beginGame(){
+    if(!dailyEvent) rollDailyEvent(true);   // ensimmäinen päivän tapahtuma heti kesän alkaessa, ilman ilmoitusta
     gameStarted = true;
     startScreenEl.hidden = true;
     if(hudEl) hudEl.style.visibility = '';
     snapCameraToPlayer(); // ensimmäinen kuva suoraan pelaajan taakse, ei lentoa aloitusruudun kamerasta
     ensureAudio(); // Pelaa-napin painallus on käyttäjän ele, joten ääni saa käynnistyä tässä
+    // Avausvälikohtaus kertoo uudelle pelaajalle lähtötilanteen ja ensimmäisen tehtävän.
+    // Näytetään vain kerran (cutSeen tallentuu), joten vanha pelaaja ei joudu lukemaan sitä joka kerta.
+    if(typeof playCutscene === 'function'){
+      playCutscene('intro', 'Kesäloma alkaa', [
+        'Olet Jonne. Koulu loppui eilen ja edessä on koko kesä.',
+        'Syksyllä on mopokortin ajokoe, mutta mopo on osina autotallin pukkien päällä. Kaikki osat odottavat hyllyllä.',
+        'Ensimmäinen homma: kasaa mopo. Mene autotallille, paina E työpöydän luona ja pultaa osat paikoilleen.',
+        'Ruudun vasemmassa ylälaidassa näkyy aina mitä pitää tehdä, missä ja millä napilla. Keltainen valopylväs maastossa näyttää suunnan.'
+      ]);
+    }
   }
   document.getElementById('startPlayBtn').addEventListener('click', beginGame);
 
@@ -14904,6 +16844,86 @@
   var mpInviteInEl = document.getElementById('mpInviteIn');
   var mpAnswerOutEl = document.getElementById('mpAnswerOut');
   var mpLeaveEl = document.getElementById('mpLeave');
+
+  // ---- ryhmäkoodi pelin sisällä ----
+  // Launcher on Windows-ohjelma, joten Macilla, Linuxilla ja puhelimella moninpeliin ei päässyt
+  // lainkaan. Tämä tekee saman kuin launcherin ryhmälista: luo huoneen palvelimelle ja näyttää
+  // koodin, tai liittyy kaverin koodilla. Palvelimen osoite muistetaan selaimeen.
+  var DEFAULT_LOBBY_URL = 'https://jonnen-lobby.onrender.com';
+  var mpServerInputEl = document.getElementById('mpServerInput');
+  var mpCreateRoomEl  = document.getElementById('mpCreateRoom');
+  var mpRoomCodeWrap  = document.getElementById('mpRoomCodeWrap');
+  var mpRoomCodeEl    = document.getElementById('mpRoomCode');
+  var mpCopyRoomEl    = document.getElementById('mpCopyRoom');
+  var mpJoinCodeEl    = document.getElementById('mpJoinCode');
+  var mpJoinRoomEl    = document.getElementById('mpJoinRoom');
+
+  function mpSavedServer(){
+    try{ return localStorage.getItem('jonne_lobby') || ''; }catch(e){ return ''; }
+  }
+  function mpRememberServer(u){
+    try{ localStorage.setItem('jonne_lobby', u); }catch(e){}
+  }
+  if(mpServerInputEl){
+    mpServerInputEl.value = netServerUrl || mpSavedServer() || DEFAULT_LOBBY_URL;
+  }
+  // Palvelimen osoite otetaan kentästä aina ennen kutsua, jotta käyttäjä voi vaihtaa sen lennossa.
+  function mpUseServerFromInput(){
+    var u = (mpServerInputEl && mpServerInputEl.value ? mpServerInputEl.value : '').trim();
+    if(!u) u = DEFAULT_LOBBY_URL;
+    u = u.replace(/\/+$/, '');
+    netServerUrl = u;
+    mpRememberServer(u);
+    return u;
+  }
+  function mpShowRoomCode(code){
+    if(!mpRoomCodeWrap) return;
+    if(!code){ mpRoomCodeWrap.hidden = true; return; }
+    mpRoomCodeEl.textContent = code;
+    mpRoomCodeWrap.hidden = false;
+  }
+  if(mpCreateRoomEl){
+    mpCreateRoomEl.addEventListener('click', function(){
+      mpUseServerFromInput();
+      if(mpNickEl && mpNickEl.value) playerName = mpNickEl.value.slice(0,16);
+      if(!netSupported()){ netSetStatus('Tämä selain ei tue vertaisyhteyttä.', 'err'); return; }
+      mpCreateRoomEl.disabled = true;
+      netSetStatus('Luodaan ryhmää palvelimelle... (ilmainen palvelin voi herätä hitaasti, odota hetki)');
+      netStartHosting('').then(function(j){
+        mpShowRoomCode(j && j.room ? j.room : netRoomId);
+        netSetStatus('Ryhmä auki. Anna koodi kavereille ja paina sitten Pelaa.', 'ok');
+        mpCreateRoomEl.disabled = false;
+      }).catch(function(e){
+        netSetStatus('Ryhmän luonti epäonnistui: ' + (e && e.message ? e.message : e), 'err');
+        mpCreateRoomEl.disabled = false;
+      });
+    });
+  }
+  if(mpCopyRoomEl){
+    mpCopyRoomEl.addEventListener('click', function(){
+      var t = mpRoomCodeEl ? mpRoomCodeEl.textContent : '';
+      if(!t) return;
+      try{ navigator.clipboard.writeText(t); mpCopyRoomEl.textContent = 'Kopioitu'; 
+           setTimeout(function(){ mpCopyRoomEl.textContent = 'Kopioi'; }, 1400); }catch(e){}
+    });
+  }
+  if(mpJoinRoomEl){
+    mpJoinRoomEl.addEventListener('click', function(){
+      mpUseServerFromInput();
+      if(mpNickEl && mpNickEl.value) playerName = mpNickEl.value.slice(0,16);
+      var code = (mpJoinCodeEl && mpJoinCodeEl.value ? mpJoinCodeEl.value : '').trim();
+      if(!code){ netSetStatus('Kirjoita kaverin ryhmäkoodi.', 'err'); return; }
+      if(!netSupported()){ netSetStatus('Tämä selain ei tue vertaisyhteyttä.', 'err'); return; }
+      mpJoinRoomEl.disabled = true;
+      netSetStatus('Liitytään ryhmään... (ilmainen palvelin voi herätä hitaasti)');
+      netJoinRoom(code).then(function(){
+        mpJoinRoomEl.disabled = false;
+      }).catch(function(e){
+        netSetStatus('Liittyminen epäonnistui: ' + (e && e.message ? e.message : e), 'err');
+        mpJoinRoomEl.disabled = false;
+      });
+    });
+  }
 
   // Kutsukoodit ovat varatie, eivät pääreitti. Jos peli on käynnistetty launcherista
   // huonepalvelimen kanssa, launcher hoitaa ryhmän luonnin ja liittymisen kokonaan, joten
@@ -14932,7 +16952,7 @@
       mpManualToggleEl.textContent = mpManualEl.hidden ? 'Näytä koodinvaihto' : 'Piilota koodinvaihto';
     });
   }else if(mpIntroEl){
-    mpIntroEl.textContent = 'Tämä peli käynnistettiin ilman huonepalvelinta, joten yhteys avataan käsin vaihdettavilla koodeilla. Helpompi tapa on launcherin Moninpeli-nappi: siellä host luo ryhmän ja kaverit liittyvät listalta yhdellä klikkauksella.';
+    mpIntroEl.textContent = 'Yksi teistä painaa Luo ryhmä ja lähettää ryhmäkoodin muille. Muut kirjoittavat koodin alle ja painavat Liity ryhmään. Tämä toimii millä tahansa koneella - Windowsilla, Macilla, Linuxilla tai puhelimella - eikä launcheria tarvita.';
   }
 
   function netSetStatus(text, kind){
@@ -15404,16 +17424,19 @@
 
   // Pintatyypit: mittakaava, värivaihtelun voimakkuus ja pinnanmuodon syvyys kullekin.
   // Asfaltti on karkeaa ja tiheää, rappaus hienoa, metalli lähes sileää.
+  // Ensimmäinen versio oli aivan liian voimakas: jokainen pinta näytti hiekkapaperilta ja
+  // kaukana kohina kimmelsi rumasti. Voimakkuudet pudotettu noin puoleen ja pinnanmuoto
+  // kolmannekseen - rakenteen pitää näkyä lähellä mutta ei huutaa.
   var DETAIL_KINDS = {
-    maa:     {scale:0.55, strength:0.30, bump:1.25},   // nurmi ja multa: iso laikukkuus
-    tie:     {scale:1.90, strength:0.26, bump:1.60},   // asfaltti: tiheä sora
-    betoni:  {scale:1.10, strength:0.18, bump:1.00},   // jalkakäytävä, sokkeli
-    seina:   {scale:1.45, strength:0.15, bump:0.85},   // rapattu seinä
-    puu:     {scale:2.40, strength:0.22, bump:1.10},   // lauta, runko
-    lehti:   {scale:1.30, strength:0.28, bump:0.45},   // lehvästö: pelkkä värivaihtelu
-    metalli: {scale:3.60, strength:0.08, bump:0.55},   // pelti: hienoinen harjaus
-    kangas:  {scale:3.00, strength:0.16, bump:0.90},   // satula, vaatteet
-    kevyt:   {scale:1.80, strength:0.10, bump:0.55}    // kaikki muu: vain hiukan elävyyttä
+    maa:     {scale:0.42, strength:0.14, bump:0.42},   // nurmi ja multa: iso laikukkuus
+    tie:     {scale:1.30, strength:0.13, bump:0.52},   // asfaltti: tiheä sora
+    betoni:  {scale:0.90, strength:0.09, bump:0.34},   // jalkakäytävä, sokkeli
+    seina:   {scale:1.05, strength:0.07, bump:0.26},   // rapattu seinä
+    puu:     {scale:1.80, strength:0.11, bump:0.36},   // lauta, runko
+    lehti:   {scale:0.95, strength:0.13, bump:0.14},   // lehvästö: pelkkä värivaihtelu
+    metalli: {scale:2.60, strength:0.04, bump:0.18},   // pelti: hienoinen harjaus
+    kangas:  {scale:2.20, strength:0.08, bump:0.28},   // satula, vaatteet
+    kevyt:   {scale:1.30, strength:0.05, bump:0.18}    // kaikki muu: vain hiukan elävyyttä
   };
 
   var detailMaterials = [];   // kaikki käsitellyt materiaalit, jotta taso voidaan vaihtaa lennossa
@@ -15441,9 +17464,10 @@
 
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>',
-                 '#include <common>\nvarying vec3 vDtlP;\nvarying vec3 vDtlN;')
+                 '#include <common>\nvarying vec3 vDtlP;\nvarying vec3 vDtlN;\nvarying float vDtlD;')
         .replace('#include <begin_vertex>',
-                 '#include <begin_vertex>\n  vDtlP = (modelMatrix * vec4(transformed, 1.0)).xyz;')
+                 '#include <begin_vertex>\n  vDtlP = (modelMatrix * vec4(transformed, 1.0)).xyz;\n' +
+                 '  vDtlD = length((modelViewMatrix * vec4(transformed, 1.0)).xyz);')
         .replace('#include <beginnormal_vertex>',
                  '#include <beginnormal_vertex>\n  vDtlN = normalize(mat3(modelMatrix) * objectNormal);');
 
@@ -15456,6 +17480,7 @@
           'uniform float dtlBump;',
           'varying vec3 vDtlP;',
           'varying vec3 vDtlN;',
+          'varying float vDtlD;',
           // kolmitasoprojektio: kolme tasoa sekoitetaan normaalin mukaan, UV:tä ei tarvita
           'vec4 dtlTri(vec3 p, vec3 n, float s){',
           '  vec3 b = abs(n); b = b*b*b*b;',
@@ -15470,22 +17495,26 @@
         .replace('#include <map_fragment>', [
           '#include <map_fragment>',
           '{',
+          // Hieno rakeisuus häivytetään etäisyyden mukaan: kaukana se on pienempi kuin pikseli
+          // ja alkaa kimmeltää. Karkea laikukkuus jää näkyviin, koska se lukee maisemana.
+          '  float fadeF = 1.0 - smoothstep(22.0, 70.0, vDtlD);',
           '  vec4 dA = dtlTri(vDtlP, vDtlN, dtlScale);',
           '  vec4 dB = dtlTri(vDtlP, vDtlN, dtlScale * 0.16);',
-          '  float v = (dA.r - 0.5) * 0.8 + (dB.a - 0.5) * 1.1;',
-          '  diffuseColor.rgb *= clamp(1.0 + v * dtlStrength * 2.0, 0.55, 1.45);',
+          '  float v = (dA.r - 0.5) * 0.8 * fadeF + (dB.a - 0.5) * 1.1;',
+          '  diffuseColor.rgb *= clamp(1.0 + v * dtlStrength * 2.0, 0.70, 1.30);',
           '}'
         ].join('\n'))
         // pinnanmuoto: kohinasta johdettu normaali taivutetaan pinnan normaaliin
         .replace('#include <normal_fragment_maps>', [
           '#include <normal_fragment_maps>',
           '{',
+          '  float fadeN = 1.0 - smoothstep(14.0, 48.0, vDtlD);',
           '  vec4 dN = dtlTri(vDtlP, vDtlN, dtlScale);',
           '  vec3 up = vec3(0.0, 1.0, 0.0);',
           '  vec3 tg = cross(up, normal);',
           '  tg = normalize(mix(vec3(1.0, 0.0, 0.0), tg, step(0.001, dot(tg, tg))));',
           '  vec3 bt = cross(normal, tg);',
-          '  normal = normalize(normal + (tg * (dN.g - 0.5) + bt * (dN.b - 0.5)) * dtlBump * 2.0);',
+          '  normal = normalize(normal + (tg * (dN.g - 0.5) + bt * (dN.b - 0.5)) * dtlBump * 2.0 * fadeN);',
           '}'
         ].join('\n'));
     };
@@ -15818,6 +17847,7 @@
       if(pendingFines[i].over > worst){ worst = pendingFines[i].over; limit = pendingFines[i].limit; }
     }
     var count = pendingFines.length;
+    finesCount += count;   // ajokokeen arvostelu muistaa poliisimerkinnät
     pendingFines.length = 0;
     var paid = Math.min(Math.round(money), total);
     money -= paid;
@@ -15855,7 +17885,10 @@
       var over = kmh - tr.limit;
       tr.cooldown = RADAR_COOLDOWN;
       tr.flash = 0.25;
-      if(over <= 3) continue;                       // mittausvara: pieni ylitys menee läpi
+      // Mittausvara riippuu poliisin kiinnostuksesta: puhtailla papereilla saa 9 km/h armoa,
+      // erityistarkkailussa enää 2. Sama ajotapa johtaa siis eri lopputulokseen sen mukaan,
+      // millaisen maineen on itselleen kesän aikana hankkinut.
+      if(over <= policeTolerance()) continue;
 
       playRadarBeep(over > RADAR_CHASE_OVER);
       if(over > RADAR_CHASE_OVER){
@@ -15863,6 +17896,8 @@
         startRadarPursuit(tr, kmh);
       } else if(plateOn){
         pendingFines.push({amount: speedingFineAmount(over), over: Math.round(over), limit: tr.limit});
+        repPoliceAdd(9, 'Tutkamerkintä kirjautui. Partioita on nyt enemmän tiellä.');
+        repVillageAdd(-2);
         radarWarnTimer = 3.2;
         showToast(true, '📸 Tutka välähti',
           Math.round(kmh) + ' km/h alueella ' + tr.limit + '. Sakko tulee postissa aamulla.', 3600);
@@ -15894,6 +17929,8 @@
     best.userData.chaseTimer = 0;
     best.userData.escapeTimer = 0;
     if(!pursuitActive){ pursuitActive = true; pursuitEscaped = false; pursuitCaught = false; }
+    repPoliceAdd(18);
+    repVillageAdd(-4);
     showToast(true, '🚓 Tutka näytti ' + Math.round(kmh) + ' km/h',
       'Rajoitus on ' + tr.limit + '. Partio lähti perään!', 4200);
   }
@@ -16186,9 +18223,348 @@
     }
   }
 
+
+  // ==========================================================================
+  // ---- TEHTÄVÄOPASTE, DIALOGI JA VÄLIKOHTAUKSET ----
+  // Tarinavaiheet olivat olemassa jo ennestään, mutta uusi pelaaja näki niistä vain yhden
+  // lyhyen rivin ruudun laidassa eikä tiennyt MINNE pitää mennä. Nyt jokaiseen vaiheeseen
+  // liittyy paikka, näppäinvihje ja maailmaan piirtyvä valopylväs, joka näkyy kauas.
+  // Lisäksi kyläläisten kanssa voi oikeasti keskustella: vastausvaihtoehdot johtavat eri
+  // repliikkeihin, ja yksi niistä kertoo aina mitä juuri nyt pitäisi tehdä.
+  // ==========================================================================
+
+  // ---- vaiheen opaste: minne mennä, mitä painaa ----
+  // Avaimena vaiheen `short`, jolloin itse storyStages-taulukkoa ei tarvinnut kirjoittaa uusiksi.
+  var STAGE_GUIDE = {
+    'Kasaa mopo autotallissa':   {at:function(){ return autotalliPos; },  place:'Autotalli',    how:'Mene työpöydän luo ja paina E'},
+    'Polkaise mopo käyntiin':    {at:function(){ return autotalliPos; },  place:'Autotalli',    how:'E nousee kyytiin, F polkaisee käyntiin'},
+    'Käy tallilla':              {at:function(){ return kauppaPos; },     place:'Kylän talli',  how:'Aja perille ja paina E'},
+    'Asenna osa autotallissa':   {at:function(){ return autotalliPos; },  place:'Autotalli',    how:'E työpöydällä, sitten Asenna'},
+    'Tienaa ensimmäiset rahat':  {at:function(){ return romuPos; },       place:'Romuttamo',    how:'Paina E keikkapaikalla ja odota'},
+    'Osta tuunausosa':           {at:function(){ return kauppaPos; },     place:'Kylän talli',  how:'Paina E ja valitse viritysosa'},
+    'Aja tankkaamaan':           {at:function(){ return meetSpot; },      place:'Huoltoasema',  how:'Pysähdy pumpun viereen ja paina R'},
+    'Jutustele kylällä':         {at:function(){ return meetSpot; },      place:'Miitti',       how:'Mene kyläläisen viereen ja paina E'},
+    'Aja miittiin':              {at:function(){ return meetSpot; },      place:'Miitti',       how:'Aja huoltoaseman pihaan'},
+    'Hitsaa sauma romuttamolla': {at:function(){ return romuPos; },       place:'Romuttamo',    how:'Paina E hitsauspenkillä'},
+    'Säädä kaasutin autotallissa':{at:function(){ return autotalliPos; }, place:'Autotalli',    how:'E työpöydällä → Säädä kaasutin'},
+    'Paikkaa rengas tallilla':   {at:function(){ return kauppaPos; },     place:'Kylän talli',  how:'E tallilla → Paikkaa rengas'},
+    'Aja kolme keikkaa':         {at:function(){ return meetSpot; },      place:'Kylä',         how:'TAB avaa puhelimen, sieltä keikat'},
+    'Käy syömässä':              {at:function(){ return macdonaldsPos; }, place:'Mac Donalds',  how:'Paina E luukulla'},
+    'Nosta kala järvestä':       {at:function(){ return rantaPos; },      place:'Uimaranta',    how:'Osta lupa kaupasta, sitten E laiturilla'},
+    'Kokeile pelikonetta':       {at:function(){ return kauppaIsoPos; },  place:'Kyläkauppa',   how:'Paina E pelikoneella'},
+    'Hanki toinen mopo':         {at:function(){ return mopedShopPos; },  place:'Mopokauppa',   how:'Paina E kaupalla'},
+    'Kierrä koko kylä':          {at:function(){ return null; },          place:'Koko kartta',  how:'Avaa kartta M:llä ja käy puuttuvissa'},
+    'Ajokoe odottaa':            {at:function(){ return examSpot; },      place:'Ajokoekonttori (Naapurikylä)', how:'Aja paikalle ja paina E - maksu ' + EXAM_FEE + ' €'}
+  };
+  function currentStage(){ return storyStages[storyIndex] || null; }
+  function currentGuide(){
+    var st = currentStage();
+    return st ? (STAGE_GUIDE[st.short] || null) : null;
+  }
+  function currentTargetPos(){
+    var g = currentGuide();
+    return g ? g.at() : null;
+  }
+
+  // ---- tehtäväkortti ruudun vasemmassa ylälaidassa ----
+  var objCardEl   = document.getElementById('objCard');
+  var objHeadEl   = document.getElementById('objHead');
+  var objGoalEl   = document.getElementById('objGoal');
+  var objWhereEl  = document.getElementById('objWhere');
+  var objHowEl    = document.getElementById('objHow');
+  var objArrowEl  = document.getElementById('objArrow');
+  var objDistEl   = document.getElementById('objDist');
+  var objHidden   = false;
+
+  function updateObjectiveCard(){
+    if(!objCardEl) return;
+    // Keikan tai tehtävän aikana yläpalkki näyttää sen tiedot samassa kohdassa, joten
+    // kortti väistää siksi aikaa.
+    if(!gameStarted || objHidden || cutsceneActive || !currentStage() || activeMission || activeJob){
+      objCardEl.hidden = true;
+      return;
+    }
+    objCardEl.hidden = false;
+    updateSummerDisplay();   // päiväluku otsikkoriville: "Tehtävä · päivä 7/30"
+    var st = currentStage(), g = currentGuide();
+    objGoalEl.textContent = st.short;
+    objHowEl.textContent = g ? g.how : '';
+    var tgt = currentTargetPos();
+    if(tgt){
+      var ref = (mode === 'riding') ? moped.position : player.position;
+      var dx = tgt.x - ref.x, dz = tgt.z - ref.z;
+      var dist = Math.sqrt(dx*dx + dz*dz);
+      objWhereEl.textContent = g.place;
+      objDistEl.textContent = (dist < 18) ? 'perillä' : (Math.round(dist) + ' m');
+      // nuoli osoittaa kohteeseen pelaajan katsesuunnasta: 0 astetta = suoraan eteenpäin
+      var hdg = (mode === 'riding') ? heading : playerHeading;
+      var rel = Math.atan2(dx, dz) - hdg;
+      while(rel >  Math.PI) rel -= Math.PI*2;
+      while(rel < -Math.PI) rel += Math.PI*2;
+      objArrowEl.style.transform = 'rotate(' + (rel*180/Math.PI) + 'deg)';
+      objArrowEl.style.opacity = (dist < 18) ? '0.25' : '1';
+    } else {
+      objWhereEl.textContent = g ? g.place : '';
+      objDistEl.textContent = '';
+      objArrowEl.style.opacity = '0.25';
+    }
+  }
+
+  // ---- maailmaan piirtyvä valopylväs kohteen päälle ----
+  // Kartta ei auta jos ei tiedä mitä etsiä. Pylväs näkyy kauas ja häipyy kun on perillä.
+  var beaconGroup = new THREE.Group();
+  (function buildBeacon(){
+    var mat = new THREE.MeshBasicMaterial({
+      color:0xffc24b, transparent:true, opacity:0.32, depthWrite:false, side:THREE.DoubleSide
+    });
+    var pillar = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2.6, 26, 12, 1, true), mat);
+    pillar.position.y = 13;
+    beaconGroup.add(pillar);
+    var ringMat = new THREE.MeshBasicMaterial({color:0xffd98a, transparent:true, opacity:0.55, depthWrite:false});
+    var ring = new THREE.Mesh(new THREE.RingGeometry(2.4, 3.1, 24), ringMat);
+    ring.rotation.x = -Math.PI/2;
+    ring.position.y = 0.12;
+    beaconGroup.add(ring);
+    beaconGroup.userData.ring = ring;
+    beaconGroup.userData.pillar = pillar;
+    beaconGroup.visible = false;
+    beaconGroup.renderOrder = 2;
+    scene.add(beaconGroup);
+  })();
+  var beaconPhase = 0;
+  function updateBeacon(dt){
+    var tgt = currentTargetPos();
+    if(!tgt || !gameStarted || inStore || objHidden){ beaconGroup.visible = false; return; }
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = tgt.x - ref.x, dz = tgt.z - ref.z;
+    var dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < 14){ beaconGroup.visible = false; return; }   // perillä: pylväs pois tieltä
+    beaconGroup.visible = true;
+    beaconGroup.position.set(tgt.x, terrainHeight(tgt.x, tgt.z), tgt.z);
+    beaconPhase += dt;
+    var pulse = 0.5 + 0.5*Math.sin(beaconPhase*2.2);
+    beaconGroup.userData.pillar.material.opacity = 0.16 + pulse*0.18;
+    beaconGroup.userData.ring.material.opacity = 0.35 + pulse*0.35;
+    beaconGroup.userData.ring.scale.setScalar(1 + pulse*0.12);
+  }
+
+  // ==========================================================================
+  // ---- VÄLIKOHTAUKSET ----
+  // Mustat palkit ylös ja alas, teksti keskelle, eteenpäin välilyönnillä tai klikkaamalla.
+  // Ohjaus on lukossa kohtauksen ajan, jottei mopo lähde karkuun kesken puheen.
+  // ==========================================================================
+  var cutsceneActive = false;
+  var cutEl       = document.getElementById('cutscene');
+  var cutTitleEl  = document.getElementById('cutTitle');
+  var cutTextEl   = document.getElementById('cutText');
+  var cutNextEl   = document.getElementById('cutNext');
+  var cutLines = [], cutStep = 0, cutDone = null;
+  var cutSeen = {};    // jokainen kohtaus näytetään vain kerran, tallentuu peliin
+
+  function playCutscene(id, title, lines, onDone){
+    if(id && cutSeen[id]){ if(onDone) onDone(); return; }
+    if(id) cutSeen[id] = true;
+    cutsceneActive = true;
+    cutLines = lines.slice();
+    cutStep = 0;
+    cutDone = onDone || null;
+    cutTitleEl.textContent = title || '';
+    cutTextEl.textContent = cutLines[0] || '';
+    cutNextEl.textContent = (cutLines.length > 1) ? 'Jatka ▸' : 'Sulje';
+    cutEl.hidden = false;
+    // nollataan ohjaus, jottei näppäin jää pohjaan kohtauksen ajaksi
+    input.fwd = input.back = input.left = input.right = false;
+    saveGame();
+  }
+  function cutsceneNext(){
+    if(!cutsceneActive) return;
+    cutStep++;
+    if(cutStep >= cutLines.length){ cutsceneEnd(); return; }
+    cutTextEl.textContent = cutLines[cutStep];
+    cutNextEl.textContent = (cutStep === cutLines.length-1) ? 'Sulje' : 'Jatka ▸';
+  }
+  function cutsceneEnd(){
+    if(!cutsceneActive) return;
+    cutsceneActive = false;
+    cutEl.hidden = true;
+    var d = cutDone; cutDone = null;
+    if(d) d();
+  }
+  if(cutNextEl) cutNextEl.addEventListener('click', cutsceneNext);
+  if(cutEl) cutEl.addEventListener('click', function(e){ if(e.target === cutEl) cutsceneNext(); });
+
+  // ==========================================================================
+  // ---- DIALOGI VALINNOILLA ----
+  // Kyläläiselle voi nyt vastata eri tavoin, ja vastaus vaikuttaa siihen mitä hän sanoo.
+  // Yksi vaihtoehto on aina "Mitä mun pitäis tehdä?", joka kertoo nykyisen tehtävän -
+  // se on uuden pelaajan tärkein apu.
+  // ==========================================================================
+  var dlgEl      = document.getElementById('dialogue');
+  var dlgNameEl  = document.getElementById('dlgName');
+  var dlgLineEl  = document.getElementById('dlgLine');
+  var dlgChoices = document.getElementById('dlgChoices');
+  var dlgOpen = false, dlgNpc = null;
+
+  // Keskusteluaiheet per kyläläinen. `q` on pelaajan repliikki, `a` vastaus, `effect` valinnainen.
+  var NPC_TOPICS = {
+    'Äiti': [
+      {q:'Mitä mun pitäis tehdä?',        a:null},
+      {q:'Onks ruokaa?',                   a:'Jääkaapissa on. Syö kunnolla ennen kuin lähdet rassaamaan.'},
+      {q:'Voisitko lainata rahaa?',        a:'Äiti ei tällä kertaa tarjoa. Käy tienaamassa keikoilla, siitä oppii.'},
+      {q:'Mitä mieltä oot mopostani?',     a:'Se on kovaääninen. Mutta jos se pitää sut poissa pahanteosta, niin olkoon.'},
+      {q:'Autan tänään pihahommissa.',     a:'Kappas. Sitä ei joka päivä kuule - kyllä sä vielä kunnon miehen teet.', rep:8},
+      {q:'Älä jaksa jauhaa.',              a:'Sillä asenteella sä et saa sitä korttia. Mene nyt.', rep:-10},
+      {q:'Moi vaan.',                      a:'Moi moi. Muista kypärä!'}
+    ],
+    'Jussi': [
+      {q:'Mitä mun pitäis tehdä?',        a:null},
+      {q:'Mistä saa lisää tehoja?',        a:'Kylän tallilta. Sylinteri ja pakoputki ensin, muu on hienosäätöä.'},
+      {q:'Onks poliisi liikkeellä?',       a:null},
+      {q:'Missä on hyvä ajaa?',            a:'Crossirata ja se iso hyppyri sen vieressä. Siellä saa ilmaa.'},
+      {q:'Sun mopo on muuten kova.',       a:'No jaa. Kyllä sun oma alkaa jo olla kans ihan jotain. Sanon tallilla hyvää sanaa susta.', rep:7},
+      {q:'Mun mopo kulkee sun ohi milloin vaan.', a:'Joo joo. Puhu sitten kun on jotain näyttää.', rep:-8},
+      {q:'Moi vaan.',                      a:'Nähdään miitissä!'}
+    ],
+    'Aku': [
+      {q:'Mitä mun pitäis tehdä?',        a:null},
+      {q:'Mikä se energiajuoma on?',       a:'Viidellä eurolla saat sellasen että kädet ei väsähdä keulassa kolmeen minuuttiin. Kokeile.'},
+      {q:'Onks sulla rahaa?',              a:'Ei oo koskaan. Sen takia mä pummaan.'},
+      {q:'Tässä on kolikko, osta jotain.', a:'Oho! Sä oot kyllä ihan eri kaveri kuin muut täällä. Mä kerron tän eteenpäin.', rep:9, cost:3},
+      {q:'Painu pois siitä.',              a:'Okei okei... ei tarvii huutaa.', rep:-9},
+      {q:'Moi vaan.',                      a:'Jep jep.'}
+    ]
+  };
+  var NPC_TOPICS_DEFAULT = [
+    {q:'Mitä mun pitäis tehdä?',  a:null},
+    {q:'Mitä kuuluu?',             a:null},   // käyttää hahmon omaa repliikkilistaa
+    {q:'Onks täällä mitään tekemistä?', a:'Kylällä on keikkoja, romuttamolla hommia ja crossiradalla menoa. Avaa puhelin niin näet.'},
+    {q:'Kiva kun kysyit, pärjäilen.', a:'Mukava kuulla. Hyvä kun nuoriso tervehtii.', rep:5},
+    {q:'Ihan sama.',               a:'No niin. Hyvää päivänjatkoa sitten.', rep:-7},
+    {q:'Moi vaan.',                a:'Moikka.'}
+  ];
+
+  function objectiveAdvice(){
+    // SEURAUS: huonolla maineella kukaan ei viitsi neuvoa. Neuvo on pelin tärkein apu, joten
+    // sen menettäminen tuntuu heti - mutta maineen saa takaisin töillä ja kohteliaisuudella.
+    if(villagersSnub()) return 'Selvitä ihan itse. Ei täällä kukaan sun perässä juokse.';
+    var st = currentStage(), g = currentGuide();
+    if(!st) return 'Taidat olla jo tehnyt kaiken mitä tässä kylässä voi tehdä.';
+    var where = g ? (' Se tapahtuu paikassa ' + g.place + '.') : '';
+    var how = g ? (' ' + g.how + '.') : '';
+    var extra = villagersHelp() ? ' Ja kuule, sano tallilla terveisiä multa - saat osat halvemmalla.' : '';
+    return 'Sun pitäis nyt: ' + st.short.toLowerCase() + '.' + where + how + extra;
+  }
+  // Poliisikysymyksen vastaus riippuu siitä, miten poliisi suhtautuu pelaajaan juuri nyt.
+  function policeGossip(){
+    var L = repPoliceLevel();
+    if(L >= 2) return 'Sua ne vahtii ihan erikseen. Partioita on lisätty ja mittausvara on nolla - aja nyt siivosti pari päivää.';
+    if(L >= 1) return 'Sun rekkari on niiden listalla. Ne mittaa tienvarressa, ja sakko tulee postissa. Katso rajoitusmerkkejä.';
+    return 'On ne liikkeellä, mutta sulla on puhtaat paperit. Pieni ylitys menee vielä läpi.';
+  }
+  function npcTopics(npc){
+    return NPC_TOPICS[npc.name] || NPC_TOPICS_DEFAULT;
+  }
+  function openDialogue(npc){
+    dlgNpc = npc;
+    dlgOpen = true;
+    npcChatCount++;
+    dlgNameEl.textContent = npc.name;
+    var greet;
+    if(villagersSnub()){
+      greet = 'Taasko sä. Kylällä puhutaan susta kaikenlaista.';
+    } else if(villagersHelp() && Math.random() < 0.5){
+      greet = 'No terve! Sua on kuulemma näkynyt auttamassa - hyvä juttu.';
+    } else {
+      greet = npc.lines ? npc.lines[npc.lineIndex % npc.lines.length] : 'No moi.';
+      npc.lineIndex = (npc.lineIndex || 0) + 1;
+    }
+    dlgLineEl.textContent = greet;
+    renderDialogueChoices();
+    dlgEl.hidden = false;
+    input.fwd = input.back = input.left = input.right = false;
+  }
+  function renderDialogueChoices(){
+    dlgChoices.innerHTML = '';
+    var topics = npcTopics(dlgNpc);
+    topics.forEach(function(t){
+      if(t.used) return;   // maineeseen vaikuttava valinta näytetään vain kerran
+      // huonolla maineella kyläläinen ei suostu juttelemaan muusta kuin pakollisesta
+      if(villagersSnub() && t.rep === undefined && t.q !== 'Moi vaan.' && t.q.indexOf('pitäis tehdä') === -1) return;
+      var btn = document.createElement('button');
+      btn.className = 'dlgChoice';
+      btn.type = 'button';
+      btn.textContent = t.q;
+      btn.addEventListener('click', function(){
+        if(t.q === 'Moi vaan.'){
+          dlgLineEl.textContent = t.a;
+          setTimeout(closeDialogue, 900);
+          return;
+        }
+        var ans = t.a;
+        if(ans === null){
+          // erikoistapaukset: tehtäväneuvo, poliisijuoru ja hahmon oma repliikkilista
+          if(t.q.indexOf('pitäis tehdä') !== -1) ans = objectiveAdvice();
+          else if(t.q.indexOf('poliisi') !== -1) ans = policeGossip();
+          else if(dlgNpc.lines){ ans = dlgNpc.lines[dlgNpc.lineIndex % dlgNpc.lines.length]; dlgNpc.lineIndex++; }
+          else ans = 'Eipä tässä kummempia.';
+        }
+        // SEURAUS: valinta muuttaa mainetta, ja osa valinnoista maksaa. Jo käytetty valinta
+        // ei enää toista vaikutustaan, jottei mainetta voi hakata samasta napista loputtomiin.
+        if(t.rep && !t.used){
+          if(t.cost && money < t.cost){
+            dlgLineEl.textContent = 'Sulla ei ole ' + t.cost + ' euroa kourassa.';
+            return;
+          }
+          if(t.cost){ money -= t.cost; updateMoneyDisplay(); }
+          t.used = true;
+          repVillageAdd(t.rep);
+          renderDialogueChoices();
+        }
+        dlgLineEl.textContent = ans;
+        if(t.effect) t.effect(dlgNpc);
+      });
+      dlgChoices.appendChild(btn);
+    });
+    var close = document.createElement('button');
+    close.className = 'dlgChoice dlgClose';
+    close.type = 'button';
+    close.textContent = 'Lopeta keskustelu';
+    close.addEventListener('click', closeDialogue);
+    dlgChoices.appendChild(close);
+  }
+  function closeDialogue(){
+    dlgOpen = false;
+    dlgNpc = null;
+    if(dlgEl) dlgEl.hidden = true;
+  }
+
+  // ---- tarinan välikohtaukset ----
+  // Laukaistaan kun vaihe vaihtuu. Vain muutama tärkeä hetki, jottei peli muutu lukemiseksi.
+  function storyCutsceneFor(stage){
+    if(!stage) return;
+    if(stage.short === 'Polkaise mopo käyntiin'){
+      playCutscene('mopoKasassa', 'Mopo on kasassa',
+        ['Viimeinen pultti kiristyy. Mopo seisoo omilla renkaillaan ensimmäistä kertaa koko kesänä.',
+         'Nouse kyytiin E:llä ja polkaise se käyntiin F:llä. Rämä ei lähde ekalla - polkaise vaan uudestaan.']);
+    } else if(stage.short === 'Käy tallilla'){
+      playCutscene('ekaKaynnistys', 'Se käy!',
+        ['Moottori rykäisee ja jää käymään. Koko piha haisee kaksitahtiselta.',
+         'Nyt kannattaa ajaa kylän tallille: siellä näkee mopon kunnon ja myydään osia.']);
+    } else if(stage.short === 'Ajokoe odottaa'){
+      playCutscene('loppu', 'Kesä on paketissa',
+        ['Mopo kulkee, kassa on kunnossa ja koko kylä on nähty.',
+         'Jonne on valmis ajokokeeseen. Loppukesä on sun.']);
+    }
+  }
+
   // kolme tutkapartiota kerrallaan maailmassa; paikat arvotaan uudelleen joka aamu
   spawnRadarTrap(); spawnRadarTrap(); spawnRadarTrap();
   placeRadarTraps();
+  // Partioiden määrä kasvaa jos poliisi on kiinnostunut: tarkistetaan joka aamu placeRadarTraps-kutsun
+  // yhteydessä, ja uusi partio lisätään vain jos niitä on liian vähän.
+  function syncRadarTrapCount(){
+    while(radarTraps.length < policeTrapCount()) spawnRadarTrap();
+  }
 
   applyDetailToScene();   // pintarakenne kaikkiin materiaaleihin kerran, kun maailma on valmis
 
@@ -16197,3 +18573,5 @@
   animate();
 })();
 </script>
+</body>
+</html>
