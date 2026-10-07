@@ -712,6 +712,10 @@
           <div class="label">Bensa</div>
           <div class="fuelbar"><i id="fuelBar"></i></div>
         </div>
+        <div class="gauge">
+          <div class="label" id="tempLabel">Lämpö</div>
+          <div class="fuelbar"><i id="tempBar"></i></div>
+        </div>
         <div class="dashPair">
           <div class="gauge">
             <div class="label">Raha</div>
@@ -732,7 +736,7 @@
     <div class="missionTracker" id="missionTracker"></div>
     <div class="wheelieCombo" id="wheelieCombo"><small>Keula</small><span id="wheelieComboText">x1</span></div>
     <div class="toast" id="toast"><div class="big" id="toastBig"></div><p id="toastText"></p></div>
-    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b></div>
+    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea</div>
     <div class="miniMapWrap" id="miniMapWrap">
       <canvas id="miniMap" width="196" height="196"></canvas>
       <div class="miniMapFoot">Koko kartta: <b>M</b></div>
@@ -2395,7 +2399,12 @@
     if(r < 0.0001) return new THREE.Vector3(x, 0, z);
     // nearScale nostettiin 2,0 -> 2,5: kohteet olivat pelaajan mielestä yhä liian tiiviissä
     // nipussa. Muunnos on säteittäinen ja monotoninen, joten suunnat ja järjestys säilyvät.
-    var near = 140, nearScale = 2.5, farScale = 0.6;
+    // V102: kartta kasvoi reilusti. nearScale 2,5 -> 3,2 ja farScale 0,6 -> 1,6, jolloin
+    // kylän keskusta leviää maltillisesti mutta kaukokohteet siirtyvät lähes kaksinkertaiselle
+    // etäisyydelle: crossirata oli n. 580 metrin päässä origosta, nyt n. 1060. Pelaaja halusi
+    // että paikasta toiseen ajamiseen kuluu oikeasti aikaa. Koko tieverkko, tasoitusalueet,
+    // viitat ja kartat johdetaan näistä samoista muuttujista, joten ne seuraavat mukana.
+    var near = 140, nearScale = 3.2, farScale = 1.6;
     var nr = (r <= near) ? r*nearScale : near*nearScale + (r-near)*farScale;
     var k = nr/r;
     return new THREE.Vector3(x*k, 0, z*k);
@@ -3440,6 +3449,164 @@
   // eteläinen silmukka: uimarannalta suoraan naapurikylään pääraittia sivuten
   makeCurvedSpurRoad(rantaPos.x, rantaPos.z, kylaPos.x, kylaPos.z, 7, 16, 7, 1);
 
+  // ==========================================================================
+  // ---- KAUKOKOHTEET KARTAN LAIDALLA ----
+  // Kartan ulkolaita oli pelkkää peltoa: kehätie ja poikittaistiet kulkivat sen läpi mutta
+  // mitään ei ollut siellä. Kolme uutta kohdetta antavat pitkille ajomatkoille päämäärän ja
+  // tekevät bensasta ja hajoamisesta oikeasti merkityksellisiä - matka takaisin on pitkä.
+  //
+  // Kaikki kolme asetetaan valmiin tieruudukon risteyksiin kiinni ja saavat oman pistotiensä,
+  // joten niihin pääsee ajamalla eikä pellon poikki.
+  // ==========================================================================
+  var kirkonkylaPos = new THREE.Vector3(-455, 0, -1270);   // iso kylä: talot ja oma huoltoasema
+  var moottorirataPos = new THREE.Vector3(470, 0, 870);    // soraovaali omine kisoineen
+  var eramokkiPos = new THREE.Vector3(-495, 0, 1425);      // erämökki pitkän soratien päässä
+
+  // ---- Kirkonkylä ----
+  var kirkonkylaColl = [];
+  var kirkonkyla = makeNaapurikyla(kirkonkylaColl);
+  kirkonkyla.position.copy(kirkonkylaPos);
+  kirkonkyla.rotation.y = 0.35;
+  scene.add(kirkonkyla);
+  registerColliders(kirkonkyla, kirkonkylaColl);
+  // oma huoltoasema: tässä voi tankata, joten kaukana kotoa ei tarvitse pelätä tankin loppumista
+  var kirkonkylaAsemaPos = new THREE.Vector3(kirkonkylaPos.x + 34, 0, kirkonkylaPos.z + 26);
+  var kirkonkylaAsemaColl = [];
+  var kirkonkylaAsema = makeHuoltoasema(kirkonkylaAsemaColl);
+  kirkonkylaAsema.position.copy(kirkonkylaAsemaPos);
+  kirkonkylaAsema.rotation.y = -0.2;
+  scene.add(kirkonkylaAsema);
+  registerColliders(kirkonkylaAsema, kirkonkylaAsemaColl);
+  // pistotie poikittaistieltä (z = -1120) kylään ja edelleen huoltoasemalle
+  makeCurvedSpurRoad(kirkonkylaPos.x, crossRoadZs[0], kirkonkylaPos.x, kirkonkylaPos.z + 40, 8, 18, 7, 1);
+  makeCurvedSpurRoad(kirkonkylaPos.x, kirkonkylaPos.z + 40, kirkonkylaAsemaPos.x, kirkonkylaAsemaPos.z, 7, -8, 4, 1);
+  makeStraightRoad(kirkonkylaPos.x, kirkonkylaPos.z + 40, 8, 8);
+  // kylänraitti talojen välistä läpi, jottei kylä jää tien päähän umpiperäksi
+  makeCurvedSpurRoad(kirkonkylaPos.x, kirkonkylaPos.z + 40, kirkonkylaPos.x - 6, kirkonkylaPos.z - 46, 7, -10, 6, 1);
+
+  // ---- Moottorirata ----
+  // Soraovaali, jonka keskilinja menee roadPaths-listaan: silloin se näkyy minikartalla,
+  // saa nopeusrajoituksen ja kisan tarkistuspisteet osaavat tarttua siihen.
+  function makeMoottorirata(cx, cz, rx, rz, width, segs){
+    var pts = [], i;
+    for(i=0; i<segs; i++){
+      var a = i/segs*Math.PI*2;
+      pts.push({x: cx + Math.cos(a)*rx, z: cz + Math.sin(a)*rz});
+    }
+    pts.push({x: pts[0].x, z: pts[0].z});
+    for(i=0; i<pts.length-1; i++){
+      var p0 = pts[i], p1 = pts[i+1];
+      var sdx = p1.x-p0.x, sdz = p1.z-p0.z;
+      var slen = Math.sqrt(sdx*sdx+sdz*sdz);
+      makeAngledRoad((p0.x+p1.x)/2, (p0.z+p1.z)/2, slen+0.6, width, Math.atan2(-sdz, sdx), i*0.0004);
+      addRoadCorridor(p0.x, p0.z, p1.x, p1.z, width/2);
+    }
+    pts.isTrack = true;   // kilparata: ei nopeusrajoitusta eikä tutkia
+    roadPaths.push(pts);
+    return pts;
+  }
+  var RATA_RX = 150, RATA_RZ = 95;
+  var moottorirataPts = makeMoottorirata(moottorirataPos.x, moottorirataPos.z, RATA_RX, RATA_RZ, 10, 28);
+  // varikko ja rengaspinot radan sisäkaarteeseen
+  (function rataVarusteet(){
+    var g = new THREE.Group();
+    var tyreMat = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.95});
+    for(var t=0; t<26; t++){
+      var a = t/26*Math.PI*2;
+      var st = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.9,10), tyreMat);
+      st.position.set(Math.cos(a)*(RATA_RX-18), 0.45, Math.sin(a)*(RATA_RZ-16));
+      st.castShadow = true;
+      g.add(st);
+    }
+    // lähtöportti radan pohjoispuolelle
+    var postMat = new THREE.MeshStandardMaterial({color:0xcfd4d8, roughness:0.6, metalness:0.3});
+    var p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,5.2,8), postMat);
+    p1.position.set(-6, 2.6, -RATA_RZ); p1.castShadow = true;
+    var p2 = p1.clone(); p2.position.x = 6;
+    var beam = new THREE.Mesh(new THREE.BoxGeometry(13.5, 1.1, 0.3), new THREE.MeshStandardMaterial({map: makeSignTexture('MOOTTORIRATA', '#c0392b', '#ffffff')}));
+    beam.position.set(0, 4.8, -RATA_RZ);
+    g.add(p1, p2, beam);
+    // varikkokatos
+    var shedMat = new THREE.MeshStandardMaterial({color:0xe2e0d6, roughness:0.85});
+    var shed = new THREE.Mesh(new THREE.BoxGeometry(14, 3.0, 6), shedMat);
+    shed.position.set(0, 1.5, -RATA_RZ+42); shed.castShadow = true; shed.receiveShadow = true;
+    var shedRoof = new THREE.Mesh(new THREE.BoxGeometry(15, 0.3, 7), new THREE.MeshStandardMaterial({color:0x8a3b2b}));
+    shedRoof.position.set(0, 3.15, -RATA_RZ+42);
+    g.add(shed, shedRoof);
+    g.position.copy(moottorirataPos);
+    scene.add(g);
+    registerColliders(g, [{x:0, z:-RATA_RZ+42, r:7.5}]);
+  })();
+  // pistotie kehätieltä (x = 620) radalle
+  makeCurvedSpurRoad(loopHalfWidth, moottorirataPos.z, moottorirataPos.x + RATA_RX, moottorirataPos.z, 8, 14, 6, 1);
+
+  // ---- Erämökki ----
+  // Järvimökin uusiokäyttö näytti huonolta: sen vesi on pieni kirkas suorakaide, joka kauempana
+  // kartalla näytti maahan unohtuneelta paperiarkilta ilman mitään järveä ympärillä. Siksi tälle
+  // tehtiin oma rakennelma, jossa on OIKEA järvi: iso tumma vesialue, hiekkaranta sen reunalla
+  // ja mökki rannan tuntumassa.
+  function makeEramokki(collOut){
+    var g = new THREE.Group();
+    // Tie tulee pohjoisesta (paikallinen -z) ja päättyy mökin pihaan, joten järvi on etelässä
+    // (+z). Ryhmää EI käännetä, jotta tien pääte ja rantaviiva pysyvät varmasti eri puolilla.
+    // Ensimmäinen versio käytti 128 metrin järveä ja kiiltävää vesimateriaalia: tie kulki
+    // veden poikki ja pinta paloi vinossa auringossa lähes valkoiseksi.
+    var shore = new THREE.Mesh(new THREE.CircleGeometry(62, 32), new THREE.MeshStandardMaterial({color:0xe8d8a6, roughness:1}));
+    shore.rotation.x = -Math.PI/2; shore.position.set(0, 0.010, 76); shore.receiveShadow = true;
+    g.add(shore);
+    var lake = new THREE.Mesh(new THREE.CircleGeometry(55, 36), new THREE.MeshStandardMaterial({
+      color:0x3f86a8, roughness:0.85, metalness:0, transparent:true, opacity:0.9
+    }));
+    lake.rotation.x = -Math.PI/2; lake.position.set(0, 0.016, 76);
+    g.add(lake);
+    var pad = new THREE.Mesh(new THREE.PlaneGeometry(46, 40), new THREE.MeshStandardMaterial({color:0x7fae5c}));
+    pad.rotation.x = -Math.PI/2; pad.position.set(0, 0.012, -2); pad.receiveShadow = true;
+    g.add(pad);
+    g.add(makeHouse(-9, -4, 0.35, 0xc9a86a, 0x5b3d24, 0.95));
+    // sauna rannan tuntumaan
+    var saunaMat = new THREE.MeshStandardMaterial({color:0x8a6a45, roughness:0.95});
+    var sauna = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.3, 3.4), saunaMat);
+    sauna.position.set(11, 1.15, 8); sauna.castShadow = true; sauna.receiveShadow = true;
+    var saunaRoof = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.26, 4.0), new THREE.MeshStandardMaterial({color:0x4a3a2a}));
+    saunaRoof.position.set(11, 2.4, 8);
+    var piippu = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.6, 8), new THREE.MeshStandardMaterial({color:0x3a3a3a, metalness:0.4, roughness:0.6}));
+    piippu.position.set(12.4, 3.2, 8);
+    g.add(sauna, saunaRoof, piippu);
+    // laituri järvelle päin
+    var pierMat = new THREE.MeshStandardMaterial({color:0x8a6a45, roughness:0.95});
+    var pier = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.16, 20), pierMat);
+    pier.position.set(2, 0.42, 32); pier.castShadow = true;
+    g.add(pier);
+    for(var pl=24; pl<=40; pl+=5){
+      [1.3, 2.7].forEach(function(px){
+        var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 6), pierMat);
+        leg.position.set(px, 0.12, pl);
+        g.add(leg);
+      });
+    }
+    var boat = new THREE.Mesh(taperBoxFront(new THREE.BoxGeometry(1.2, 0.38, 2.8), 0.5, 0.3), new THREE.MeshStandardMaterial({color:0x2f5f3a, roughness:0.9}));
+    boat.position.set(-2.4, 0.17, 38); boat.rotation.y = 0.25; boat.castShadow = true;
+    g.add(boat);
+    // nuotiopaikka pihalle
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.16, 6, 14).rotateX(-Math.PI/2), new THREE.MeshStandardMaterial({color:0x6b6b66, roughness:1}));
+    ring.position.set(-15, 0.14, 10);
+    g.add(ring);
+    if(collOut){
+      collOut.push({x:-9, z:-4, r:2.2});
+      collOut.push({x:11, z:8, r:2.4});
+      collOut.push({x:-2.4, z:38, r:1.0});
+    }
+    return g;
+  }
+  var eramokkiColl = [];
+  var eramokki = makeEramokki(eramokkiColl);
+  eramokki.position.copy(eramokkiPos);
+  eramokki.rotation.y = 0;   // tien pääte ja rantaviiva pysyvät eri puolilla ilman kiertoa
+  scene.add(eramokki);
+  registerColliders(eramokki, eramokkiColl);
+  // pitkä mutkitteleva soratie poikittaistieltä (z = 1120) mökille - tahallaan hidas ja kapea
+  makeCurvedSpurRoad(-450, crossRoadZs[3], eramokkiPos.x, eramokkiPos.z - 22, 6.5, 34, 12, 3);
+
   // ---- poliisiasema: pieni asema kodin/kaupan väliin jäävällä avoimella pellolla, oma lyhyt
   // liittymätie kodin-risteyksen tieltä (x=-9). Tänne poliisiautot palaavat partiointireitillään. ----
   function makePoliisiasema(collOut){
@@ -4425,6 +4592,8 @@
     dayTime = 0.30;
     advanceSummerDay();   // nukuttu yö kuluttaa yhden kesäpäivän
     rollDailyEvent();
+    rollUsedOffer();
+    seriesMorningNotice();
     foodBoostLeft = 0;
     if(fuel < 25) fuel = 25;
     // yön yli nukkuminen palauttaa kunnon, mutta aamulla on nälkä
@@ -4458,7 +4627,9 @@
     // tarkoittaa mopon työntämistä kotiin - siksi näiden ostaminen ETUKÄTEEN kannattaa.
     {id:'varatulppa',   name:'Varasytytystulppa', gen:'varasytytystulpan', desc:'Reppuun. Vaihtuu tien päällä G:llä jos tulppa karstoittuu.', price:4, owned:false, consumable:true, count:0},
     {id:'ketjulukko',   name:'Ketjulukko',        gen:'ketjulukon',         desc:'Reppuun. Katkenneen ketjun saa jatkettua tien päällä G:llä.', price:6, owned:false, consumable:true, count:0},
-    {id:'paikkaussarja',name:'Paikkaussarja',     gen:'paikkaussarjan',     desc:'Reppuun. Puhjenneen renkaan paikkaus tien päällä G:llä.', price:9, owned:false, consumable:true, count:0}
+    {id:'paikkaussarja',name:'Paikkaussarja',     gen:'paikkaussarjan',     desc:'Reppuun. Puhjenneen renkaan paikkaus tien päällä G:llä.', price:9, owned:false, consumable:true, count:0},
+    {id:'kaksitahtioljy', name:'Kaksitahtiöljy',  gen:'kaksitahtiöljyn',   desc:'Pullo sekoitusöljyä. Kaadetaan bensan sekaan pumpulla O-napilla - ilman öljyä mäntä leikkaa kiinni.', price:5, owned:false, consumable:true, count:0},
+    {id:'kypara', name:'Kypärä', desc:'Punainen avokypärä. Pakollinen: ilman sitä partio sakottaa ja ajokokeesta tulee virhepisteitä.', price:45, owned:false}
   ];
   function storeItemById(id){
     for(var si2=0; si2<storeItems.length; si2++) if(storeItems[si2].id === id) return storeItems[si2];
@@ -4508,6 +4679,7 @@
         if(it.id === 'karkkipussi') karkkipussiMesh.visible = true;
         if(it.id === 'kalastuslupa') kalastuslupaMesh.visible = true;
         if(it.id === 'onnenkolikko') onnenkolikkoMesh.visible = true;
+        if(it.id === 'kypara') updateHelmet();
         renderStoreItems();
         if(inventoryOpen) renderInventory();
       });
@@ -4995,7 +5167,11 @@
     {x:meetSpot.x, z:meetSpot.z, r:32}, {x:macdonaldsPos.x, z:macdonaldsPos.z, r:32},
     {x:rantaPos.x, z:rantaPos.z, r:64}, {x:kylaPos.x, z:kylaPos.z, r:52}, {x:crossiPos.x, z:crossiPos.z, r:64},
     {x:policeStationPos.x, z:policeStationPos.z, r:28}, {x:mopedShopPos.x, z:mopedShopPos.z, r:26},
-    {x:jarviPos.x, z:jarviPos.z, r:50}, {x:kauppaIsoPos.x, z:kauppaIsoPos.z, r:34}
+    {x:jarviPos.x, z:jarviPos.z, r:50}, {x:kauppaIsoPos.x, z:kauppaIsoPos.z, r:34},
+    // kartan laidan uudet kohteet
+    {x:kirkonkylaPos.x, z:kirkonkylaPos.z, r:56}, {x:kirkonkylaAsemaPos.x, z:kirkonkylaAsemaPos.z, r:30},
+    {x:moottorirataPos.x, z:moottorirataPos.z, r:185}, {x:eramokkiPos.x, z:eramokkiPos.z, r:56},
+    {x:eramokkiPos.x, z:eramokkiPos.z + 76, r:78}
   ];
   var flatSegments = [
     {x1:0, z1:-1600, x2:0, z2:1600, r:26},
@@ -5031,7 +5207,13 @@
     {x1:kauppaPos.x, z1:kauppaPos.z, x2:romuPos.x, z2:romuPos.z, r:24}, // metsätie-oikotie
     {x1:policeStationJunction.x, z1:policeStationJunction.z, x2:policeStationPos.x, z2:policeStationPos.z, r:20},
     {x1:mopedShopJunction.x, z1:mopedShopJunction.z, x2:mopedShopPos.x, z2:mopedShopPos.z, r:20},
-    {x1:0, z1:kauppaIsoPos.z, x2:kauppaIsoPos.x, z2:kauppaIsoPos.z, r:22}
+    {x1:0, z1:kauppaIsoPos.z, x2:kauppaIsoPos.x, z2:kauppaIsoPos.z, r:22},
+    // uusien kaukokohteiden pistotiet
+    {x1:kirkonkylaPos.x, z1:crossRoadZs[0], x2:kirkonkylaPos.x, z2:kirkonkylaPos.z+40, r:34},
+    {x1:kirkonkylaPos.x, z1:kirkonkylaPos.z+40, x2:kirkonkylaAsemaPos.x, z2:kirkonkylaAsemaPos.z, r:24},
+    {x1:loopHalfWidth, z1:moottorirataPos.z, x2:moottorirataPos.x+150, z2:moottorirataPos.z, r:30},
+    {x1:kirkonkylaPos.x, z1:kirkonkylaPos.z+40, x2:kirkonkylaPos.x-6, z2:kirkonkylaPos.z-46, r:26},
+    {x1:-450, z1:crossRoadZs[3], x2:eramokkiPos.x, z2:eramokkiPos.z-22, r:52}
   ];
   var hillTransition = 40; // pehmeän liu'un pituus (m) tasaisesta täyteen mäkeen
   function flattenFactor(x, z){
@@ -5974,6 +6156,9 @@
   plateMesh.visible = plateOn;
 
   moped.add(body, seat, bar, frontWheel, rearWheel, frontRimStripe, rearRimStripe, brakeDisc, brakeCaliper, forkLeft, forkRight, rearShock, frontFender, exhaustStock, exhaustRace, headlight, headlightBeam, headlightTarget, headlightGlow, essanssiMesh, onnenkolikkoMesh, radioMesh, karkkipussiMesh, kalastuslupaMesh, plateMesh);
+  // Omassa mopossa ei ollut vilkkuja lainkaan, vaikka kaikilla NPC-ajoneuvoilla on. Käytetään
+  // samaa apufunktiota, jolloin myös vilkkuminen hoituu olemassa olevalla updateBlinkers-koodilla.
+  addBlinkers(moped, 0.21, 0.72, -0.74, 0.60);
   headlightBeam.target = headlightTarget;
 
   // ---- käyttäjän oma 3D-skootterimalli (ladattu .glb) proseduraalisen mopon tilalle ----
@@ -7499,6 +7684,166 @@
   // Kutsutaan sekä animaatiosilmukasta (näkyvyys) että mopoa vaihdettaessa (asento).
   var riderPoseId = null;
   var throttleTwist = 0;   // 0 = kaasu kiinni, 1 = kaasu pohjassa
+  // ==========================================================================
+  // ---- LIIKENNESÄÄNNÖT JA POLIISIKONTROLLI ----
+  // Poliisi mittasi vain nopeutta. Kypärää ei ollut olemassa, vilkut olivat koriste eikä partio
+  // koskaan pysäyttänyt ketään. Nyt mopossa on kolme asiaa jotka voivat olla pielessä:
+  //   - kypärä puuttuu (ostetaan kyläkaupasta)
+  //   - rekisterikilvet irrotettu (oli jo olemassa, nyt siitä sakotetaan)
+  //   - kilpapakoputki tai 88BR eli mopo on viritetty yli rajojen
+  // Partio voi pysäyttää tien varteen tarkastukseen. Jos pysähdyt, saat sakon rikkeistä.
+  // Jos karkaat, alkaa tavallinen takaa-ajo. Vilkkua pitää käyttää kääntyessä - ajokokeessa
+  // sen unohtaminen maksaa virhepisteitä.
+  // ==========================================================================
+  var helmetOn = false;          // onko kypärä päässä (ostettu = aina päässä)
+  var helmetMesh = null;
+  var signalSideNow = 0;         // -1 vasen, 0 ei mitään, 1 oikea
+  var signalLeftTime = 0;        // montako sekuntia vilkku vielä palaa
+  var lastTurnSignalled = 0;     // milloin viimeksi vilkutettiin (peliaikaa)
+  var signalMisses = 0;          // ilman vilkkua tehdyt käännökset
+  function ownsHelmet(){ var it = storeItemById('kypara'); return !!(it && it.owned); }
+  // Kypärä pään luuhun: sama tapa kuin kasvot, joten se kääntyy pään mukana.
+  function ensureHelmet(){
+    if(!riderEntry || !riderEntry.limbs || !riderEntry.limbs.head) return;
+    if(helmetMesh) return;
+    var g = new THREE.Group();
+    var kuori = new THREE.Mesh(new THREE.SphereGeometry(0.135, 14, 10, 0, Math.PI*2, 0, Math.PI*0.62),
+      new THREE.MeshStandardMaterial({color:0xd8402c, roughness:0.35, metalness:0.1}));
+    kuori.scale.set(1.0, 1.12, 1.05);
+    var visiiri = new THREE.Mesh(new THREE.SphereGeometry(0.128, 12, 8, Math.PI*0.72, Math.PI*0.56, Math.PI*0.22, Math.PI*0.30),
+      new THREE.MeshStandardMaterial({color:0x1b2a33, roughness:0.15, metalness:0.3, side:THREE.DoubleSide}));
+    visiiri.scale.set(1.06, 1.12, 1.12);
+    var raita = new THREE.Mesh(new THREE.TorusGeometry(0.138, 0.012, 6, 18).rotateX(Math.PI/2),
+      new THREE.MeshStandardMaterial({color:0xf2efe6, roughness:0.5}));
+    raita.position.y = 0.02;
+    g.add(kuori, visiiri, raita);
+    g.position.set(0, 0.16, 0.01);
+    g.visible = false;
+    riderEntry.limbs.head.add(g);
+    helmetMesh = g;
+  }
+  function updateHelmet(){
+    ensureHelmet();
+    helmetOn = ownsHelmet();
+    if(helmetMesh) helmetMesh.visible = helmetOn;
+  }
+  // ---- vilkut ----
+  function setSignal(side){
+    if(mode !== 'riding') return;
+    if(signalSideNow === side && signalLeftTime > 0){
+      signalSideNow = 0; signalLeftTime = 0;
+      npcSignal(moped, 0, 0);
+      return;
+    }
+    signalSideNow = side;
+    signalLeftTime = 6;
+    lastTurnSignalled = 0;
+    npcSignal(moped, side, 6);
+  }
+  function updateSignals(dt, turnInput){
+    if(signalLeftTime > 0){
+      signalLeftTime -= dt;
+      if(signalLeftTime <= 0){ signalSideNow = 0; npcSignal(moped, 0, 0); }
+    }
+    // Käännöksen havainto: riittävän jyrkkä ja pitkä kaarre vauhdissa on "kääntyminen".
+    // Jos vilkku ei ole päällä oikeaan suuntaan, se kirjataan laiminlyönniksi.
+    if(mode !== 'riding' || Math.abs(speed) < 3) { turnHold = 0; return; }
+    // Pitkä kaarre on YKSI käännös, ei viisi: havainnon jälkeen on jäähdytysaika, muuten
+    // yhdestä mutkasta kertyisi virhepisteitä niin kauan kuin ohjausta pitää kääntyneenä.
+    if(turnCooldown > 0){ turnCooldown -= dt; turnHold = 0; return; }
+    if(turnInput !== 0){
+      turnHold += dt*turnInput;
+      if(Math.abs(turnHold) > 0.55){
+        var puoli = (turnHold > 0) ? -1 : 1;    // turnInput +1 = vasemmalle
+        if(signalLeftTime > 0 && signalSideNow === puoli) lastTurnSignalled = 1;
+        else { signalMisses++; lastTurnSignalled = -1; }
+        turnHold = 0;
+        turnCooldown = 5;
+        if(examRun && lastTurnSignalled === -1){
+          examAddFault(5, 'Vilkku! Käännöksestä pitää näyttää merkki.');
+        }
+      }
+    } else turnHold *= Math.max(0, 1 - dt*3);
+  }
+  var turnHold = 0, turnCooldown = 0;
+  // ---- rikkeet ----
+  function trafficViolations(){
+    var list = [];
+    if(!helmetOn) list.push({nimi:'Kypärä puuttuu', sakko:40});
+    if(!plateOn)  list.push({nimi:'Rekisterikilvet irrotettu', sakko:60});
+    if(kilpaPipeOwned && exhaustMode === 'kilpa') list.push({nimi:'Kilpapakoputki, liian äänekäs', sakko:50});
+    if(typeof derbiHas88br === 'function' && derbiHas88br() && equippedMopedId === 'derbi'){
+      list.push({nimi:'Mopo viritetty yli 45 km/h rajan', sakko:90});
+    }
+    return list;
+  }
+  // ---- liikennevalvonta: partio pysäyttää ----
+  var stopCheck = null;     // {timer, car} kun pysäytys on käynnissä
+  var stopCooldown = 60;    // ettei pysäytyksiä tule putkeen
+  function updateTrafficStop(dt){
+    if(stopCooldown > 0) stopCooldown -= dt;
+    if(stopCheck){
+      stopCheck.timer -= dt;
+      if(Math.abs(speed) < 1.6){ finishTrafficStop(true); return; }
+      if(stopCheck.timer <= 0){ finishTrafficStop(false); return; }
+      return;
+    }
+    if(mode !== 'riding' || crashed || examRun || pursuitActive) return;
+    if(stopCooldown > 0) return;
+    if(Math.abs(speed) < 4) return;
+    var rikkeet = trafficViolations();
+    if(!rikkeet.length && repPoliceLevel() === 0) return;
+    // lähin partioauto riittävän läheltä ja näköetäisyydeltä
+    for(var i=0; i<policeCars.length; i++){
+      var pc = policeCars[i];
+      if(pc.userData.state === 'chase') return;
+      var dx = pc.position.x - moped.position.x, dz = pc.position.z - moped.position.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      if(d > 60) continue;
+      // todennäköisyys: rikkeiden määrä ja poliisin kiinnostus nostavat
+      var mahdollisuus = (rikkeet.length*0.25 + repPoliceLevel()*0.2) * dt;
+      if(Math.random() < mahdollisuus){ startTrafficStop(pc); return; }
+    }
+  }
+  function startTrafficStop(car){
+    stopCheck = {timer: 9, car: car};
+    if(car && car.userData) car.userData.lightsOn = true;
+    showToast(true, '🚓 Partio antaa pysähtymismerkin', 'Hidasta ja pysähdy yhdeksässä sekunnissa. Jos jatkat matkaa, alkaa takaa-ajo.', 6000);
+    playRadarBeep(false);
+  }
+  function finishTrafficStop(pysahtyi){
+    var car = stopCheck ? stopCheck.car : null;
+    stopCheck = null;
+    stopCooldown = 150;
+    if(!pysahtyi){
+      showToast(true, '🚓 Et pysähtynyt', 'Partio lähti perään.', 4200);
+      repPoliceAdd(22);
+      if(car && car.userData){
+        car.userData.state = 'chase';
+        car.userData.chaseTimer = 0;
+        car.userData.escapeTimer = 0;
+      }
+      if(!pursuitActive){ pursuitActive = true; pursuitEscaped = false; pursuitCaught = false; }
+      return;
+    }
+    var rikkeet = trafficViolations();
+    if(!rikkeet.length){
+      showToast(false, '🚓 Tarkastus ohi', 'Papereissa ei ollut huomauttamista. "Hyvää matkaa."', 4600);
+      repPoliceAdd(-6);
+      return;
+    }
+    var summa = 0, nimet = [];
+    for(var i=0; i<rikkeet.length; i++){ summa += rikkeet[i].sakko; nimet.push(rikkeet[i].nimi); }
+    var maksettu = Math.min(Math.round(money), summa);
+    money -= maksettu;
+    updateMoneyDisplay();
+    finesCount++;
+    repPoliceAdd(8);
+    repVillageAdd(-3);
+    showToast(true, '🚓 Sakko ' + maksettu + ' €', nimet.join(' · ') + '. Korjaa nämä ennen seuraavaa kertaa.', 7000);
+    saveGame();
+  }
+
   function updateRider(dt){
     if(!riderEntry) return;
     riderEntry.group.visible = (mode === 'riding');
@@ -7730,28 +8075,199 @@
   // sekunnissa. Ei siis pysyvä osto vaan taito, joka pitää uusia välillä.
   var carbTune = 0;
   var carbTuneLeft = 0;
+
+  // ==========================================================================
+  // ---- MOOTTORIN LÄMPÖTILA ----
+  // Sekoitusöljy oli binäärinen: joko seos riitti tai mäntä leikkasi. Lämpötila tekee siitä
+  // jatkuvan ja luettavan. Kaksitahtimoottori jäähtyy ILMALLA, joten ajoviima on ainoa
+  // jäähdytys - seisova mopo kuumenee joutokäynnilläkin, ja pitkä täyskaasuveto kuumentaa
+  // nopeasti. Laiha seos nostaa lämpöä selvästi, koska öljy on myös voiteluaine.
+  //
+  // Mittari näyttää lämmön HUD:ssa. Punaisella alueella mäntä voi leikata kiinni vaikka
+  // öljyä olisi tankissa - ratkaisu on päästää kaasusta ja antaa viiman jäähdyttää.
+  // ==========================================================================
+  var engineTemp = 20;            // celsiusta
+  var TEMP_AMBIENT = 20;          // ulkoilman perustaso, säätila muuttaa tätä
+  var TEMP_WARN = 108;            // mittari punaiselle
+  var TEMP_SEIZE = 125;           // tästä ylöspäin mäntä voi tarttua
+  var tempWarned = false;
+  function ambientTemp(){
+    // helteellä ilma on lämmin, sateella ja yöllä viileä
+    var paiva = Math.sin((dayTime - 0.25)*Math.PI*2)*0.5 + 0.5;   // 0 yöllä, 1 keskipäivällä
+    var t = 11 + paiva*16;
+    if(typeof heatWave !== 'undefined') t += heatWave*13;
+    if(typeof rainBlend !== 'undefined') t -= rainBlend*7;
+    return t;
+  }
+  function tempRatio(){ return Math.max(0, Math.min(1, (engineTemp - TEMP_AMBIENT)/(TEMP_SEIZE - TEMP_AMBIENT))); }
+  function updateEngineTemp(dt, throttle, speedMs){
+    TEMP_AMBIENT = ambientTemp();
+    if(!engineRunning){
+      // sammutettu moottori jäähtyy ilman viimaa hitaasti kohti ulkolämpötilaa
+      engineTemp += (TEMP_AMBIENT - engineTemp) * Math.min(1, dt*0.05);
+      tempWarned = false;
+      return;
+    }
+    // TAVOITELÄMPÖ, ei tuotto/jäähdytys-tase. Ensimmäinen versio laski lämpöä tuoton ja
+    // jäähdytyksen erotuksena, jolloin joutokäynnin tasapaino asettui 136 asteeseen ja
+    // rullaava mopo jäähtyi 46 asteeseen - molemmat väärin. Nyt lämpö hakeutuu kohti
+    // tavoitetta, joka on aina vähintään normaali käyntilämpö.
+    var laiha = Math.max(0, (45 - (typeof maint !== 'undefined' ? maint.oil : 50))/45);
+    var viima = Math.min(1, Math.abs(speedMs)/20)*0.62;        // ajoviiman jäähdytysteho 0..0.62
+    var target = TEMP_AMBIENT + 52                              // normaali käyntilämpö
+               + (throttle ? 42 : 4) * (1 - viima)              // kaasu lämmittää, viima vie lämmön pois
+               + laiha*48;                                      // laiha seos kuumentaa reilusti
+    if(typeof carbTuneLeft !== 'undefined' && carbTuneLeft <= 0) target += 4;
+    engineTemp += (target - engineTemp) * Math.min(1, dt*0.05);
+    engineTemp = Math.max(TEMP_AMBIENT, Math.min(190, engineTemp));
+
+    if(!tempWarned && engineTemp > TEMP_WARN){
+      tempWarned = true;
+      showToast(true, '🌡️ Moottori kuumenee', 'Päästä kaasusta ja anna ajoviiman jäähdyttää. Kuuma mäntä tarttuu kiinni.', 5200);
+    }
+    if(tempWarned && engineTemp < TEMP_WARN - 18) tempWarned = false;
+  }
+  // Ylikuumenemisen kerroin kiinnileikkausriskiin: alle rajan ei vaikuta mitään,
+  // sen yli riski kasvaa jyrkästi.
+  function tempSeizeFactor(){
+    if(engineTemp < TEMP_SEIZE) return 1;
+    var yli = (engineTemp - TEMP_SEIZE)/30;
+    return 1 + yli*yli*22;
+  }
+  // kuuma moottori menettää tehoa ennen kuin se leikkaa - varoitus tuntuu kaasukahvassa
+  function tempPowerFactor(){
+    if(engineTemp < TEMP_WARN) return 1;
+    return Math.max(0.55, 1 - (engineTemp - TEMP_WARN)/70);
+  }
+
+  // ==========================================================================
+  // ---- HUOLTOARVOT: SEKOITUSÖLJY, KETJU, TULPPA JA RENKAAT ----
+  // Mopoa huollettiin tähän asti vain vaihtamalla osia: kunto laski, ostit uuden, siinä kaikki.
+  // Neljä säädettävää arvoa tekee huollosta jatkuvan tekemisen sen sijaan että se olisi
+  // kertaostos. Jokainen arvo on 0-100 ja ihanne on 50 - sekä liian vähän että liian paljon
+  // on väärin, mikä on koko mekaniikan ydin.
+  //
+  //   oil   sekoitusöljy bensan seassa. EI ajaudu itsestään vaan laimenee kun bensaa kuluu,
+  //         ja nousee kun tankatessa kaataa öljypullon sekaan. Liian laiha = moottori leikkaa
+  //         kiinni, liian rasvainen = tulppa karstoittuu ja mopo savuttaa.
+  //   chain ketjun kireys. Löystyy ajaessa. Löysä ketju katkeaa, kireä kuluttaa rattaat.
+  //   plug  sytytystulpan kärkiväli. Kasvaa kulumisesta. Väärä väli = huono käynnistyvyys ja yskintä.
+  //   tyre  rengaspaineet. Vuotavat hitaasti. Vajaa rengas puhkeaa ja hidastaa, ylipaine liukuu.
+  //
+  // Säätäminen tehdään autotallin työpöydällä samalla viisarilla kuin kaasuttimen säätö.
+  // ==========================================================================
+  var MAINT = [
+    {key:'oil',   nimi:'Sekoitusöljy',        lyhyt:'öljy',   ikoni:'🛢️', drift:0,     liianVahan:'laiha seos',      liianPaljon:'rasvainen seos'},
+    // Ensimmäiset arvot (0,085 / 0,045 / 0,060 per sekunti) söivät säädöt nollaan kymmenessä
+    // minuutissa ajoa, jolloin työpöydällä olisi pitänyt käydä joka päivä. Nyt sama kuluma vie
+    // noin viisi ajopäivää, eli säätöjä tarkistetaan viikoittain eikä jokaisen lenkin jälkeen.
+    {key:'chain', nimi:'Ketjun kireys',       lyhyt:'ketju',  ikoni:'⛓️', drift:0.014, liianVahan:'löysä ketju',     liianPaljon:'kireä ketju'},
+    {key:'plug',  nimi:'Tulpan kärkiväli',    lyhyt:'tulppa', ikoni:'⚡', drift:0.008, liianVahan:'liian pieni väli', liianPaljon:'liian suuri väli'},
+    {key:'tyre',  nimi:'Rengaspaineet',       lyhyt:'paineet',ikoni:'🛞', drift:0.010, liianVahan:'vajaa rengas',    liianPaljon:'ylipaine'}
+  ];
+  var maint = {oil:50, chain:50, plug:50, tyre:50};
+  function maintDef(k){ for(var i=0;i<MAINT.length;i++) if(MAINT[i].key === k) return MAINT[i]; return null; }
+  // poikkeama ihanteesta: 0 = täydellinen, 1 = täysin pielessä
+  function maintDev(k){ return Math.min(1, Math.abs((maint[k] || 50) - 50)/50); }
+  function maintLow(k){ return Math.max(0, (50 - (maint[k] || 50))/50); }   // alle ihanteen
+  function maintHigh(k){ return Math.max(0, ((maint[k] || 50) - 50)/50); }  // yli ihanteen
+  function maintLabel(k){
+    var d = maintDef(k), v = maint[k] || 50;
+    if(Math.abs(v-50) <= 8) return 'kohdallaan';
+    return (v < 50 ? d.liianVahan : d.liianPaljon);
+  }
+  // Ajossa arvot valuvat pois kohdalleen. Öljy laimenee bensankulutuksen mukana erikseen.
+  function maintTick(dt, throttle){
+    if(mode !== 'riding') return;
+    var kuorma = throttle ? 1 : 0.35;
+    for(var i=0; i<MAINT.length; i++){
+      var m = MAINT[i];
+      if(!m.drift) continue;
+      // ketju ja paineet valuvat ALAS, tulpan väli kasvaa YLÖS
+      var suunta = (m.key === 'plug') ? 1 : -1;
+      maint[m.key] = Math.max(0, Math.min(100, maint[m.key] + suunta*m.drift*kuorma*dt));
+    }
+  }
+  // Tankkaaminen laimentaa seosta: uusi bensa ilman öljyä laskee öljypitoisuutta.
+  function maintDiluteOil(lisattyPros){
+    if(lisattyPros <= 0) return;
+    var vanha = Math.max(0, 100 - lisattyPros);
+    maint.oil = Math.max(0, (maint.oil*vanha)/(vanha + lisattyPros));
+  }
+  // ---- vaikutukset ajoon ----
+  function maintPowerFactor(){
+    // löysä ketju luistaa, väärä tulppa yskii
+    return (1 - maintLow('chain')*0.20) * (1 - maintDev('plug')*0.12);
+  }
+  function maintTopSpeedFactor(){ return 1 - maintLow('tyre')*0.14; }
+  function maintGripFactor(){ return (1 + maintLow('tyre')*0.06) * (1 - maintHigh('tyre')*0.22); }
+  function maintBrakeFactor(){ return 1 - maintHigh('tyre')*0.18; }
+  function maintStartFactor(){ return 1 - maintDev('plug')*0.40; }
+  function maintPunctureFactor(){ return 1 + maintLow('tyre')*2.5; }
+  function maintSeizureFactor(){
+    // laiha seos on kiinnileikkauksen tärkein syy
+    var laiha = Math.max(0, (35 - maint.oil)/35);
+    return 1 + laiha*laiha*7;
+  }
+  function maintChainBreakFactor(){ return 1 + maintLow('chain')*3.0; }
+  // Kuluminen: väärät säädöt syövät juuri sitä osaa jota ne koskevat.
+  function maintWearFor(partId){
+    if(partId === 'ketju')         return 1 + maintDev('chain')*1.8;
+    if(partId === 'sytytystulppa') return 1 + maintDev('plug')*1.2 + maintHigh('oil')*2.0;
+    if(partId === 'sylinteri')     return 1 + Math.max(0, (35 - maint.oil)/35)*1.6;
+    return 1;
+  }
+  function maintSmoking(){ return maint.oil > 72; }
+  // Kiireellisin huoltokohde tai null - puhelin ja autotalli näyttävät tämän.
+  function maintWorst(){
+    var worst = null, wd = 0.18;
+    for(var i=0; i<MAINT.length; i++){
+      var d = maintDev(MAINT[i].key);
+      if(d > wd){ wd = d; worst = MAINT[i]; }
+    }
+    return worst;
+  }
   // Tankkaus ei enää tapahdu missä tahansa: bensaa saa VAIN huoltoaseman pumpulta, ja sen
   // käyttäminen on oma minipelinsä (pidä pohjassa, päästä ajoissa). Pumpun maailmansijainti
   // lasketaan vasta kutsuttaessa, koska huoltoaseman ryhmä rakennetaan myöhemmin tiedostossa.
   var fuelPumpRadius = 7.5;
-  function fuelPumpWorldPos(){
-    // pumppu on huoltoaseman ryhmän paikallisessa kohdassa (-2.8, -1), ryhmä käännetty -0.2 rad
-    var ry = -0.2, lx = -2.8, lz = -1;
+  // Pumppuja on nyt kaksi: miitin huoltoasema ja Kirkonkylän oma asema kartan laidalla.
+  // Kauas ajaminen ei siis tarkoita että tankki pitäisi laskea kotimatkaa varten puoliksi.
+  function pumpAt(base, ry, lx, lz){
     return {
-      x: meetSpot.x + (lx*Math.cos(ry) + lz*Math.sin(ry)),
-      z: meetSpot.z + (-lx*Math.sin(ry) + lz*Math.cos(ry))
+      x: base.x + (lx*Math.cos(ry) + lz*Math.sin(ry)),
+      z: base.z + (-lx*Math.sin(ry) + lz*Math.cos(ry))
     };
   }
+  function fuelPumpPositions(){
+    var out = [pumpAt(meetSpot, -0.2, -2.8, -1)];
+    if(typeof kirkonkylaAsemaPos !== 'undefined' && kirkonkylaAsemaPos) out.push(pumpAt(kirkonkylaAsemaPos, -0.2, -2.8, -1));
+    return out;
+  }
+  function fuelPumpWorldPos(){
+    // lähin pumppu: käytetään vihjeisiin ja etäisyyksiin
+    var ref = (typeof mode !== 'undefined' && mode === 'riding') ? moped.position : player.position;
+    var list = fuelPumpPositions(), best = list[0], bestD = 1e9;
+    for(var i=0; i<list.length; i++){
+      var dx = ref.x - list[i].x, dz = ref.z - list[i].z;
+      var d = dx*dx + dz*dz;
+      if(d < bestD){ bestD = d; best = list[i]; }
+    }
+    return best;
+  }
   function atFuelPump(){
-    var pp = fuelPumpWorldPos();
+    var list = fuelPumpPositions();
     var ref = (mode === 'riding') ? moped.position : player.position;
-    var dx = ref.x - pp.x, dz = ref.z - pp.z;
-    return Math.sqrt(dx*dx + dz*dz) <= fuelPumpRadius;
+    for(var i=0; i<list.length; i++){
+      var dx = ref.x - list[i].x, dz = ref.z - list[i].z;
+      if(Math.sqrt(dx*dx + dz*dz) <= fuelPumpRadius) return true;
+    }
+    return false;
   }
   function refuel(){
     if(inStore || mini.active || bolt.active) return;
     if(!atFuelPump()){
-      showToast(true, 'Ei bensaa mukana', 'Tankata voi vain huoltoaseman pumpulla. Aja huoltoasemalle (Miitti) ja paina R pumpun vieressä.', 4200);
+      showToast(true, 'Ei bensaa mukana', 'Tankata voi vain huoltoaseman pumpulla. Aja miitin huoltoasemalle tai Kirkonkylän asemalle ja paina R pumpun vieressä.', 4600);
       return;
     }
     if(fuel >= 99.5){
@@ -8034,9 +8550,29 @@
       ? '🎚️ Kaasutin säädetty (' + Math.round(carbTune*100) + ' %, ' + Math.ceil(carbTuneLeft/60) + ' min)'
       : '🎚️ Säädä kaasutin';
     carbRow.addEventListener('click', function(){
+      pendingMaintKey = null;
       openMini('kaasutin', garagePanelEl, function(){ carbTuneCount++; });
     });
     shelfListEl.appendChild(carbRow);
+
+    // ---- huoltoarvot: ketju, tulppa, renkaat ----
+    // Öljy ei ole täällä: sitä kaadetaan tankatessa huoltoasemalla, ei työpöydällä.
+    for(var mi2=1; mi2<MAINT.length; mi2++){
+      (function(def){
+        var row = document.createElement('button');
+        row.className = 'wideBtn';
+        row.type = 'button';
+        row.style.marginTop = '8px';
+        var dev = maintDev(def.key);
+        row.textContent = def.ikoni + ' ' + def.nimi + ': ' + Math.round(maint[def.key]) + '/100 · ' +
+                          maintLabel(def.key) + (dev > 0.18 ? ' — säädä' : '');
+        row.addEventListener('click', function(){
+          pendingMaintKey = def.key;
+          openMini('kaasutin', garagePanelEl, function(){ pendingMaintKey = null; });
+        });
+        shelfListEl.appendChild(row);
+      })(MAINT[mi2]);
+    }
   }
   // Kilpien irrotus on riski-valinta: ilman kilpiä poliisi ei saa rekisterinumeroa eikä tule
   // aamulla kotiovelle, mutta kilvetön mopo herättää partion huomion ilman keulintaakin.
@@ -8360,6 +8896,37 @@
     if(fuel > 0){ stalled = false; stallEl.classList.remove('show'); }
     if(inventoryOpen) renderInventory();
     refuelCount++;
+    // uusi bensa on öljytöntä, joten seos laimenee sitä enemmän mitä enemmän tankattiin
+    maintDiluteOil(pumped);
+    if(maint.oil < 28){
+      showToast(true, '🛢️ Seos on laiha', (spareCount('kaksitahtioljy') > 0
+        ? 'Kaada kaksitahtiöljyä sekaan: paina O pumpun vieressä.'
+        : 'Osta kaksitahtiöljyä kyläkaupasta ja kaada sitä bensan sekaan, tai moottori leikkaa kiinni.'), 6000);
+    }
+  }
+
+  // ---- ÖLJYN KAATAMINEN ----
+  // Öljy sekoitetaan bensan sekaan pumpulla. Mitta-astiaan kaataminen on sama viisarisäätö
+  // kuin muutkin huoltotyöt: huolellinen kaataja osuu lähelle oikeaa suhdetta.
+  function pourOil(){
+    if(mini.active || bolt.active || inStore) return;
+    if(!atFuelPump() && !nearGarageBench()){
+      showToast(false, 'Öljyä kaadetaan pumpulla', 'Mene huoltoaseman pumpun viereen tai autotallin työpöydälle ja paina O.', 4000);
+      return;
+    }
+    if(spareCount('kaksitahtioljy') <= 0){
+      showToast(true, 'Ei öljyä repussa', 'Kaksitahtiöljyä saa kyläkaupasta. Ilman sitä mäntä leikkaa ennen pitkää kiinni.', 4600);
+      return;
+    }
+    useSpare('kaksitahtioljy');
+    pendingMaintKey = 'oil';
+    openMini('kaasutin', null, function(){ pendingMaintKey = null; });
+  }
+  function nearGarageBench(){
+    if(typeof autotalliBenchPos === 'undefined') return false;
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = autotalliBenchPos.x - ref.x, dz = autotalliBenchPos.z - ref.z;
+    return Math.sqrt(dx*dx + dz*dz) <= (typeof autotalliRadius !== 'undefined' ? autotalliRadius : 6);
   }
   function updateTankkaus(dt){
     var st = mini.s;
@@ -8375,12 +8942,18 @@
   }
 
   // ---- 2. KAASUTTIMEN SÄÄTÖ: napauta kun osoittimet ovat kohdakkain ----
+  // maintKey != null -> sama viisarisäätö kohdistuu huoltoarvoon (ketju, tulppa, paineet)
+  var pendingMaintKey = null;
   function openKaasutin(){
-    mini.s = {pos:0, dir:1, speed:0.62, target:0.5, tdir:-1, tspeed:0.22, round:0, rounds:3, score:0, lock:0};
-    miniTitleEl.textContent = 'Kaasuttimen säätö';
+    var mk = pendingMaintKey;
+    var def = mk ? maintDef(mk) : null;
+    mini.s = {pos:0, dir:1, speed:0.62, target:0.5, tdir:-1, tspeed:0.22, round:0, rounds:3, score:0, lock:0, maintKey:mk};
+    miniTitleEl.textContent = def ? def.nimi : 'Kaasuttimen säätö';
     miniHintEl.textContent = 'Napauta VÄLILYÖNTIÄ kun valkoinen viisari on vihreän ikkunan kohdalla. Kolme säätöä. Esc peruu.';
     miniBodyEl.innerHTML =
-      '<div class="miniSub">Neulan korkeus ja ilmaruuvi kohdalleen kuulolta.</div>' +
+      '<div class="miniSub">' + (def
+        ? ('Nykyinen arvo ' + Math.round(maint[mk]) + ' / 100 (' + maintLabel(mk) + '). Ihanne on 50.')
+        : 'Neulan korkeus ja ilmaruuvi kohdalleen kuulolta.') + '</div>' +
       '<div class="miniTrack"><i class="target" id="miniTarget"></i><i class="needle" id="miniNeedle"></i></div>' +
       '<div class="boltPips" id="miniPips"><i></i><i></i><i></i></div>';
     miniMsgEl.textContent = 'Säätö 1/3';
@@ -8414,9 +8987,17 @@
       renderKaasutin();
       if(st.round >= st.rounds){
         var q = st.score / st.rounds;
-        carbTune = q;
-        carbTuneLeft = 600;   // kestää kymmenen minuuttia pelin aikaa
-        miniFinish('Kaasutin säädetty ' + Math.round(q*100) + ' %. Moottori vetää paremmin hetken aikaa.', q);
+        if(st.maintKey){
+          // hyvä suoritus osuu lähelle ihannetta, huono jättää arvon pieleen
+          var hajonta = (1 - q)*22;
+          maint[st.maintKey] = Math.max(0, Math.min(100, 50 + (Math.random()*2-1)*hajonta));
+          var dnow = maintDef(st.maintKey);
+          miniFinish(dnow.nimi + ': ' + Math.round(maint[st.maintKey]) + ' / 100 (' + maintLabel(st.maintKey) + ').', q);
+        } else {
+          carbTune = q;
+          carbTuneLeft = 600;   // kestää kymmenen minuuttia pelin aikaa
+          miniFinish('Kaasutin säädetty ' + Math.round(q*100) + ' %. Moottori vetää paremmin hetken aikaa.', q);
+        }
       }
     } else {
       st.lock = 0.4;
@@ -8783,9 +9364,194 @@
     }
     return null;
   }
+  // ==========================================================================
+  // ---- KÄYTETTYJEN MOPOJEN KAUPPA ----
+  // Mopoja ostettiin vain uutena kiinteään hintaan. Nyt Reiska tuo joka aamu romuttamolta
+  // yhden käytetyn mopon myyntiin mopokaupan pihaan - ja sen TODELLISTA kuntoa ei näe
+  // hintalapusta. Kunnon saa selville vain tarkastamalla: kuuntelemalla moottoria, katsomalla
+  // savuaako pakoputki ja kokeilemalla kompressiota. Jokainen tarkastus kaventaa arviota.
+  //
+  // Pyyntihinta arvotaan erikseen todellisesta arvosta, joten joukossa on sekä löytöjä että
+  // ryöstöjä. Ostetun mopon voi kunnostaa tallilla ja myydä eteenpäin. Voitto tulee siitä että
+  // osaa lukea mopoa paremmin kuin myyjä - ei siitä että klikkaa nopeasti.
+  // ==========================================================================
+  var USED_BASE = {scoba:170, kickscooter:280, derbi:640, monkey:1180};
+  var USED_IDS = ['scoba', 'kickscooter', 'derbi', 'monkey'];
+  var usedOffer = null;    // {id, kunto, hinta, aani, savu, komp, paiva}
+  var usedOwned = null;    // ostettu projekti: {id, kunto, ostohinta}
+  function usedName(id){
+    for(var i=0; i<mopedModels.length; i++) if(mopedModels[i].id === id) return mopedModels[i].name;
+    return id;
+  }
+  function usedTrueValue(o){
+    if(!o) return 0;
+    // kunto 0 -> 35 % uushinnasta, kunto 1 -> 110 %
+    return Math.round((USED_BASE[o.id] || 300) * (0.35 + o.kunto*0.75));
+  }
+  function rollUsedOffer(){
+    if(usedOwned) return;   // yksi projekti kerrallaan
+    var id = USED_IDS[Math.floor(Math.random()*USED_IDS.length)];
+    var kunto = 0.12 + Math.random()*0.80;
+    var o = {id:id, kunto:kunto, aani:false, savu:false, komp:false, paiva:summerDay};
+    // Pyyntihinta on 55-135 % todellisesta arvosta. Myyjä ei itsekään tiedä tarkkaan mitä
+    // hänellä on, joten joukossa on sekä löytöjä että ylihintaisia.
+    o.hinta = Math.max(40, Math.round(usedTrueValue(o) * (0.55 + Math.random()*0.80)));
+    usedOffer = o;
+  }
+  // ---- tarkastukset ----
+  // Jokainen kertoo kunnosta eri tavalla ja eri tarkkuudella. Kolmen jälkeen arvio on tarkka.
+  function usedListen(){
+    if(!usedOffer || usedOffer.aani) return null;
+    usedOffer.aani = true;
+    var k = usedOffer.kunto;
+    saveGame();
+    if(k > 0.72) return 'Moottori käy tasaisesti ja vastaa kaasuun heti. Kuulostaa terveeltä.';
+    if(k > 0.45) return 'Käy kyllä, mutta joutokäynti on levotonta ja ääni vähän karhea.';
+    if(k > 0.22) return 'Nakuttaa selvästi kierroksilla. Jotain on löysällä sisällä.';
+    return 'Lähtee vaivoin käyntiin ja sammuu heti. Tästä ei kuulu mitään hyvää.';
+  }
+  function usedSmoke(){
+    if(!usedOffer || usedOffer.savu) return null;
+    usedOffer.savu = true;
+    var k = usedOffer.kunto;
+    saveGame();
+    if(k > 0.65) return 'Pakoputkesta tulee ohut sininen hönkä - normaalia kaksitahtiselle.';
+    if(k > 0.38) return 'Savuaa melko paljon ja putken suu on märkä öljystä.';
+    return 'Savuaa kuin saunan kiuas. Mäntä tai renkaat ovat loppu.';
+  }
+  function usedCompression(){
+    if(!usedOffer || usedOffer.komp) return null;
+    usedOffer.komp = true;
+    var k = usedOffer.kunto;
+    // kompressio antaa numeroarvion, mutta ±8 prosenttiyksikön epävarmuudella
+    var ala = Math.max(0, Math.round((k - 0.08)*100));
+    var yla = Math.min(100, Math.round((k + 0.08)*100));
+    saveGame();
+    return 'Kompressiomittari näyttää kunnoksi arviolta ' + ala + '-' + yla + ' %.';
+  }
+  function usedChecksDone(){
+    if(!usedOffer) return 0;
+    return (usedOffer.aani?1:0) + (usedOffer.savu?1:0) + (usedOffer.komp?1:0);
+  }
+  function usedEstimate(){
+    // mitä pelaaja tietää tarkastusten perusteella
+    if(!usedOffer) return null;
+    var n = usedChecksDone();
+    if(n === 0) return 'Kuntoa ei tiedä kukaan. Tarkasta ennen kuin ostat.';
+    if(n < 3)   return 'Arvio tarkentuu vielä - ' + (3-n) + ' tarkastusta tekemättä.';
+    return 'Arvio on nyt tarkka. Arvo noin ' + usedTrueValue(usedOffer) + ' €.';
+  }
+  function usedBuy(){
+    if(!usedOffer || usedOwned) return;
+    if(money < usedOffer.hinta){
+      showToast(true, 'Ei rahaa', 'Pyyntihinta on ' + usedOffer.hinta + ' €.', 3400);
+      return;
+    }
+    money -= usedOffer.hinta;
+    updateMoneyDisplay();
+    usedOwned = {id: usedOffer.id, kunto: usedOffer.kunto, ostohinta: usedOffer.hinta};
+    var arvo = usedTrueValue(usedOwned);
+    usedOffer = null;
+    var ero = arvo - usedOwned.ostohinta;
+    showToast(ero < 0, 'Ostit käytetyn: ' + usedName(usedOwned.id),
+      'Todellinen arvo ' + arvo + ' € (maksoit ' + usedOwned.ostohinta + ' €). ' +
+      (ero >= 0 ? 'Hyvä kauppa.' : 'Tästä jäi tappiolle.') +
+      ' Kunnosta se tallilla ja myy mopokaupassa.', 7000);
+    saveGame();
+    renderMopeds();
+  }
+  function usedReconCost(){
+    if(!usedOwned) return 0;
+    // Kerroin oli 0,42, jolloin kunnostaminen ei kannattanut lainkaan: kaupan 20 prosentin
+    // välistävedon jälkeen romun kunnostamisesta jäi tappiota. Nyt 0,30, ja kauppa maksaa 88 %,
+    // joten kunnostaminen tuottaa - mutta voitto tulee silti ennen kaikkea hyvästä ostosta.
+    return Math.round((0.92 - usedOwned.kunto) * (USED_BASE[usedOwned.id] || 300) * 0.30);
+  }
+  function usedRecondition(){
+    if(!usedOwned) return;
+    if(usedOwned.kunto >= 0.9){ showToast(false, 'Jo kunnossa', 'Tätä ei kannata enää kunnostaa.', 3000); return; }
+    var hinta = usedReconCost();
+    if(money < hinta){ showToast(true, 'Kunnostus maksaa ' + hinta + ' €', 'Kassassa on ' + Math.round(money) + ' €.', 3800); return; }
+    money -= hinta;
+    updateMoneyDisplay();
+    var ennen = usedTrueValue(usedOwned);
+    usedOwned.kunto = 0.92;
+    showToast(false, 'Kunnostettu', usedName(usedOwned.id) + ': arvo nousi ' + ennen + ' € → ' + usedTrueValue(usedOwned) + ' €. Myy se mopokaupassa.', 6000);
+    saveGame();
+    if(repairOpen) renderParts();
+  }
+  function usedSell(){
+    if(!usedOwned) return;
+    // kauppa ottaa välistä, ja hyvä maine kylässä parantaa hintaa
+    var kerroin = 0.88 + Math.max(0, repVillage/100)*0.10;
+    var hinta = Math.round(usedTrueValue(usedOwned) * kerroin);
+    money += hinta;
+    updateMoneyDisplay();
+    var voitto = hinta - usedOwned.ostohinta;
+    repVillageAdd(voitto > 0 ? 3 : 0);
+    showToast(voitto < 0, 'Myit: ' + usedName(usedOwned.id),
+      'Sait ' + hinta + ' €. ' + (voitto >= 0 ? 'Voittoa ' + voitto + ' €.' : 'Tappiota ' + (-voitto) + ' €.'), 6000);
+    usedOwned = null;
+    saveGame();
+    renderMopeds();
+  }
+
   function renderMopeds(){
     mopedMoneyEl.textContent = Math.round(money);
     mopedsListEl.innerHTML = '';
+
+    // ---- käytettyjen osasto ensin ----
+    var usedBox = document.createElement('div');
+    usedBox.className = 'partRow';
+    if(usedOwned){
+      var arvoNyt = usedTrueValue(usedOwned);
+      var myyntiNyt = Math.round(arvoNyt * (0.88 + Math.max(0, repVillage/100)*0.10));
+      usedBox.innerHTML =
+        '<div class="partHead"><span class="partName">🔧 Projekti: ' + usedName(usedOwned.id) + '</span>' +
+        '<span class="partTier tuned">Kunto ' + Math.round(usedOwned.kunto*100) + ' %</span></div>' +
+        '<div class="partDesc">Ostit ' + usedOwned.ostohinta + ' eurolla. Arvo nyt ' + arvoNyt +
+        ' €, kauppa maksaa siitä ' + myyntiNyt + ' €.' +
+        (usedOwned.kunto < 0.9 ? ' Kunnostus maksaa ' + usedReconCost() + ' € ja nostaa kunnon 92 prosenttiin.' : '') + '</div>' +
+        '<div class="partActions">' +
+        (usedOwned.kunto < 0.9 ? '<button class="tuneBtn" data-used="recon">Kunnosta ' + usedReconCost() + ' €</button>' : '') +
+        '<button class="repairBtn" data-used="sell">Myy ' + myyntiNyt + ' €</button></div>';
+    } else if(usedOffer){
+      var tiedot = [];
+      if(usedOffer.aani) tiedot.push('🔊 kuunneltu');
+      if(usedOffer.savu) tiedot.push('💨 savu katsottu');
+      if(usedOffer.komp) tiedot.push('📏 kompressio mitattu');
+      usedBox.innerHTML =
+        '<div class="partHead"><span class="partName">🛵 Käytettynä: ' + usedName(usedOffer.id) + '</span>' +
+        '<span class="partTier">Pyyntihinta ' + usedOffer.hinta + ' €</span></div>' +
+        '<div class="partDesc">Reiska toi tämän romuttamolta. Hintalappu ei kerro kunnosta mitään - tarkasta itse.<br>' +
+        usedEstimate() + (tiedot.length ? '<br>Tehdyt tarkastukset: ' + tiedot.join(', ') : '') + '</div>' +
+        '<div class="partActions">' +
+        '<button class="tuneBtn" data-used="aani"' + (usedOffer.aani ? ' disabled' : '') + '>Kuuntele</button>' +
+        '<button class="tuneBtn" data-used="savu"' + (usedOffer.savu ? ' disabled' : '') + '>Katso savu</button>' +
+        '<button class="tuneBtn" data-used="komp"' + (usedOffer.komp ? ' disabled' : '') + '>Kompressio</button>' +
+        '<button class="repairBtn" data-used="buy"' + (money < usedOffer.hinta ? ' disabled' : '') + '>Osta ' + usedOffer.hinta + ' €</button>' +
+        '</div>';
+    } else {
+      usedBox.innerHTML =
+        '<div class="partHead"><span class="partName">🛵 Käytetyt</span><span class="partTier">tyhjä</span></div>' +
+        '<div class="partDesc">Reiska tuo uuden käytetyn mopon myyntiin joka aamu.</div>';
+    }
+    mopedsListEl.appendChild(usedBox);
+    Array.prototype.forEach.call(usedBox.querySelectorAll('button[data-used]'), function(b){
+      b.addEventListener('click', function(){
+        var k = b.getAttribute('data-used');
+        var viesti = null;
+        if(k === 'aani') viesti = usedListen();
+        else if(k === 'savu') viesti = usedSmoke();
+        else if(k === 'komp') viesti = usedCompression();
+        else if(k === 'buy'){ usedBuy(); return; }
+        else if(k === 'recon'){ usedRecondition(); renderMopeds(); return; }
+        else if(k === 'sell'){ usedSell(); return; }
+        if(viesti) showToast(false, 'Tarkastus', viesti, 6000);
+        renderMopeds();
+      });
+    });
+
     mopedModels.forEach(function(m){
       var isActive = equippedMopedId === m.id;
       var btnLabel = !m.owned ? ('Osta '+m.price+' €') : (isActive ? 'Käytössä' : 'Ota käyttöön');
@@ -8905,6 +9671,7 @@
         return;
       }
       mode = 'riding';
+      travelHeading = null;
       player.visible = false;
       mountHintEl.hidden = true;
       ensureAudio();
@@ -9088,6 +9855,10 @@
     if(k==='e' && !e.repeat){ handleInteract(); }
     if(k==='m' && !e.repeat){ toggleBigMap(); }
     if(k==='g' && !e.repeat){ roadsideRepair(); }   // hätäkorjaus repun varaosalla
+    if(k==='h' && !e.repeat){ hailFriend(); }       // huuda kaverille: seuraa / kisa
+    if(k==='o' && !e.repeat){ pourOil(); }          // kaada kaksitahtiöljyä bensan sekaan
+    if(k==='q' && !e.repeat){ setSignal(-1); }      // vasen vilkku
+    if(k==='c' && !e.repeat){ setSignal(1); }       // oikea vilkku
     // vaihteet: X ylös, Z alas (vain mopoilla joissa on vaihteisto)
     if(k==='x' && !e.repeat && mode === 'riding'){ shiftGear(1); }
     if(k==='z' && !e.repeat && mode === 'riding'){ shiftGear(-1); }
@@ -9446,8 +10217,11 @@
     var step = breakdownCheckT;
     breakdownCheckT = 0;
     // rengasrikko: vain sorasta/pellolta kovassa vauhdissa
-    if(!brokenTyre && offRoad && speedMs > 8.5){
-      if(Math.random() < 0.016*step*(speedMs/10)){
+    // Rengasrikko oli pelaajan mielestä aivan liian herkkä: pieni oikaisu pellon poikki
+    // puhkaisi renkaan tuon tuosta. Nyt vaaditaan selvästi kovempi vauhti (yli 40 km/h) ja
+    // todennäköisyys on neljäsosa entisestä - rikko on harvinainen huolimattomuuden seuraus.
+    if(!brokenTyre && offRoad && speedMs > 11.5){
+      if(Math.random() < 0.004*step*(speedMs/10)*maintPunctureFactor()){
         brokenTyre = true;
         showToast(true, '💨 Rengas puhkesi', 'Sorasta tuli reikä. Mopo kulkee hitaasti ja vetää sivuun. Paikkaussarjalla sen korjaa tien päällä (G).', 6500);
         updateBreakdownBanner();
@@ -9456,13 +10230,34 @@
       }
     }
     if(breakdown) return;   // yksi vika kerrallaan riittää
+    // Täysin öljytön seos leikkaa männän osan kunnosta riippumatta: tämä on se rangaistus
+    // josta pelaaja oppii katsomaan seossuhdetta ennen pitkää ajoa.
+    if(maint.oil < 10 && Math.abs(speedMs) > 3){
+      if(Math.random() < 0.05*step*stress*(1 - maint.oil/10)){
+        triggerBreakdown('kiinnileikkaus');
+        showToast(true, '🛢️ Seos oli öljytön', 'Mäntä kuumeni kiinni. Muista kaataa kaksitahtiöljyä bensan sekaan tankatessa.', 7000);
+        return;
+      }
+    }
+    // Ylikuumeneminen leikkaa männän vaikka öljyä olisi: pitkä täyskaasuveto helteellä
+    // ilman jäähdytystaukoa riittää.
+    if(engineTemp > TEMP_SEIZE){
+      if(Math.random() < 0.025*step*(tempSeizeFactor()-1)){
+        triggerBreakdown('kiinnileikkaus');
+        showToast(true, '🌡️ Moottori ylikuumeni', Math.round(engineTemp) + ' astetta. Mäntä tarttui kiinni. Pitkällä vedolla kannattaa päästää kaasusta välillä.', 7000);
+        return;
+      }
+    }
     for(var i=0; i<BREAKDOWN_KINDS.length; i++){
       var k = BREAKDOWN_KINDS[i];
       var p = partById(k.part);
       if(!p || p.condition >= k.raja) continue;
       // mitä lähempänä nollaa osa on, sitä herkemmin se pettää
       var sev = 1 - p.condition/k.raja;
-      if(Math.random() < 0.055*sev*stress*step){ triggerBreakdown(k.id); return; }
+      // huoltoarvot kertovat riskin: laiha seos leikkaa männän, löysä ketju katkeaa
+      var hk = (k.id === 'kiinnileikkaus') ? maintSeizureFactor()*tempSeizeFactor()
+             : (k.id === 'ketjuPoikki')    ? maintChainBreakFactor() : 1;
+      if(Math.random() < 0.055*sev*stress*hk*step){ triggerBreakdown(k.id); return; }
     }
   }
 
@@ -9540,7 +10335,7 @@
       if(kp){ sum += kp.condition; n++; }
     }
     var cond = n ? (sum/n)/100 : 0.5;
-    var chance = 0.22 + cond*0.68;      // rämällä n. 22 %, täysin kunnossa n. 90 %
+    var chance = (0.22 + cond*0.68) * maintStartFactor();   // väärä kärkiväli vaikeuttaa käynnistystä
     chance += kickAttempts*0.18;         // joka hukkapolkaisu helpottaa seuraavaa
     return Math.max(0.1, Math.min(0.97, chance));
   }
@@ -10044,6 +10839,8 @@
     dashBuffsEl.innerHTML = html;
   }
   var fuelBar = document.getElementById('fuelBar');
+  var tempBar = document.getElementById('tempBar');
+  var tempLabel = document.getElementById('tempLabel');
   var clockVal = document.getElementById('clockVal');
   var waypointEl = document.getElementById('waypoint');
   var wpArrow = document.getElementById('wpArrow');
@@ -10056,7 +10853,11 @@
     {name:'Crossirata', pos: crossiPos, arriveRadius: 16, arrivedText: 'Crossiradalla! 🏁', reward: 18, visited:false},
     {name:'Mac Donalds', pos: macdonaldsPos, arriveRadius: 10, arrivedText: 'Mac Donaldsilla! 🍟', reward: 9, visited:false},
     {name:'Järvimökki', pos: jarviPos, arriveRadius: 13, arrivedText: 'Mökillä järven rannalla! 🚤', reward: 14, visited:false},
-    {name:'Kyläkauppa', pos: kauppaIsoPos, arriveRadius: 14, arrivedText: 'Kyläkaupalla! 🏪', reward: 8, visited:false}
+    {name:'Kyläkauppa', pos: kauppaIsoPos, arriveRadius: 14, arrivedText: 'Kyläkaupalla! 🏪', reward: 8, visited:false},
+    // kartan laidan kaukokohteet: pidempi matka, isompi löytöpalkkio
+    {name:'Kirkonkylä', pos: kirkonkylaPos, arriveRadius: 22, arrivedText: 'Kirkonkylässä! ⛪ Täällä on oma huoltoasema.', reward: 26, visited:false},
+    {name:'Moottorirata', pos: moottorirataPos, arriveRadius: 60, arrivedText: 'Moottoriradalla! 🏁', reward: 30, visited:false},
+    {name:'Erämökki', pos: eramokkiPos, arriveRadius: 20, arrivedText: 'Erämökillä! 🛶 Hiljaista on.', reward: 34, visited:false}
   ];
   var poiRange = 140;
   var arrivedPoi = null;
@@ -10146,6 +10947,7 @@
     summerDay = 1;
     examDone = false;
     finesCount = 0;
+    seriesReset();   // uusi kesä, uusi sarja
     updateSummerDisplay();
     saveGame();
     showToast(false, 'Uusi kesä alkaa', 'Kesä ' + summerNumber + ': 30 päivää uusintaan. Mopo, rahat ja osat säilyivät.', 5600);
@@ -10258,6 +11060,8 @@
     if(prevDayTime < 0.29 && dayTime >= 0.29){
       deliverPendingFines();
       rollDailyEvent();   // uusi päivä, uusi pikku keikka kylällä
+      rollUsedOffer();    // Reiska tuo uuden käytetyn mopon myyntiin
+      seriesMorningNotice();   // mestaruussarjan osakilpailu tänään / ohi mennyt
       if(typeof syncRadarTrapCount === 'function') syncRadarTrapCount();
       placeRadarTraps();
       repDecayOvernight();   // siivosti ajettu vuorokausi laskee poliisin kiinnostusta
@@ -10318,9 +11122,66 @@
   // partikkeleita. Koska peli on nimenomaan kesäinen (ks. tarinan "kesä alkaa"/"kesän huipennus"), tuulinen
   // sää heiluttaa puita ja pöllyttää irtolehtiä kesätuulena - ei ole tehty erillistä syksy-teemaa, joka
   // olisi ristiriidassa tarinan kesäasetelman kanssa. ----
-  var weatherState = 'clear'; // 'clear' | 'rain' | 'breeze'
+  var weatherState = 'clear'; // 'clear' | 'rain' | 'breeze' | 'storm' | 'heat'
   var weatherTimer = 50 + Math.random()*50;
   var rainBlend = 0, breezeBlend = 0;
+  // ---- sään ääripäät ----
+  // Ukkonen on sateen raju versio: salamat välähtävät, jyrinä kuuluu viiveellä ja tie kastuu
+  // nopeammin. Helle taas ei näy juuri mitenkään mutta tuntuu moottorissa - ilma on niin
+  // lämmintä ettei ajoviima enää jäähdytä kunnolla.
+  var stormBlend = 0, heatWave = 0;
+  var lightningTimer = 4 + Math.random()*6;
+  var lightningFlash = 0;
+
+  // ==========================================================================
+  // ---- MÄRKÄ KELI: SÄÄ VAIKUTTAA AJOON ----
+  // Sade oli pelkkä partikkeliefekti ja hieman tummempi valaistus: mopo kulki sateessa
+  // täsmälleen samalla tavalla kuin paisteessa. Nyt sateella on seuraus.
+  //
+  // Olennaista on että tie EI kuivu samalla hetkellä kun sade loppuu. roadWet nousee nopeasti
+  // ja laskee hitaasti, joten vaarallisin hetki on se kymmenen minuuttia sateen jälkeen jolloin
+  // taivas on jo kirkas mutta asfaltti vielä märkä. Se on juuri se tilanne jossa oikeassakin
+  // elämässä kaadutaan.
+  //
+  // Liukkaus toteutetaan OHJAUKSEN VIIVEENÄ: mopo liikkuu travelHeading-suuntaan, joka seuraa
+  // ohjattua suuntaa. Kuivalla se seuraa välittömästi, märällä jää jälkeen - eli mopo pyyhkäisee
+  // ulos mutkassa. Tämä on halvempi ja luettavampi kuin oikea sivuluisufysiikka, ja antaa samalla
+  // mitattavan luisukulman, jota ajokoe käyttää virhepisteisiin.
+  // ==========================================================================
+  var roadWet = 0;              // 0..1 tien märkyys
+  var morningFog = 0;           // 0..1 aamusumu
+  var travelHeading = null;     // mihin mopo oikeasti liikkuu (null = ei vielä alustettu)
+  var slipAngle = 0;            // |ohjattu - todellinen| radiaaneina, luisun mitta
+  function wetGrip(){  return 1 - roadWet*0.42; }    // ohjauksen puremа
+  function wetBrake(){ return 1 - roadWet*0.46; }    // jarrutusmatka pitenee lähes kaksinkertaiseksi
+  function wetAccel(){ return 1 - roadWet*0.15; }    // takapyörä sutii lähdössä
+  function wetSlideK(){ return 20 - roadWet*15.5; }  // kuinka nopeasti mopo seuraa ohjausta
+  function keliNimi(){
+    if(roadWet > 0.6) return 'märkä';
+    if(roadWet > 0.25) return 'kostea';
+    return 'kuiva';
+  }
+  var wetWarned = false;
+  function updateWetness(dt){
+    // kastuu nopeasti, kuivuu hitaasti
+    var ennen = roadWet;
+    if(rainBlend > roadWet) roadWet = Math.min(1, roadWet + dt*0.26*(rainBlend - roadWet + 0.25));
+    else roadWet = Math.max(0, roadWet - dt*0.008);
+    // Varoitetaan kerran kun tie muuttuu märäksi ja kerran kun se on taas kuiva. Tämä on tärkeää:
+    // ilman ilmoitusta pelaaja ei ymmärtäisi miksi mopo yhtäkkiä käyttäytyy toisin.
+    if(!wetWarned && ennen <= 0.45 && roadWet > 0.45 && gameStarted && !inStore){
+      wetWarned = true;
+      showToast(true, '🌧️ Tie on märkä', 'Pito ja jarrut pettävät selvästi aiemmin. Tie kuivuu vasta hyvän tovin sateen jälkeen.', 5200);
+    }
+    if(wetWarned && roadWet < 0.18){
+      wetWarned = false;
+      if(gameStarted && !inStore) showToast(false, '☀️ Tie kuivui', 'Pito on taas normaali.', 3000);
+    }
+    // aamusumu: nousee n. klo 3 ja haihtuu klo 7.30 mennessä
+    var hNow = dayTime*24;
+    var fogT = (hNow >= 3 && hNow <= 7.5) ? Math.sin((hNow-3)/4.5*Math.PI) : 0;
+    morningFog = fogT*0.9;
+  }
   function makeRainTexture(){
     var c = document.createElement('canvas');
     c.width = 8; c.height = 64;
@@ -10390,20 +11251,177 @@
       noiseSrc.start();
     }catch(e){ rainNoiseGain = null; }
   }
+  // ---- LAMMIKOT ----
+  // Märkä tie näkyy lammikoina teiden reunamilla. Yksi instansoitu kiekkojoukko, joka tehdään
+  // kerran teiden varrelle: läpinäkyvyys seuraa märkyyttä, joten lammikot ilmestyvät sateessa
+  // ja kuivuvat pois samaa tahtia kuin pito palaa.
+  // Teitä on yhteensä kymmenkunta kilometriä, joten harva lammikkojoukko jäisi kokonaan
+  // huomaamatta. Instansoituna 260 kiekkoa ei maksa käytännössä mitään.
+  var PUDDLE_COUNT = 260;
+  var puddleMesh = null;
+  function buildPuddles(){
+    if(puddleMesh || !roadPaths.length) return;
+    var geo = new THREE.CircleGeometry(1, 12);
+    geo.rotateX(-Math.PI/2);
+    var mat = new THREE.MeshStandardMaterial({
+      color: 0x2b3640, roughness: 0.12, metalness: 0.0,
+      transparent: true, opacity: 0, depthWrite: false
+    });
+    puddleMesh = new THREE.InstancedMesh(geo, mat, PUDDLE_COUNT);
+    puddleMesh.frustumCulled = false;
+    puddleMesh.visible = false;
+    var d = new THREE.Object3D();
+    for(var i=0; i<PUDDLE_COUNT; i++){
+      // Arvotaan paikka tien keskilinjalta ja tarkistetaan että se osuu oikeasti tielle.
+      // Ilman tarkistusta lammikot levisivät nurmikolle teiden viereen.
+      var px = 0, pz = 0, kelpo = false;
+      for(var yr=0; yr<8 && !kelpo; yr++){
+        var rp = roadPaths[Math.floor(Math.random()*roadPaths.length)];
+        var j = Math.floor(Math.random()*(rp.length-1));
+        var a = rp[j], b = rp[j+1];
+        var t = Math.random();
+        px = a.x + (b.x-a.x)*t; pz = a.z + (b.z-a.z)*t;
+        var ux = b.x-a.x, uz = b.z-a.z, ul = Math.sqrt(ux*ux+uz*uz) || 1;
+        px += (-uz/ul)*(Math.random()-0.5)*5.5;
+        pz += ( ux/ul)*(Math.random()-0.5)*5.5;
+        kelpo = (typeof speedLimitAt !== 'function') || speedLimitAt(px, pz) > 0;
+      }
+      // Tien pinta on kiinteällä korkeudella (roadLayerY), ei maaston mukana. Maastonkorkeuteen
+      // asetettu lammikko jäisi tien ALLE piiloon - juuri siksi ensimmäisessä versiossa
+      // lammikot näkyivät vain nurmikolla.
+      d.position.set(px, Math.max(terrainHeight(px, pz), roadSurfaceY) + 0.045, pz);
+      d.rotation.set(0, Math.random()*Math.PI, 0);
+      var r = 1.1 + Math.random()*2.8;
+      d.scale.set(r, 1, r*(0.5 + Math.random()*0.8));
+      d.updateMatrix();
+      puddleMesh.setMatrixAt(i, d.matrix);
+    }
+    puddleMesh.instanceMatrix.needsUpdate = true;
+    scene.add(puddleMesh);
+  }
+  function updatePuddles(){
+    if(!puddleMesh) return;
+    var o = Math.max(0, (roadWet - 0.18)/0.82)*0.5;
+    puddleMesh.visible = o > 0.01 && !inStore;
+    puddleMesh.material.opacity = o;
+  }
+
+  // ---- ROISKEET ----
+  // Märällä takapyörä nostaa vesiviuhkan. Pieni pistepilvi mopon takana, jonka pisteet
+  // syntyvät renkaan kohdalla ja putoavat maahan.
+  var SPRAY_COUNT = 70;
+  var sprayGeom = new THREE.BufferGeometry();
+  var sprayPos = new Float32Array(SPRAY_COUNT*3);
+  var sprayVel = new Float32Array(SPRAY_COUNT*3);
+  var sprayLife = new Float32Array(SPRAY_COUNT);
+  sprayGeom.setAttribute('position', new THREE.BufferAttribute(sprayPos, 3));
+  var sprayMat = new THREE.PointsMaterial({color:0xc9d6e2, size:0.11, sizeAttenuation:true, transparent:true, opacity:0.5, depthWrite:false, fog:true});
+  var sprayPoints = new THREE.Points(sprayGeom, sprayMat);
+  sprayPoints.frustumCulled = false;
+  sprayPoints.visible = false;
+  scene.add(sprayPoints);
+  var sprayNext = 0;
+  function updateSpray(dt){
+    var active = (mode === 'riding') && roadWet > 0.15 && Math.abs(speed) > 3 && !inStore;
+    sprayPoints.visible = active || sprayLife[0] > 0;
+    if(active){
+      // syntymätahti vauhdin ja märkyyden mukaan
+      var spawn = Math.min(6, Math.floor(dt*Math.abs(speed)*roadWet*8));
+      for(var k=0; k<spawn; k++){
+        var i = (sprayNext++) % SPRAY_COUNT;
+        var back = travelHeading === null ? heading : travelHeading;
+        sprayPos[i*3]   = moped.position.x - Math.sin(back)*0.75 + (Math.random()-0.5)*0.18;
+        sprayPos[i*3+1] = moped.position.y + 0.12;
+        sprayPos[i*3+2] = moped.position.z - Math.cos(back)*0.75 + (Math.random()-0.5)*0.18;
+        sprayVel[i*3]   = -Math.sin(back)*(1.5+Math.random()*2) + (Math.random()-0.5)*1.4;
+        sprayVel[i*3+1] = 1.4 + Math.random()*1.6;
+        sprayVel[i*3+2] = -Math.cos(back)*(1.5+Math.random()*2) + (Math.random()-0.5)*1.4;
+        sprayLife[i] = 0.55 + Math.random()*0.35;
+      }
+    }
+    var any = false;
+    for(var i2=0; i2<SPRAY_COUNT; i2++){
+      if(sprayLife[i2] <= 0){ sprayPos[i2*3+1] = -999; continue; }
+      any = true;
+      sprayLife[i2] -= dt;
+      sprayVel[i2*3+1] -= 9.5*dt;
+      sprayPos[i2*3]   += sprayVel[i2*3]*dt;
+      sprayPos[i2*3+1] += sprayVel[i2*3+1]*dt;
+      sprayPos[i2*3+2] += sprayVel[i2*3+2]*dt;
+    }
+    sprayPoints.visible = any;
+    sprayGeom.attributes.position.needsUpdate = true;
+    sprayMat.opacity = 0.25 + roadWet*0.35;
+  }
+
   function nextWeatherState(){
     var r = Math.random();
-    return r < 0.5 ? 'clear' : (r < 0.8 ? 'breeze' : 'rain');
+    if(r < 0.40) return 'clear';
+    if(r < 0.62) return 'breeze';
+    if(r < 0.78) return 'rain';
+    if(r < 0.90) return 'heat';
+    return 'storm';
+  }
+  function weatherName(){
+    if(weatherState === 'storm') return 'ukkonen';
+    if(weatherState === 'rain')  return 'sade';
+    if(weatherState === 'heat')  return 'helle';
+    if(weatherState === 'breeze') return 'tuulista';
+    return 'poutaa';
+  }
+  // Ukkosen jyrinä: matala suodatettu kohina, joka kuuluu salaman jälkeen etäisyyden verran myöhässä.
+  function playThunder(laheisyys){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime + (1 - laheisyys)*2.2;
+    var len = Math.floor(audioCtx.sampleRate*1.8);
+    var buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0; i<len; i++){
+      var e = Math.pow(1 - i/len, 1.6);
+      d[i] = (Math.random()*2-1)*e;
+    }
+    var src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 160 + laheisyys*320;
+    var g = audioCtx.createGain();
+    g.gain.value = 0.10 + laheisyys*0.22;
+    src.connect(lp).connect(g).connect(sfxOut());
+    src.start(t);
+    src.stop(t + 1.9);
   }
   function updateWeather(dt){
+    updateWetness(dt);   // tien märkyys ja aamusumu ennen muuta sääpäivitystä
     weatherTimer -= dt;
     if(weatherTimer <= 0){
       weatherState = nextWeatherState();
       weatherTimer = weatherState === 'clear' ? (70+Math.random()*70) : (30+Math.random()*35);
     }
-    var rainTarget = (weatherState === 'rain' && !inStore) ? 1 : 0;
-    var breezeTarget = (weatherState === 'breeze' && !inStore) ? 1 : 0;
+    // ukkonen sataa rajummin kuin tavallinen sade
+    var rainTarget = (!inStore && (weatherState === 'rain' || weatherState === 'storm'))
+      ? (weatherState === 'storm' ? 1 : 0.8) : 0;
+    var breezeTarget = (!inStore && (weatherState === 'breeze' || weatherState === 'storm')) ? 1 : 0;
+    var stormTarget = (weatherState === 'storm' && !inStore) ? 1 : 0;
+    var heatTarget = (weatherState === 'heat' && !inStore) ? 1 : 0;
     rainBlend += (rainTarget-rainBlend) * (1-Math.pow(0.01,dt));
     breezeBlend += (breezeTarget-breezeBlend) * (1-Math.pow(0.01,dt));
+    stormBlend += (stormTarget-stormBlend) * (1-Math.pow(0.02,dt));
+    heatWave   += (heatTarget-heatWave)   * (1-Math.pow(0.05,dt));
+
+    // ---- salamat ----
+    // Välähdys on lyhyt kirkastus koko maailmaan, ja jyrinä tulee perässä etäisyyden verran
+    // myöhässä - juuri se viive tekee siitä ukkosen eikä pelkän valoefektin.
+    if(lightningFlash > 0) lightningFlash = Math.max(0, lightningFlash - dt*4.5);
+    if(stormBlend > 0.3){
+      lightningTimer -= dt;
+      if(lightningTimer <= 0){
+        lightningTimer = 4 + Math.random()*11;
+        var laheinen = Math.random();
+        lightningFlash = 0.55 + laheinen*0.45;
+        playThunder(laheinen);
+      }
+    }
 
     rainPoints.visible = rainBlend > 0.01;
     rainMat.opacity = rainBlend*0.55;
@@ -10427,6 +11445,16 @@
     // sade tummentaa/sumentaa hieman vuorokaudenkierron laskeman valaistuksen päälle (ei korvaa sitä)
     sun.intensity *= (1 - rainBlend*0.45);
     hemi.intensity *= (1 - rainBlend*0.25);
+    // salaman välähdys kirkastaa koko maailman hetkeksi
+    if(lightningFlash > 0.01){
+      hemi.intensity += lightningFlash*1.7;
+      sun.intensity  += lightningFlash*0.6;
+    }
+    // helle: ilma väreilee lämpimänä, taivas haalistuu ja sumu vetäytyy kauemmas
+    if(heatWave > 0.02){
+      sun.intensity *= 1 + heatWave*0.10;
+      scene.fog.color.lerp(new THREE.Color(0xf0e6cf), heatWave*0.35);
+    }
     // Sisätilojen valaistus. Aiemmin kaupan sisävalot (ja niiden oma hemisphere-valo) paloivat AINA,
     // myös ulkona - hemisphere-valolla ei ole sijaintia eikä kantamaa, joten se kirkasti koko maailmaa
     // ja jätti yöt liian vaaleiksi. Samalla ulkona paistava aurinko valaisi sisätiloja seinien läpi,
@@ -10446,8 +11474,19 @@
     kauppaSisaLight2.intensity = (indoorPlace === 'kauppa') ? 0.70 : 0;
     kotiSisaLight.intensity    = (indoorPlace === 'koti')   ? 0.95 : 0;
     kotiSisaLight2.intensity   = (indoorPlace === 'koti')   ? 0.65 : 0;
-    scene.fog.far = fogFarBase - rainBlend*(fogFarBase*0.62);
-    scene.fog.near = Math.min(150, fogFarBase*0.42) - rainBlend*60;
+    // sade sumentaa, ja aamusumu sumentaa vielä enemmän: aikaisin aamulla näkee vain lähelle
+    var sumu = Math.min(0.92, rainBlend*0.62 + morningFog*0.74);
+    scene.fog.far = fogFarBase - sumu*fogFarBase*0.86;
+    scene.fog.near = Math.max(4, Math.min(150, fogFarBase*0.42) - sumu*110);
+    // aamusumu himmentää myös aurinkoa ja vaalentaa sumun värin
+    if(morningFog > 0.02){
+      sun.intensity *= (1 - morningFog*0.35);
+      scene.fog.color.lerp(new THREE.Color(0xd8dde2), morningFog*0.55);
+    }
+
+    buildPuddles();
+    updatePuddles();
+    updateSpray(dt);
 
     ensureRainNoise();
     if(rainNoiseGain) rainNoiseGain.gain.setTargetAtTime(muted?0:rainBlend*0.14, audioCtx.currentTime, 0.6);
@@ -11070,6 +12109,11 @@
     if(examDone){ showToast(false, 'Ajokoe on jo tehty', 'Tämän kesän koe on takana.', 3000); return; }
     if(!mopedAssembled()){ showToast(true, 'Mopo on osina', 'Ajokokeeseen tullaan ajamalla, ei kävellen.', 3600); return; }
     if(money < EXAM_FEE){ showToast(true, 'Ajokoemaksu ' + EXAM_FEE + ' €', 'Kassassa on ' + Math.round(money) + ' €. Käy tienaamassa ensin.', 4200); return; }
+    // kypärä on ehdoton: ilman sitä vastaanottaja ei päästä lähtöön ollenkaan
+    if(!ownsHelmet()){
+      showToast(true, 'Kypärä puuttuu', 'Ajokokeeseen ei lähdetä ilman kypärää. Niitä myydään kyläkaupassa 45 eurolla.', 5600);
+      return;
+    }
     // koe ajetaan omalla mopolla, joten sen pitää olla paikalla
     var dmx = moped.position.x - player.position.x, dmz = moped.position.z - player.position.z;
     if(Math.sqrt(dmx*dmx + dmz*dmz) > 30){
@@ -11098,9 +12142,13 @@
     }
     examRun = {idx: 0, faults: 0, t: 0, offT: 0, note: null, noteT: 0, stopOk: false, speedNoteT: 0};
     showExaminer(true);
+    var keliRivi = (roadWet > 0.25)
+      ? '"Keli on ' + keliNimi() + '. Aja sen mukaan - jos mopo luistaa, se näkyy pisteissä."'
+      : '"Keli on kuiva. Ei siis mitään tekosyitä."';
     playCutscene('ajokoeAlku' + summerNumber, 'Ajokoe alkaa',
       ['Tutkinnonvastaanottaja nousee tarakalle ja napsauttaa kypärän remmin kiinni.',
-       '"Aja normaalisti. Minä sanon mihin mennään. Nopeusrajoitukset ovat voimassa, ja risteyksissä pysähdytään kun käsken."',
+       '"Aja normaalisti. Minä sanon mihin mennään. Nopeusrajoitukset ovat voimassa, risteyksissä pysähdytään kun käsken, ja käännöksistä näytetään vilkulla (Q vasen, C oikea)."',
+       keliRivi,
        'Virhepisteitä saa kertyä enintään ' + EXAM_FAIL_FAULTS + '. Aikaa on reilut seitsemän minuuttia.'],
       function(){ examNote(EXAM_ROUTE[0].ohje, 6); });
   }
@@ -11151,6 +12199,12 @@
     if(wheelieAngle > 0.05){
       examRun.faults += 4.0*dt;
       if(examRun.speedNoteT <= 0){ examNote('Laske se etupyörä alas. Heti.', 3); examRun.speedNoteT = 4; }
+    }
+    // 3b. luisuminen: märällä kelillä mopo pyyhkäisee ulos mutkassa jos ajaa liian lujaa.
+    // Vastaanottaja ei katso sitä hyvällä - juuri siksi sateessa ajokoe on vaikeampi.
+    if(slipAngle > 0.16 && Math.abs(speed) > 5){
+      examRun.faults += (slipAngle - 0.16)*9*dt;
+      if(examRun.speedNoteT <= 0){ examNote('Nyt luistaa. Hiljennä, keli on ' + keliNimi() + '.', 3); examRun.speedNoteT = 4.5; }
     }
 
     // 4. tarkistuspisteet
@@ -11236,6 +12290,208 @@
         else showToast(false, 'Kortti taskussa', 'Peli jatkuu vapaana kesänä - mitään ei nollata.', 5200);
       });
   }
+
+  // ==========================================================================
+  // ---- KAVERIT AJAVAT KANSSASI ----
+  // Kylässä on ollut liikennettä (npcVehicles) ja seisovia kyläläisiä, mutta kukaan ei ole
+  // ollut KAVERI: ajoneuvot ovat nimettömiä kulkijoita eikä niihin voi olla missään tekemisissä.
+  // Nyt kylässä on kolme nimettyä kaveria omilla mopoillaan:
+  //   - ne ajelevat kylän teitä omia reittejään ja kokoontuvat illaksi miittiin
+  //   - H huutaa lähimmälle kaverille: hän lähtee perään tai jää
+  //   - kun molemmat seisovat, H haastaa kiihdytyskisaan 300 metrin matkalla
+  // Kaverin mopon huippunopeus on kiinteä, joten kisan voittaminen riippuu siitä miten oma
+  // mopo on viritetty - se kytkee kisan suoraan tallin osiin.
+  // ==========================================================================
+  var FRIEND_HAIL_RANGE = 22;      // kuinka kaukaa kaverille voi huutaa
+  var RACE_DISTANCE = 300;         // kiihdytyskisan pituus metreinä
+  var RACE_WAGER = 15;             // panos euroina
+  var friends = [];
+  function makeFriend(name, color, topKmh, look, lines){
+    var g = makeNpcMoped(color);
+    g.position.set(0, 0, 0);
+    scene.add(g);
+    var f = {
+      name: name, group: g, top: topKmh/3.6, speed: 0, heading: 0,
+      state: 'cruise',           // 'cruise' | 'follow' | 'race'
+      wpIndex: 0, lines: lines, lineIndex: 0,
+      raceT: 0, raceDist: 0, raceStart: null, raceResult: null
+    };
+    friends.push(f);
+    return f;
+  }
+  // Reitti: kaverit kiertävät kylän pääkohteita. Käytetään olemassa olevia paikkoja, jottei
+  // kukaan aja talon läpi.
+  function friendRoute(){
+    return [meetSpot, kauppaIsoPos, romuPos, macdonaldsPos, kylaPos, crossiPos];
+  }
+  function friendTarget(f){
+    if(f.state === 'follow'){
+      // asetutaan pelaajan taakse, ei päälle
+      var ref = (mode === 'riding') ? moped.position : player.position;
+      var hd  = (mode === 'riding') ? heading : playerHeading;
+      return new THREE.Vector3(ref.x - Math.sin(hd)*6.5, 0, ref.z - Math.cos(hd)*6.5);
+    }
+    // illalla kaikki miittiin, muuten kierros kylän ympäri
+    var h = dayTime*24;
+    if(h >= 18 && h < 23) return meetSpot;
+    var r = friendRoute();
+    return r[f.wpIndex % r.length];
+  }
+  function updateFriends(dt){
+    for(var i=0; i<friends.length; i++){
+      var f = friends[i];
+      if(f.state === 'race'){ updateFriendRace(f, dt); continue; }
+      var tgt = friendTarget(f);
+      var dx = tgt.x - f.group.position.x, dz = tgt.z - f.group.position.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      var wantHeading = Math.atan2(dx, dz);
+      var hd = wantHeading - f.heading;
+      while(hd >  Math.PI) hd -= Math.PI*2;
+      while(hd < -Math.PI) hd += Math.PI*2;
+      f.heading += hd * Math.min(1, dt*2.2);
+      // seuratessa pidetään etäisyys: liian lähellä hidastetaan, kaukana kiritään
+      var wantSpeed;
+      if(f.state === 'follow') wantSpeed = (d < 4) ? 0 : Math.min(f.top, 2 + d*0.9);
+      else wantSpeed = (d < 12) ? f.top*0.35 : f.top*0.7;
+      f.speed += (wantSpeed - f.speed) * Math.min(1, dt*1.6);
+      f.group.position.x += Math.sin(f.heading)*f.speed*dt;
+      f.group.position.z += Math.cos(f.heading)*f.speed*dt;
+      // Ilman tätä kaveri oikaisisi pellon poikki kohteesta toiseen. Sama korjaus kuin
+      // partioautoilla: kaistalta valuva ajoneuvo vedetään takaisin tielle.
+      if(f.state === 'cruise') keepCarOnRoad(f.group.position);
+      f.group.position.y = terrainHeight(f.group.position.x, f.group.position.z);
+      f.group.rotation.y = f.heading;
+      if(f.group.userData.wheels){
+        for(var w=0; w<f.group.userData.wheels.length; w++) f.group.userData.wheels[w].rotation.x += f.speed*dt*2.2;
+      }
+      if(f.state === 'cruise' && d < 14) f.wpIndex++;
+    }
+  }
+  // ---- kiihdytyskisa ----
+  var dragWins = 0;            // voitetut kiihdytyskisat - tarinaketjut seuraavat tätä
+  var raceFriend = null;       // kenen kanssa kisataan
+  var raceCountdown = 0;       // sekuntia lähtöön
+  var racePlayerStart = null;
+  function friendNearest(){
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var best = null, bestD = FRIEND_HAIL_RANGE;
+    for(var i=0; i<friends.length; i++){
+      var dx = friends[i].group.position.x - ref.x, dz = friends[i].group.position.z - ref.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      if(d < bestD){ bestD = d; best = friends[i]; }
+    }
+    return best;
+  }
+  // H: huuda lähimmälle kaverille
+  function hailFriend(){
+    if(crashed) return;
+    if(raceFriend){ cancelRace('Peruit kisan.'); return; }
+    var f = friendNearest();
+    if(!f){
+      showToast(false, 'Ei ketään lähellä', 'Kaverit ajelevat kylällä ja kokoontuvat iltaisin huoltoaseman miittiin.', 3400);
+      return;
+    }
+    if(f.state === 'follow'){
+      // Kisa lähtee kun PELAAJA seisoo: kaveri siirretään joka tapauksessa lähtöviivalle,
+      // joten hänen omaa vauhtiaan ei tarvitse odottaa. Liikkeessä huutaminen päästää kaverin menemään.
+      if(mode === 'riding' && Math.abs(speed) < 2){ startRace(f); return; }
+      f.state = 'cruise';
+      showToast(false, f.name + ' jäi', f.lines[1] || 'Nähdään!', 3000);
+      return;
+    }
+    f.state = 'follow';
+    showToast(false, f.name + ' lähti perään', (f.lines[0] || 'Jee, mennään!') + ' Pysähdy ja paina H uudestaan, niin ajetaan kisa.', 4600);
+  }
+  function startRace(f){
+    if(money < RACE_WAGER){
+      showToast(true, 'Panos ' + RACE_WAGER + ' €', 'Kisaan ei lähdetä tyhjin taskuin. Kassassa on ' + Math.round(money) + ' €.', 3800);
+      return;
+    }
+    raceFriend = f;
+    raceCountdown = 3.2;
+    f.state = 'race';
+    f.speed = 0;
+    f.heading = (mode === 'riding') ? heading : playerHeading;
+    f.raceDist = 0;
+    f.raceResult = null;
+    // kaveri lähtöviivalle pelaajan viereen
+    var sx = Math.cos(f.heading)*2.6, sz = -Math.sin(f.heading)*2.6;
+    f.group.position.set(moped.position.x + sx, terrainHeight(moped.position.x+sx, moped.position.z+sz), moped.position.z + sz);
+    racePlayerStart = moped.position.clone();
+    showToast(false, '🏁 Kisa ' + f.name + 'ia vastaan', RACE_DISTANCE + ' metriä, panos ' + RACE_WAGER + ' €. Valmiina...', 3000);
+  }
+  function cancelRace(syy){
+    if(raceFriend){ raceFriend.state = 'cruise'; raceFriend = null; }
+    raceCountdown = 0;
+    racePlayerStart = null;
+    if(syy) showToast(false, 'Kisa peruttu', syy, 2600);
+  }
+  function updateFriendRace(f, dt){
+    if(raceCountdown > 0){
+      // lähtölaskennan ajan molemmat seisovat paikallaan
+      f.speed = 0;
+      return;
+    }
+    f.speed = Math.min(f.top, f.speed + f.top*0.42*dt);
+    f.group.position.x += Math.sin(f.heading)*f.speed*dt;
+    f.group.position.z += Math.cos(f.heading)*f.speed*dt;
+    f.group.position.y = terrainHeight(f.group.position.x, f.group.position.z);
+    f.group.rotation.y = f.heading;
+    f.raceDist += f.speed*dt;
+    if(f.group.userData.wheels){
+      for(var w=0; w<f.group.userData.wheels.length; w++) f.group.userData.wheels[w].rotation.x += f.speed*dt*2.2;
+    }
+  }
+  // HUOM: nimi on updateDragRace, koska updateRace on jo varattu reittikisoille.
+  function updateDragRace(dt2){
+    if(!raceFriend) return;
+    if(mode !== 'riding'){ cancelRace('Poistuit mopon selästä.'); return; }
+    if(raceCountdown > 0){
+      var ennen = Math.ceil(raceCountdown);
+      raceCountdown -= dt2;
+      var nyt = Math.ceil(raceCountdown);
+      if(nyt !== ennen && nyt >= 0){
+        if(nyt === 0){ showToast(false, '🏁 AJA!', 'Kaasu pohjaan!', 1600); playExamBeep(); }
+        else showToast(false, String(nyt), 'Valmiina...', 900);
+      }
+      return;
+    }
+    var pd = racePlayerStart ? Math.sqrt(Math.pow(moped.position.x-racePlayerStart.x,2) + Math.pow(moped.position.z-racePlayerStart.z,2)) : 0;
+    if(pd >= RACE_DISTANCE || raceFriend.raceDist >= RACE_DISTANCE){
+      var voitto = pd >= raceFriend.raceDist;
+      var f = raceFriend;
+      raceFriend = null;
+      f.state = 'cruise';
+      racePlayerStart = null;
+      if(voitto){
+        money += RACE_WAGER;
+        dragWins++;
+        repVillageAdd(6);
+        showToast(false, '🏆 Voitit kisan!', f.name + ': "' + (f.lines[2] || 'Noi on kyllä tehot.') + '" +' + RACE_WAGER + ' €', 5200);
+      } else {
+        money = Math.max(0, money - RACE_WAGER);
+        repVillageAdd(-2);
+        showToast(true, 'Hävisit kisan', f.name + ': "' + (f.lines[3] || 'Käy virittämässä se mopo.') + '" -' + RACE_WAGER + ' €', 5200);
+      }
+      updateMoneyDisplay();
+      saveGame();
+    }
+  }
+
+  // Kolme kaveria, kolme eri mopoa. Huippunopeudet on asetettu niin että vakiomopolla (n. 55 km/h)
+  // häviää kaikille, yhdellä viritysosalla voittaa Nipan, ja täysin viritetyllä kaikki -
+  // kisa on siis mittari sille missä vaiheessa oma rassaus on.
+  makeFriend('Nipa',  0x2f7a78, 62, null, ['Jee, mennään!', 'Moi moi.', 'Okei, toi veti kyllä.', 'Hah! Käy virittämässä se.']);
+  makeFriend('Late',  0xc99a2f, 78, null, ['Mennään vaan.', 'Nähdään miitissä.', 'No ei helvetti. Hyvä veto.', 'Vähän heikko. Sylinteri ensin.']);
+  makeFriend('Masa',  0x8a3b2b, 96, null, ['Nyt lähtee!', 'Jep, käy tallilla välillä.', 'Sulla on kyllä nopeampi kuin mulla nyt.', 'Tuu takaisin kun on 88-sarja.']);
+  (function placeFriends(){
+    var r = friendRoute();
+    for(var i=0; i<friends.length; i++){
+      var sp = r[i % r.length];
+      friends[i].group.position.set(sp.x + (i-1)*4, terrainHeight(sp.x + (i-1)*4, sp.z + 6), sp.z + 6);
+      friends[i].wpIndex = i + 1;
+    }
+  })();
 
   npcCharacters.forEach(function(npc){
     // sisätilan hahmot seisovat huoneen lattialla (y=0), ulkona maaston korkeudella
@@ -12852,6 +14108,15 @@
       } else {
         phoneStoryEl.innerHTML = '<div class="phoneStoryDone">Tarina läpi - kesä on sinun. 🏁</div>';
       }
+      // kyläläisten tarinaketjut
+      var qs = questSummary().filter(function(q){ return q.vaihe < q.kaikki; });
+      if(qs.length){
+        phoneStoryEl.innerHTML +=
+          '<div class="phoneStoryHint" style="margin-top:7px">⭐ <b>Kyläläisten jutut</b><br>' +
+          qs.map(function(q){
+            return q.npc + ' · ' + q.nimi + ' (' + q.vaihe + '/' + q.kaikki + '): ' + q.vihje;
+          }).join('<br>') + '</div>';
+      }
       // päivän tapahtuma omana rivinään
       var de = dailyEventDef();
       if(de){
@@ -12870,6 +14135,18 @@
         '<br>🤝 Maine kylässä: <b>' + repVillageLabel() + '</b>' +
         (hinta !== 0 ? ' (osat ' + (hinta > 0 ? '+' : '') + hinta + ' %)' : '') +
         '<br>🚓 Poliisi: <b>' + repPoliceLabel() + '</b> · mittausvara ' + policeTolerance() + ' km/h' +
+        (function(){
+          var r = trafficViolations();
+          return r.length ? '<br>⚠️ Puutteet: ' + r.map(function(x){ return x.nimi + ' (' + x.sakko + ' €)'; }).join(' · ')
+                          : '<br>✅ Mopo on säännösten mukainen';
+        })() +
+        '<br>🔧 Huolto: ' + MAINT.map(function(m){
+          return m.ikoni + ' ' + Math.round(maint[m.key]) + (maintDev(m.key) > 0.18 ? '!' : '');
+        }).join(' · ') +
+        (maintWorst() ? ' — ' + maintWorst().nimi.toLowerCase() + ' kaipaa säätöä' : '') +
+        '<br>🌦️ Sää: <b>' + weatherName() + '</b> · tie ' + keliNimi() + ' · ilma ' + Math.round(ambientTemp()) + '°' +
+        (roadWet > 0.25 ? ' · pito ' + Math.round(wetGrip()*100) + ' %, jarru ' + Math.round(wetBrake()*100) + ' %' : '') +
+        (morningFog > 0.15 ? ' · aamusumua' : '') +
         '</div>';
     }
     // keikkalista
@@ -13202,7 +14479,18 @@
     {id:'jarvi',  name:'Järvilenkki', reward:180,
      cps:[homePos, rantaPos, jarviPos, kylaPos, kauppaPos]},
     {id:'crossi', name:'Crossikisa',  reward:220,
-     cps:[kauppaPos, crossiPos, romuPos, meetSpot, autotalliPos]}
+     cps:[kauppaPos, crossiPos, romuPos, meetSpot, autotalliPos]},
+    // Moottorirata on suljettu ovaali: tarkistuspisteet ovat radan omalla keskilinjalla, joten
+    // kisa kiertää radan eikä kulje kylän läpi. Pisin matka ja isoin palkkio.
+    {id:'rata',   name:'Moottorirata', reward:200, noSnap:true,
+     cps:(function(){
+       var out = [];
+       for(var i=0; i<8; i++){
+         var a = i/8*Math.PI*2;
+         out.push(new THREE.Vector3(moottorirataPos.x + Math.cos(a)*RATA_RX, 0, moottorirataPos.z + Math.sin(a)*RATA_RZ));
+       }
+       return out;
+     })()}
   ];
   var race = {active:false, routeId:'', phase:'', timer:0, myCp:0, myFinish:0, standings:[], awarded:false};
   var raceBest = {};            // omat parhaat ajat reiteittäin (tallentuu peliin)
@@ -13246,6 +14534,10 @@
     raceCpsReady = true;
     for(var i=0; i<RACE_ROUTES.length; i++){
       var rt = RACE_ROUTES[i];
+      // Moottoriradan pisteet ovat jo valmiiksi radan keskilinjalla ja oikeassa kiertojärjestyksessä.
+      // Tiehen tarttuminen veisi ne kehätielle ja lähimmän naapurin järjestely pomppisi ovaalin
+      // puolelta toiselle, joten suljettu rata ohittaa molemmat vaiheet.
+      if(rt.noSnap) continue;
       var out = [];
       for(var j=0; j<rt.cps.length; j++){
         var src = rt.cps[j];
@@ -13291,8 +14583,198 @@
     var m = Math.floor(sec/60), r = sec - m*60;
     return m + ':' + (r < 10 ? '0' : '') + r.toFixed(1);
   }
+  // ==========================================================================
+  // ---- KESÄN MESTARUUSSARJA ----
+  // Kisat olivat yksittäisiä aika-ajoja: ajoit reitin, sait ehkä ennätyksen, ja siinä se.
+  // Mikään ei kantanut seuraavaan päivään eikä mitään ollut voitettavana. Nyt kesässä on
+  // viiden osakilpailun sarja, jossa ajetaan samoja kavereita vastaan kuin kylällä muutenkin.
+  //
+  // Osakilpailu ajetaan TIETTYNÄ kesäpäivänä: jos sen päivän nukkuu ohi, osakilpailu menee
+  // sivu suun eikä sitä voi ajaa myöhemmin. Se antaa kesän kalenterille toisen merkityksen
+  // ajokokeen rinnalle - 30 päivää ei ole enää pelkkä takaraja vaan aikataulu.
+  //
+  // Kaverien ajat SIMULOIDAAN reitin pituudesta ja heidän mopojensa huippunopeudesta. Sama
+  // nopeusjärjestys kuin kiihdytyskisoissa, joten pelaaja tietää jo etukäteen kenet voi voittaa.
+  // ==========================================================================
+  var SERIES_FEE = 25;
+  var SERIES_PRIZE = [150, 80, 40];          // kesän lopun mestaruuspalkinnot
+  var SERIES_POINTS = [25, 18, 15, 12, 10, 8];
+  var SERIES_ROUNDS = [
+    {day: 5,  routeId: 'crossi'},
+    {day: 11, routeId: 'kyla'},
+    {day: 17, routeId: 'rata'},     // moottorirata kartan laidalla
+    {day: 23, routeId: 'jarvi'},
+    {day: 29, routeId: 'rata'}
+  ];
+  // Kilpakumppanit ovat samat kaverit joita vastaan kiihdytyskisat ajetaan, plus kaksi muuta
+  // kylän kuskia. Luku on mopon huippunopeus km/h.
+  var SERIES_RIVALS = [
+    {name:'Nipa', kmh:62},
+    {name:'Tomi', kmh:71},
+    {name:'Late', kmh:78},
+    {name:'Kake', kmh:86},
+    {name:'Masa', kmh:96}
+  ];
+  var seriesPoints = {};        // nimi -> pisteet
+  var seriesDone = [];          // osakilpailun indeksi -> true kun ajettu tai ohitettu
+  var seriesCrowned = false;
+  var seriesLastResult = null;  // viimeisimmän osakilpailun tulostaulukko puhelimeen
+  function seriesMyName(){ return (typeof playerName === 'string' && playerName) ? playerName : 'Jonne'; }
+  function seriesReset(){
+    seriesPoints = {};
+    seriesDone = [];
+    seriesCrowned = false;
+    seriesLastResult = null;
+  }
+  function seriesRoundIndexForDay(d){
+    for(var i=0; i<SERIES_ROUNDS.length; i++) if(SERIES_ROUNDS[i].day === d) return i;
+    return -1;
+  }
+  // Tänään ajettava osakilpailu, tai null.
+  function seriesToday(){
+    var i = seriesRoundIndexForDay(summerDay);
+    if(i < 0 || seriesDone[i]) return null;
+    return {idx: i, round: SERIES_ROUNDS[i]};
+  }
+  function seriesNextRound(){
+    for(var i=0; i<SERIES_ROUNDS.length; i++){
+      if(!seriesDone[i] && SERIES_ROUNDS[i].day >= summerDay) return {idx:i, round:SERIES_ROUNDS[i]};
+    }
+    return null;
+  }
+  // Reitin pituus metreinä tarkistuspisteiden kautta. Lasketaan vasta kun pisteet on
+  // kiinnitetty teihin (raceEnsureCps), joten tätä ei kutsuta ennen kuin kisa on ajankohtainen.
+  function seriesRouteLength(routeId){
+    var rt = raceRouteById(routeId);
+    if(!rt || rt.cps.length < 2) return 1500;
+    var sum = 0;
+    for(var i=0; i<rt.cps.length-1; i++){
+      var dx = rt.cps[i+1].x - rt.cps[i].x, dz = rt.cps[i+1].z - rt.cps[i].z;
+      sum += Math.sqrt(dx*dx + dz*dz);
+    }
+    return sum;
+  }
+  // Kaverin aika: reitin pituus jaettuna keskinopeudella. Keskinopeus jää reilusti huipun alle,
+  // koska reitillä on mutkia ja tarkistuspisteitä - ja koska tahdin pitää olla sellainen että
+  // vakiomopolla pärjää hitaimmille ja täysin viritetyllä voittaa kaikki. Ilman tätä skaalausta
+  // pelaaja jäi joka osakilpailussa viimeiseksi, mikä ei opeta mitään.
+  function seriesRivalTime(rival, routeId){
+    var len = seriesRouteLength(routeId);
+    var avg = (rival.kmh/3.6) * (0.50 + Math.random()*0.12);
+    return len/Math.max(1, avg) * (0.97 + Math.random()*0.08);
+  }
+  function seriesAddPoints(name, pts){
+    seriesPoints[name] = (seriesPoints[name] || 0) + pts;
+  }
+  function seriesStandings(){
+    var list = [];
+    var seen = {};
+    list.push({name: seriesMyName(), pts: seriesPoints[seriesMyName()] || 0, me: true});
+    seen[seriesMyName()] = true;
+    for(var i=0; i<SERIES_RIVALS.length; i++){
+      var n = SERIES_RIVALS[i].name;
+      if(seen[n]) continue;
+      list.push({name: n, pts: seriesPoints[n] || 0, me: false});
+    }
+    list.sort(function(a, b){ return b.pts - a.pts; });
+    return list;
+  }
+  // Osakilpailun tulos: pelaajan aika vastaan simuloidut kaveriajat.
+  function seriesFinishRound(idx, routeId, myTime){
+    if(seriesDone[idx]) return;
+    seriesDone[idx] = true;
+    var rows = [{name: seriesMyName(), time: myTime, me: true}];
+    for(var i=0; i<SERIES_RIVALS.length; i++){
+      rows.push({name: SERIES_RIVALS[i].name, time: seriesRivalTime(SERIES_RIVALS[i], routeId), me: false});
+    }
+    // keskeytys (ei maaliaikaa) = viimeinen sija ilman pisteitä
+    rows.sort(function(a, b){
+      if(!a.time && !b.time) return 0;
+      if(!a.time) return 1;
+      if(!b.time) return -1;
+      return a.time - b.time;
+    });
+    var myPlace = 0;
+    for(var r=0; r<rows.length; r++){
+      rows[r].place = r+1;
+      var pts = rows[r].time ? (SERIES_POINTS[r] || 0) : 0;
+      rows[r].pts = pts;
+      seriesAddPoints(rows[r].name, pts);
+      if(rows[r].me) myPlace = r+1;
+    }
+    seriesLastResult = {round: idx+1, routeId: routeId, rows: rows};
+    var rt = raceRouteById(routeId);
+    var otsikko = '🏆 Osakilpailu ' + (idx+1) + '/' + SERIES_ROUNDS.length + ' ajettu';
+    var teksti;
+    if(!myTime){
+      teksti = 'Et päässyt maaliin, joten pisteitä ei tullut. ' + seriesRemainingText();
+    } else {
+      teksti = (rt ? rt.name + ': ' : '') + 'sija ' + myPlace + '/' + rows.length +
+               ' · ' + rows[myPlace-1].pts + ' pistettä · aika ' + raceTime(myTime) + '. ' + seriesRemainingText();
+    }
+    showToast(!myTime, otsikko, teksti, 7000);
+    saveGame();
+    seriesMaybeCrown();
+  }
+  function seriesRemainingText(){
+    var nxt = seriesNextRound();
+    if(!nxt) return 'Sarja on ajettu.';
+    return 'Seuraava osakilpailu päivänä ' + nxt.round.day + '.';
+  }
+  // Kesän mestaruus ratkeaa kun kaikki osakilpailut on ajettu tai kesä loppuu.
+  function seriesMaybeCrown(){
+    if(seriesCrowned) return;
+    var kaikkiAjettu = true;
+    for(var i=0; i<SERIES_ROUNDS.length; i++) if(!seriesDone[i]) kaikkiAjettu = false;
+    if(!kaikkiAjettu) return;
+    seriesCrowned = true;
+    var st = seriesStandings();
+    var myPlace = 1;
+    for(var j=0; j<st.length; j++) if(st[j].me) myPlace = j+1;
+    var palkinto = SERIES_PRIZE[myPlace-1] || 0;
+    if(palkinto > 0){ money += palkinto; updateMoneyDisplay(); }
+    if(myPlace === 1) repVillageAdd(22, 'Jonne voitti kesän mestaruuden. Siitä puhutaan kylällä.');
+    else if(myPlace <= 3) repVillageAdd(10);
+    var lines = [
+      'Kesän viimeinen osakilpailu on ajettu ja huoltoaseman pihalla luetaan pistetilanne.',
+      st.slice(0, 5).map(function(r, k){ return (k+1) + '. ' + r.name + ' ' + r.pts + ' p'; }).join('   '),
+      myPlace === 1 ? 'JONNE ON KESÄN MESTARI. Palkintona ' + palkinto + ' € ja koko kylän kunnioitus.'
+                    : (palkinto > 0 ? 'Sija ' + myPlace + '. Palkintorahaa ' + palkinto + ' €.'
+                                    : 'Sija ' + myPlace + '. Palkintorahoille ei tällä kertaa ollut asiaa.')
+    ];
+    saveGame();
+    if(typeof playCutscene === 'function') playCutscene('sarja' + summerNumber, myPlace === 1 ? 'Kesän mestari!' : 'Sarja ratkesi', lines);
+    else showToast(false, myPlace === 1 ? 'Kesän mestari!' : 'Sarja ratkesi', lines[2], 7000);
+  }
+  // Ohitetut osakilpailut: päivä meni eikä pelaaja ajanut. Kaverit ajoivat silti.
+  function seriesSkipPastRounds(){
+    for(var i=0; i<SERIES_ROUNDS.length; i++){
+      if(seriesDone[i] || SERIES_ROUNDS[i].day >= summerDay) continue;
+      seriesDone[i] = true;
+      // kaverit saavat pisteet keskenään, pelaaja ei mitään
+      var rows = [];
+      for(var r=0; r<SERIES_RIVALS.length; r++){
+        rows.push({name: SERIES_RIVALS[r].name, time: seriesRivalTime(SERIES_RIVALS[r], SERIES_ROUNDS[i].routeId)});
+      }
+      rows.sort(function(a, b){ return a.time - b.time; });
+      for(var k=0; k<rows.length; k++) seriesAddPoints(rows[k].name, SERIES_POINTS[k] || 0);
+      showToast(true, '🏁 Osakilpailu meni ohi',
+        'Päivän ' + SERIES_ROUNDS[i].day + ' osakilpailu ajettiin ilman sinua. Kaverit keräsivät pisteet.', 5200);
+    }
+    seriesMaybeCrown();
+  }
+  // Aamuilmoitus: tänään ajetaan.
+  function seriesMorningNotice(){
+    seriesSkipPastRounds();
+    var t = seriesToday();
+    if(!t) return;
+    var rt = raceRouteById(t.round.routeId);
+    showToast(false, '🏆 Tänään osakilpailu ' + (t.idx+1) + '/' + SERIES_ROUNDS.length,
+      (rt ? rt.name : t.round.routeId) + ' ajetaan tänään. Avaa puhelin (TAB) ja käynnistä kisa - osallistumismaksu ' + SERIES_FEE + ' €.', 7000);
+  }
+
   function raceLocalReset(){
-    race.active = false; race.routeId = ''; race.phase = ''; race.timer = 0;
+    race.active = false; race.routeId = ''; race.phase = ''; race.timer = 0; race.series = null;
     race.myCp = 0; race.myFinish = 0; race.standings = []; race.awarded = false;
     if(raceRingMesh) raceRingMesh.visible = false;
     if(racePanelEl) racePanelEl.hidden = true;
@@ -13313,10 +14795,26 @@
   function raceBegin(routeId){
     var route = raceRouteById(routeId);
     if(!route || race.active) return;
+    // Jos tänään on tämän reitin osakilpailu, kisa lasketaan mestaruussarjaan ja siitä
+    // peritään osallistumismaksu. Muina päivinä sama reitti on tavallinen aika-ajo.
+    race.series = null;
+    var sarja = seriesToday();
+    if(sarja && sarja.round.routeId === routeId){
+      if(money < SERIES_FEE){
+        showToast(true, 'Osallistumismaksu ' + SERIES_FEE + ' €',
+          'Kassassa on ' + Math.round(money) + ' €. Ilman maksua reitin voi ajaa aika-ajona, mutta se ei kerrytä sarjapisteitä.', 5200);
+      } else {
+        money -= SERIES_FEE;
+        updateMoneyDisplay();
+        race.series = sarja.idx;
+      }
+    }
     race.active = true; race.routeId = routeId; race.phase = 'count'; race.timer = 5;
     race.myCp = 0; race.myFinish = 0; race.standings = []; race.awarded = false;
     if(racePanelEl) racePanelEl.hidden = false;
-    showToast(false, route.name, 'Kisa alkaa! Aja tarkistuspisteiden läpi järjestyksessä.', 3400);
+    showToast(false, route.name, (race.series !== null && race.series !== undefined)
+      ? ('🏆 Osakilpailu ' + (race.series+1) + '/' + SERIES_ROUNDS.length + ' alkaa! Aja tarkistuspisteiden läpi järjestyksessä.')
+      : 'Kisa alkaa! Aja tarkistuspisteiden läpi järjestyksessä.', 3800);
     renderRaceRoutes();
   }
   function raceCmp(a, b){
@@ -13383,6 +14881,8 @@
     if(prize > 0) txt += ' · ' + prize + ' €';
     showToast(prize > 0 ? false : true, route.name + ' maalissa', txt, 4600);
     saveGame();
+    // mestaruussarjan osakilpailu: pisteet ja sijoitus kavereita vastaan
+    if(race.series !== null && race.series !== undefined) seriesFinishRound(race.series, route.id, race.myFinish);
   }
   function raceFinishAll(){
     race.phase = 'done';
@@ -13487,10 +14987,39 @@
     if(!raceRouteListEl) return;
     raceEnsureCps();
     var html = '';
+    // ---- mestaruussarjan tilanne ennen reittilistaa ----
+    var tanaan = seriesToday();
+    var seur = seriesNextRound();
+    var st = seriesStandings();
+    html += '<div class="phoneNote" style="margin-bottom:6px">🏆 <b>Kesän mestaruussarja</b><br>';
+    if(seriesCrowned){
+      html += 'Sarja on ratkennut. Lopputulos: ' + st.slice(0,3).map(function(r,k){ return (k+1)+'. '+r.name+' '+r.pts+' p'; }).join(' · ');
+    } else if(tanaan){
+      var rtT = raceRouteById(tanaan.round.routeId);
+      html += '<b>Tänään</b> ajetaan osakilpailu ' + (tanaan.idx+1) + '/' + SERIES_ROUNDS.length +
+              ' (' + (rtT ? rtT.name : tanaan.round.routeId) + ') · maksu ' + SERIES_FEE + ' €';
+    } else if(seur){
+      var rtN = raceRouteById(seur.round.routeId);
+      html += 'Seuraava osakilpailu ' + (seur.idx+1) + '/' + SERIES_ROUNDS.length +
+              ' päivänä ' + seur.round.day + ' (' + (rtN ? rtN.name : seur.round.routeId) + ')';
+    } else {
+      html += 'Osakilpailut on ajettu.';
+    }
+    html += '<br>Pisteet: ' + st.slice(0,4).map(function(r,k){
+      return (r.me ? '<b>' : '') + (k+1) + '. ' + r.name + ' ' + r.pts + ' p' + (r.me ? '</b>' : '');
+    }).join(' · ') + '</div>';
+    if(seriesLastResult){
+      html += '<div class="phoneNote" style="margin-bottom:6px">Viimeisin osakilpailu (' + seriesLastResult.round + '/' + SERIES_ROUNDS.length + '): ' +
+        seriesLastResult.rows.slice(0,4).map(function(r){
+          return (r.me ? '<b>' : '') + r.place + '. ' + r.name + ' ' + (r.time ? raceTime(r.time) : 'kesken') + (r.me ? '</b>' : '');
+        }).join(' · ') + '</div>';
+    }
     for(var i=0; i<RACE_ROUTES.length; i++){
       var rt = RACE_ROUTES[i];
       var best = raceBest[rt.id];
-      html += '<button class="raceBtn" type="button" data-race="' + rt.id + '">🏁 ' + rt.name +
+      var onSarja = tanaan && tanaan.round.routeId === rt.id;
+      html += '<button class="raceBtn" type="button" data-race="' + rt.id + '">' + (onSarja ? '🏆 ' : '🏁 ') + rt.name +
+              (onSarja ? ' — OSAKILPAILU TÄNÄÄN' : '') +
               '<span class="rbMeta">' + rt.cps.length + ' pistettä · palkinto ' + rt.reward + ' € · ' +
               (best ? ('ennätys ' + raceTime(best)) : 'ei ennätystä') + '</span></button>';
     }
@@ -13581,6 +15110,15 @@
         breakdown: breakdown ? breakdown.kind : null,
         brokenTyre: brokenTyre,
         dailyEvent: dailyEvent,
+        maint: maint,
+        questStage: questStage,
+        signalMisses: signalMisses,
+        usedOffer: usedOffer,
+        usedOwned: usedOwned,
+        dragWins: dragWins,
+        seriesPoints: seriesPoints,
+        seriesDone: seriesDone,
+        seriesCrowned: seriesCrowned,
         summerNumber: summerNumber,
         examDone: examDone,
         examPassed: examPassed,
@@ -13610,6 +15148,18 @@
       if(typeof save.breakdown === 'string' && breakdownKindById(save.breakdown)) breakdown = {kind: save.breakdown, since: 0};
       if(typeof save.brokenTyre === 'boolean') brokenTyre = save.brokenTyre;
       if(save.dailyEvent && typeof save.dailyEvent.id === 'string') dailyEvent = {id: save.dailyEvent.id, done: !!save.dailyEvent.done};
+      if(save.questStage && typeof save.questStage === 'object') questStage = save.questStage;
+      if(typeof save.signalMisses === 'number') signalMisses = save.signalMisses|0;
+      if(save.usedOffer && typeof save.usedOffer.id === 'string') usedOffer = save.usedOffer;
+      if(save.usedOwned && typeof save.usedOwned.id === 'string') usedOwned = save.usedOwned;
+      updateHelmet();
+      if(typeof save.dragWins === 'number') dragWins = save.dragWins|0;
+      if(save.maint && typeof save.maint === 'object'){
+        for(var mk2 in maint) if(typeof save.maint[mk2] === 'number') maint[mk2] = Math.max(0, Math.min(100, save.maint[mk2]));
+      }
+      if(save.seriesPoints && typeof save.seriesPoints === 'object') seriesPoints = save.seriesPoints;
+      if(Array.isArray(save.seriesDone)) seriesDone = save.seriesDone;
+      if(typeof save.seriesCrowned === 'boolean') seriesCrowned = save.seriesCrowned;
       updateBreakdownBanner();
       if(typeof save.summerNumber === 'number') summerNumber = Math.max(1, save.summerNumber|0);
       if(typeof save.examDone === 'boolean') examDone = save.examDone;
@@ -13788,6 +15338,7 @@
     crashed = false;
     crashSpin = -1;
     speed = 0;
+    travelHeading = null;   // luisu nollataan, muuten mopo lähtisi vinoon
     wheelieAngle = 0;
     stoppieAngle = 0;
     wheelieHoldTime = 0;
@@ -13855,7 +15406,16 @@
     brokenTyre = false;
     pushingMoped = false;
     dailyEvent = null;
+    maint = {oil:50, chain:50, plug:50, tyre:50};
+    engineTemp = 20;
+    signalMisses = 0; signalSideNow = 0; signalLeftTime = 0; stopCheck = null; stopCooldown = 60;
+    usedOffer = null; usedOwned = null; rollUsedOffer();
+    questStage = {};
+    dragWins = 0;
     if(examRun){ examRun = null; showExaminer(false); }
+    cancelRace(null);
+    for(var fr=0; fr<friends.length; fr++) friends[fr].state = 'cruise';
+    seriesReset();
     updateBreakdownBanner();
     storeItems.forEach(function(it){ if(it.consumable){ it.count = 0; it.owned = false; } });
     summerDay = 1; summerNumber = 1; examDone = false; examPassed = false; examScore = 0; finesCount = 0;
@@ -15117,6 +16677,15 @@
         mountHintEl.innerHTML = kickAttempts > 0
           ? 'Ei lähtenyt - polkaise uudestaan: <b>F</b>'
           : 'Paina <b>F</b> polkaistaksesi mopon käyntiin';
+      } else if(engineRunning && friendNearest() && !examRun){
+        // ajaessa näkyy myös kaverivihje, muuten H-nappia ei löytäisi kukaan
+        var fr2 = friendNearest();
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = raceFriend
+          ? ('🏁 Kisa ' + raceFriend.name + 'ia vastaan · ' + RACE_DISTANCE + ' m')
+          : ((fr2.state === 'follow')
+              ? ('<b>H</b>: ' + fr2.name + ' seuraa · pysähdy ja paina H = kiihdytyskisa')
+              : ('Paina <b>H</b>: huuda kaverille (' + fr2.name + ')'));
       } else if(!mountHintEl.hidden && engineRunning){
         mountHintEl.hidden = true;
       }
@@ -15155,6 +16724,17 @@
       if(equippedMopedId === 'derbi') effMaxSpeed = derbiTopSpeedKmh()/3.6;
       effMaxSpeed *= breakdownSpeedFactor();     // puhjennut rengas hidastaa reilusti
       gripMult *= breakdownGripFactor();
+      // märkä keli: ohjaus puree huonommin, jarru pitää huonommin, takapyörä sutii lähdössä
+      gripMult  *= wetGrip();
+      brakeMult *= wetBrake();
+      accelMult *= wetAccel();
+      // huoltoarvot: löysä ketju luistaa, väärä tulppa yskii, renkaat vaikuttavat pitoon ja jarruun
+      accelMult   *= maintPowerFactor() * tempPowerFactor();
+      effMaxSpeed *= maintTopSpeedFactor();
+      gripMult    *= maintGripFactor();
+      brakeMult   *= maintBrakeFactor();
+      maintTick(dt, throttle);
+      updateEngineTemp(dt, throttle, speed);
 
       // rikkoutunut mopo: leikannut moottori tai poikki oleva ketju eivät vedä lainkaan
       var throttle = input.fwd && !stalled && engineRunning && !mopedDead();
@@ -15176,7 +16756,7 @@
           // alle kahdessa minuutissa kaasua, mikä tarkoitti että talliin piti palata
           // jatkuvasti. Nyt sama matka kestää noin neljännestunnin ajoa.
           // löysällä olevat kiinnityspultit kuluttavat osaa selvästi nopeammin (ks. boltWearMult)
-          wp.condition = Math.max(0, wp.condition - 0.11*wearMult*boltWearMult(wp)*dt);
+          wp.condition = Math.max(0, wp.condition - 0.11*wearMult*boltWearMult(wp)*maintWearFor(wp.id)*dt);
         }
       } else if(braking){
         speed -= brake*brakeMult*breakdownBrakeFactor()*dt;   // pettäneet jarrut eivät juuri pysäytä
@@ -15287,9 +16867,23 @@
       heading += turnInput * 1.8 * speedFactor * turnDir * Math.min(1.3, gripMult) * steerFactor * dt;
       heading += damageSteerDrift(dt);   // kolhittu mopo ei kulje suoraan
       damageRattleTick(dt);
+      updateSignals(dt, turnInput);      // vilkun käyttö ja käännöksen havainto
 
-      moped.position.x += Math.sin(heading)*speed*dt;
-      moped.position.z += Math.cos(heading)*speed*dt;
+      // ---- liukuminen ----
+      // Mopo EI liiku suoraan ohjattuun suuntaan vaan travelHeadingiin, joka seuraa ohjausta.
+      // Kuivalla se seuraa käytännössä heti; märällä jää jälkeen, jolloin mopo pyyhkäisee
+      // mutkassa ulos. Erotus (slipAngle) on luisun mitta - ajokoe rankaisee siitä.
+      if(travelHeading === null) travelHeading = heading;
+      var hDiff = heading - travelHeading;
+      while(hDiff >  Math.PI) hDiff -= Math.PI*2;
+      while(hDiff < -Math.PI) hDiff += Math.PI*2;
+      // pienessä vauhdissa ei luista: seisovaa mopoa voi kääntää paikallaan
+      var slideK = wetSlideK() + Math.max(0, 8 - Math.abs(speed)*2.2);
+      travelHeading += hDiff * Math.min(1, dt*slideK);
+      slipAngle = Math.abs(hDiff);
+
+      moped.position.x += Math.sin(travelHeading)*speed*dt;
+      moped.position.z += Math.cos(travelHeading)*speed*dt;
       moped.rotation.y = heading;
       updateMopedAir(dt);
       // Törmäys: otetaan talteen mihin suuntaan este työnsi mopoa, jotta lommo osuu
@@ -15300,6 +16894,10 @@
         speed *= 0.55;
       }
 
+      // rasvainen seos savuttaa: pakoputken liekkipilvi jää näkyviin ohuena savuna
+      if(maintSmoking() && throttle && exhaustFlame && exhaustFlame.material){
+        exhaustFlame.material.opacity = Math.min(0.45, exhaustFlame.material.opacity + dt*1.6);
+      }
       var wheelSpin = speed*dt*2.2;
       frontWheel.rotation.x += wheelSpin;
       rearWheel.rotation.x += wheelSpin;
@@ -15617,6 +17215,12 @@
           : (fishingState === 'waiting'
               ? 'Odota nykäisyä... (<b>E</b> kelaa sisään)'
               : 'Paina <b>E</b> onkiaksesi');
+      } else if(friendNearest()){
+        var fnear = friendNearest();
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = (fnear.state === 'follow')
+          ? ('<b>H</b>: ' + fnear.name + ' seuraa · pysähdy ja paina H = kiihdytyskisa')
+          : ('Paina <b>H</b>: huuda kaverille (' + fnear.name + ')');
       } else if(nearNpc){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = nearNpc.exam
@@ -15684,6 +17288,13 @@
     updateBuffChips();
     fuelBar.style.width = fuel + '%';
     fuelBar.style.background = fuel<20 ? '#c9463a' : 'var(--accent)';
+    if(tempBar){
+      var tr = tempRatio();
+      tempBar.style.width = Math.round(tr*100) + '%';
+      tempBar.style.background = (engineTemp > TEMP_SEIZE) ? '#e03a28'
+        : (engineTemp > TEMP_WARN) ? '#e08a28' : '#5aa9d6';
+      if(tempLabel) tempLabel.textContent = 'Lämpö ' + Math.round(engineTemp) + '°';
+    }
 
     mopedShadowBlob.position.set(moped.position.x, terrainHeight(moped.position.x, moped.position.z) + 0.02, moped.position.z);
     playerShadowBlob.position.set(player.position.x, (inStore ? 0 : terrainHeight(player.position.x, player.position.z)) + 0.02, player.position.z);
@@ -15692,6 +17303,12 @@
 
     updateMission(dt, mode === 'riding' ? moped.position : player.position);
     updateJobs(dt, mode === 'riding' ? moped.position : player.position);
+    if(mode !== 'riding') updateEngineTemp(dt, false, 0);   // sammutettu moottori jäähtyy taustalla
+    updateTrafficStop(dt);   // partion pysäytys ja tienvarsitarkastus
+    updateBlinkers(moped, dt);   // oman mopon vilkut samalla koodilla kuin muidenkin
+    updateHelmet();
+    updateFriends(dt);       // kaverit ajelevat kylällä, seuraavat tai kisaavat
+    updateDragRace(dt);      // kiihdytyskisan lähtölaskenta ja maali
     updateExam(dt);          // ajokoe käynnissä: virhepisteet, ohjeet ja tarkistuspisteet
     updateNpcRoutines(dt);   // kyläläiset kävelevät päiväjärjestyksensä mukaan
     updateNpcFacing(dt, mode === 'riding' ? moped.position : player.position);
@@ -16814,6 +18431,7 @@
   }
   function beginGame(){
     if(!dailyEvent) rollDailyEvent(true);   // ensimmäinen päivän tapahtuma heti kesän alkaessa, ilman ilmoitusta
+    if(!usedOffer && !usedOwned) rollUsedOffer();
     gameStarted = true;
     startScreenEl.hidden = true;
     if(hudEl) hudEl.style.visibility = '';
@@ -17606,7 +19224,8 @@
       // etäisyys kylän keskustasta ratkaisee: keskustassa ajetaan hiljaa
       var dHub = Math.sqrt((mx - meetSpot.x)*(mx - meetSpot.x) + (mz - meetSpot.z)*(mz - meetSpot.z));
       var limit;
-      if(total > 900 && Math.abs(rp[0].x) < 1) limit = SPEED_LIMIT_MAIN;      // pääraitti
+      if(rp.isTrack)                           limit = 0;                     // kilparadalla ei ole rajoitusta
+      else if(total > 900 && Math.abs(rp[0].x) < 1) limit = SPEED_LIMIT_MAIN; // pääraitti
       else if(dHub < 120 || total < 120)       limit = SPEED_LIMIT_STREET;    // keskustan katu
       else                                      limit = SPEED_LIMIT_RING;
       roadLimits.push(limit);
@@ -17683,6 +19302,7 @@
     for(var i=0; i<roadPaths.length; i++){
       var rp = roadPaths[i];
       var limit = roadLimits[i];
+      if(!limit) continue;   // rajoitukseton pätkä (kilparata) ei saa merkkejä
       for(var j=0; j<rp.length-1; j++){
         var a = rp[j], b = rp[j+1];
         var ex = b.x - a.x, ez = b.z - a.z;
@@ -17758,11 +19378,14 @@
           for(var side = -1; side <= 1; side += 2){
             var sx = a.x + ux*d + nx*8.5*side;
             var sz = a.z + uz*d + nz*8.5*side;
-            if(sz < -660 || sz > 430) continue;
+            // Raja oli viritetty vanhaan, puolta pienempään karttaan: uudessa mittakaavassa
+            // tutkat olisivat mahtuneet vain kapealle kaistaleelle kylän eteläpuolelle.
+            if(sz < -1150 || sz > 760) continue;
             if(distToNearestRoad(sx, sz) < 7.0) continue;
             // ei aivan kotipihaan eikä poliisiaseman eteen
             var dh = Math.sqrt((sx-homePos.x)*(sx-homePos.x) + (sz-homePos.z)*(sz-homePos.z));
             if(dh < 60) continue;
+            if(!roadLimits[i]) continue;   // kilparadalle ei pystytetä tutkaa
             radarSpots.push({x:sx, z:sz, hx:ux, hz:uz, limit:roadLimits[i]});
           }
         }
@@ -18443,6 +20066,161 @@
     {q:'Moi vaan.',                a:'Moikka.'}
   ];
 
+  // ==========================================================================
+  // ---- KYLÄLÄISTEN TARINAKETJUT ----
+  // Kyläläisillä oli vain irrallisia repliikkejä: juttelit, sait sattumanvaraisen lauseen,
+  // mikään ei muuttunut. Nyt jokaisella on oma monivaiheinen juoni, joka etenee kun teet
+  // hänelle palveluksia. Ehdot on sidottu asioihin joita peli jo seuraa (kalat, hitsaukset,
+  // syödyt ateriat, voitetut kisat, varaosat repussa), joten ketjut vievät pelaajan niiden
+  // järjestelmien läpi joita hän ei muuten ehkä kokeilisi.
+  //
+  // Vaihe etenee vasta kun ehto täyttyy: siihen asti kyläläinen toistaa vihjeensä. Palkkiona
+  // on rahaa ja mainetta, ja viimeisestä vaiheesta jotain isompaa.
+  // ==========================================================================
+  var QUESTS = {
+    'Romu-Reiska': {
+      nimi: 'Kadonnut sylinterisarja',
+      vaiheet: [
+        {kysy:'Mikä se kadonnut osa oikein on?',
+         vihje:'Se on jossain romukasojen alla. Käy hitsaamassa mulle yksi sauma, niin kerron tarkemmin.',
+         ehto:function(){ return weldsDone >= 1; },
+         vastaus:'Hyvä sauma. No niin: täällä on erään vanhan Derbin sylinterisarja. En vaan löydä sitä.',
+         raha:30, maine:6},
+        {kysy:'Löytyikö sitä sarjaa?',
+         vihje:'Löytyi, mutta kasa on jumissa. Tuo mulle ketjulukko niin saan vedettyä sen irti.',
+         ehto:function(){ return spareCount('ketjulukko') > 0; },
+         teko:function(){ useSpare('ketjulukko'); },
+         vastaus:'Noin. Kiitos ketjulukosta - sarja on nyt vapaa. Käy huomenna hakemassa.',
+         raha:0, maine:8},
+        {kysy:'Tulin hakemaan sitä sarjaa.',
+         vihje:'Odotahan, pitää vielä puhdistaa se. Käy sillä aikaa jossain.',
+         ehto:function(){ return true; },
+         vastaus:'Tässä. Ei maksa mitään - sä teit työt. Jos sulla on Derbi, tämä on se osa jolla se kulkee 250.',
+         raha:180, maine:14, erikois:'88br'}
+      ]
+    },
+    'Kalamies': {
+      nimi: 'Järven järkäle',
+      vaiheet: [
+        {kysy:'Mitä täältä oikein saa?',
+         vihje:'Ensin lupa kuntoon. Kyläkaupasta saa kalastusluvan halvalla.',
+         ehto:function(){ var it = storeItemById('kalastuslupa'); return !!(it && it.owned); },
+         vastaus:'Noin. Nyt saat onkia laillisesti. Kokeile laiturin päästä.',
+         raha:0, maine:5},
+        {kysy:'Kaloja on tullut.',
+         vihje:'Viisi kalaa pitää olla takana ennen kuin puhutaan isoista. Jatka onkimista.',
+         ehto:function(){ return fishCaught >= 5; },
+         vastaus:'Viisi kalaa. Nyt sä alat olla kalamies. Mutta se iso ei ole täällä.',
+         raha:40, maine:8},
+        {kysy:'Missä se iso sitten on?',
+         vihje:'Erämökin laiturilla, kartan perukoilla. Käy siellä ja ota kahdeksan kalaa kokemusta ensin.',
+         ehto:function(){ return fishCaught >= 8 && poiIsVisited('Erämökki'); },
+         vastaus:'Kävit siellä asti. Tässä on vanha vapani - se on nostanut isompia kuin sinä tai minä.',
+         raha:120, maine:15}
+      ]
+    },
+    'Jussi': {
+      nimi: 'Jussin mopoprojekti',
+      vaiheet: [
+        {kysy:'Mitä sulla on tekeillä?',
+         vihje:'Mulla on projekti kesken mutta rengas on puhki. Tuo paikkaussarja, niin näytän.',
+         ehto:function(){ return spareCount('paikkaussarja') > 0; },
+         teko:function(){ useSpare('paikkaussarja'); },
+         vastaus:'Kiitti! Tule katsomaan - tästä tulee kylän kovin mopo.',
+         raha:0, maine:6},
+        {kysy:'Miten projekti etenee?',
+         vihje:'Osat maksaa. Lainaisitko kuusikymppiä? Maksan takaisin kun se on valmis.',
+         ehto:function(){ return money >= 60; },
+         teko:function(){ money -= 60; updateMoneyDisplay(); },
+         vastaus:'Oot kaveri. Kuusikymppiä riittää siihen mitä puuttuu.',
+         raha:0, maine:10},
+        {kysy:'Onko se valmis?',
+         vihje:'On. Mutta en anna rahoja takaisin ilmaiseksi - voita yksi kiihdytyskisa, niin uskon että osaat ajaa.',
+         ehto:function(){ return dragWins >= 1; },
+         vastaus:'Näinhän se menee. Tässä on sun rahat ja vähän korkoa päälle.',
+         raha:150, maine:16}
+      ]
+    },
+    'Äiti': {
+      nimi: 'Äidin huoli',
+      vaiheet: [
+        {kysy:'Mitä sä oikein murehdit?',
+         vihje:'Sitä että sä elät pelkällä limulla. Käy kunnolla syömässä pari kertaa.',
+         ehto:function(){ return foodEaten >= 2; },
+         vastaus:'No niin. Sitähän minä. Nyt jaksat rassatakin paremmin.',
+         raha:0, maine:5},
+        {kysy:'Nyt syön kunnolla. Muuta?',
+         vihje:'Se ajokoe. Haluan että mopo on oikeasti kunnossa ennen sitä - vähintään 60 pisteen valmius.',
+         ehto:function(){ return examReview().score >= 60; },
+         vastaus:'Katsoin sen mopon. Hyvältä näyttää. Tässä vähän rahaa, osta jotain järkevää.',
+         raha:50, maine:8},
+        {kysy:'Mopo on kunnossa. Oletko tyytyväinen?',
+         vihje:'Melkein. Näytä vielä että osaat ajaa siivosti: ei poliisimerkintöjä, ja kesää takana vähintään kymmenen päivää.',
+         ehto:function(){ return repPolice <= 10 && summerDay >= 10; },
+         vastaus:'Kymmenen päivää ilman että poliisi on soittanut. Sä olet kasvanut tänä kesänä.',
+         raha:100, maine:12}
+      ]
+    }
+  };
+  var questStage = {};   // npc-nimi -> seuraavan vaiheen indeksi
+  function questFor(npc){ return npc ? QUESTS[npc.name] : null; }
+  function questStep(npc){
+    var q = questFor(npc);
+    if(!q) return null;
+    var i = questStage[npc.name] || 0;
+    return (i < q.vaiheet.length) ? q.vaiheet[i] : null;
+  }
+  function questDone(name){
+    var q = QUESTS[name];
+    return !!q && (questStage[name] || 0) >= q.vaiheet.length;
+  }
+  // Vaiheen yritys: ehto täyttyy -> palkkio ja seuraava vaihe, muuten pelkkä vihje.
+  function questTry(npc){
+    var q = questFor(npc), st = questStep(npc);
+    if(!q || !st) return 'Ei ole mitään kesken.';
+    var ok = false;
+    try{ ok = !!st.ehto(); }catch(e){ ok = false; }
+    if(!ok) return st.vihje;
+    if(st.teko){ try{ st.teko(); }catch(e2){} }
+    questStage[npc.name] = (questStage[npc.name] || 0) + 1;
+    if(st.raha){ money += st.raha; updateMoneyDisplay(); }
+    if(st.maine) repVillageAdd(st.maine);
+    if(st.erikois === '88br') questRewardBr88();
+    var loppu = questDone(npc.name);
+    showToast(false, (loppu ? '⭐ ' : '✅ ') + q.nimi,
+      (loppu ? 'Ketju on valmis! ' : 'Vaihe ' + questStage[npc.name] + '/' + q.vaiheet.length + ' tehty. ') +
+      (st.raha ? '+' + st.raha + ' € ' : '') + (st.maine ? '+' + st.maine + ' mainetta' : ''), 5200);
+    saveGame();
+    return st.vastaus;
+  }
+  // Reiskan palkinto: 88BR-sylinterisarja suoraan autotallin hyllylle, jos Derbi on omistuksessa.
+  function questRewardBr88(){
+    var cyl = partById('sylinteri');
+    if(!cyl) return;
+    var idx = -1;
+    for(var i=0; i<cyl.tiers.length; i++) if(cyl.tiers[i].br88) idx = i;
+    var derbiOwned = false;
+    for(var m=0; m<mopedModels.length; m++) if(mopedModels[m].id === 'derbi' && mopedModels[m].owned) derbiOwned = true;
+    if(idx < 0 || !derbiOwned){
+      showToast(false, 'Reiska antoi sarjan', 'Sarja sopii vain Derbiin. Reiska lupasi säilyttää sen sinulle - osta ensin Derbi.', 5200);
+      return;
+    }
+    if(typeof addToShelf === 'function' && !shelfHas('sylinteri', 'tier')){
+      addToShelf('sylinteri', 'tier', idx);
+      showToast(false, '⭐ 88BR-sylinterisarja', 'Sarja odottaa autotallin hyllyllä. Käy asentamassa se.', 6000);
+    }
+  }
+  function questSummary(){
+    var out = [];
+    for(var nm in QUESTS){
+      if(!Object.prototype.hasOwnProperty.call(QUESTS, nm)) continue;
+      var q = QUESTS[nm], i = questStage[nm] || 0;
+      out.push({npc: nm, nimi: q.nimi, vaihe: i, kaikki: q.vaiheet.length,
+                vihje: (i < q.vaiheet.length) ? q.vaiheet[i].vihje : null});
+    }
+    return out;
+  }
+
   function objectiveAdvice(){
     // SEURAUS: huonolla maineella kukaan ei viitsi neuvoa. Neuvo on pelin tärkein apu, joten
     // sen menettäminen tuntuu heti - mutta maineen saa takaisin töillä ja kohteliaisuudella.
@@ -18485,6 +20263,21 @@
   }
   function renderDialogueChoices(){
     dlgChoices.innerHTML = '';
+    // Tarinaketjun vaihe on aina ensimmäisenä ja omalla korostuksellaan: se on se asia jota
+    // kyläläinen oikeasti odottaa, eikä sen pidä hukkua tavallisten jutustelujen sekaan.
+    var qstep = questStep(dlgNpc);
+    if(qstep && !villagersSnub()){
+      var qb = document.createElement('button');
+      qb.className = 'dlgChoice';
+      qb.type = 'button';
+      qb.style.borderLeft = '3px solid var(--accent)';
+      qb.textContent = '⭐ ' + qstep.kysy;
+      qb.addEventListener('click', function(){
+        dlgLineEl.textContent = questTry(dlgNpc);
+        renderDialogueChoices();
+      });
+      dlgChoices.appendChild(qb);
+    }
     var topics = npcTopics(dlgNpc);
     topics.forEach(function(t){
       if(t.used) return;   // maineeseen vaikuttava valinta näytetään vain kerran
