@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:117-->
-<!--JONNE-NAME:Jonnen ajokoe 117-->
+<!--JONNE-VERSION:118-->
+<!--JONNE-NAME:Jonnen ajokoe 118-->
 <!--JONNE-DATE:2026-10-14-->
-<!--JONNE-NOTES:Kypäränäkymä (V): kamera kuskin silmiin, leveämpi kuvakulma ja kypärän kehys|Kyläläiset kommentoivat ohi ajavaa mopoa sen kunnon, virityksen ja maineen mukaan|Kypäränäkymä mukana näppäinasetuksissa ja tallennuksessa-->
+<!--JONNE-NOTES:Teoriakoe liikennemerkeistä: 18 kankaalle piirrettyä merkkiä, 24 kysymystä, 10 per koe|Katsastus tallissa: kahdeksan tarkastuskohtaa, voimassa kesän loppuun|Ajokokeeseen pääsee vasta teoriakokeen ja katsastuksen jälkeen-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -366,6 +366,47 @@
            text-shadow:0 2px 10px rgba(0,0,0,0.9);margin:0 0 16px;}
   .cutNext{font:700 12px/1 'Karla',sans-serif;letter-spacing:.06em;color:var(--cream);
            background:var(--accent);border:0;border-radius:9px;padding:10px 20px;cursor:pointer;}
+  /* ---- teoriakoe ja katsastus ---- */
+  .koeScrim{position:absolute;inset:0;background:rgba(10,13,10,0.74);z-index:60;pointer-events:auto;}
+  .koeScrim[hidden]{display:none;}
+  /* kokeen ajaksi muu HUD pois: kysymys saa koko ruudun, kuten valokuvaustilassakin */
+  #app.koeing .hud > *:not(#koePanel):not(#koeScrim):not(#toast){display:none!important;}
+  .koePanel{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(560px, 94vw);max-height:90vh;overflow-y:auto;
+    background:#2a3527;border:1px solid var(--panel-line);border-radius:16px;
+    padding:18px 20px 20px;pointer-events:auto;z-index:61;
+    box-shadow:0 18px 60px rgba(0,0,0,0.55);
+  }
+  .koePanel[hidden]{display:none;}
+  .koeTitle{font:700 12px/1 'Karla',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);}
+  .koeStep{font:600 11px/1 'Karla',sans-serif;letter-spacing:.07em;opacity:.65;margin-top:5px;}
+  .koeSign{display:block;margin:13px auto 4px;width:190px;height:190px;}
+  .koeSign[hidden]{display:none;}
+  .koeText{font:600 15px/1.5 'Karla',sans-serif;margin:11px 0 12px;}
+  .koeList{display:flex;flex-direction:column;gap:6px;}
+  .koeChoice{
+    font:600 13px/1.35 'Karla',sans-serif;text-align:left;color:var(--cream);
+    background:rgba(251,246,233,0.09);border:1px solid var(--panel-line);border-radius:8px;
+    padding:9px 12px;cursor:pointer;transition:background .13s;
+  }
+  .koeChoice:hover:not(:disabled){background:rgba(251,246,233,0.18);}
+  .koeChoice:disabled{cursor:default;}
+  .koeChoice.oikein{background:rgba(74,154,86,0.34);border-color:rgba(120,210,130,0.6);}
+  .koeChoice.vaarin{background:rgba(192,57,43,0.32);border-color:rgba(230,120,110,0.6);}
+  .koeNum{opacity:.55;margin-right:7px;}
+  /* katsastuslistan rivit: vihreä läpi, punainen hylkäys */
+  .koeRivi{font:500 13px/1.45 'Karla',sans-serif;display:flex;gap:8px;align-items:flex-start;
+           padding:6px 2px;border-bottom:1px solid rgba(251,246,233,0.09);}
+  .koeRivi b{font-weight:700;}
+  .koeRivi.ok{color:#9fdca8;}
+  .koeRivi.ei{color:#f0a097;}
+  .koeInfo{font:400 12.5px/1.5 'Karla',sans-serif;opacity:.78;margin:11px 0 0;}
+  .koeBtns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .koeBtn{font:700 12px/1 'Karla',sans-serif;letter-spacing:.05em;color:var(--cream);
+          background:var(--accent);border:0;border-radius:9px;padding:11px 18px;cursor:pointer;}
+  .koeBtn.toinen{background:rgba(251,246,233,0.14);}
+  .koeBtn:disabled{opacity:.45;cursor:default;}
   /* ---- keskustelu ---- */
   .dialogue{
     position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
@@ -902,6 +943,17 @@
         <button class="cutNext" id="cutNext" type="button">Jatka ▸</button>
       </div>
       <div class="cutBar bottom"></div>
+    </div>
+    <!-- Teoriakoe ja katsastus kayttavat samaa paneelia: otsikko, merkki, teksti, lista ja napit -->
+    <div class="koeScrim" id="koeScrim" hidden></div>
+    <div class="koePanel" id="koePanel" hidden>
+      <div class="koeTitle" id="koeTitle">Teoriakoe</div>
+      <div class="koeStep" id="koeStep"></div>
+      <canvas class="koeSign" id="koeSign" width="380" height="380" hidden></canvas>
+      <p class="koeText" id="koeText"></p>
+      <div class="koeList" id="koeList"></div>
+      <p class="koeInfo" id="koeInfo" hidden></p>
+      <div class="koeBtns" id="koeBtns"></div>
     </div>
     <!-- Keskustelu valinnoilla -->
     <div class="dialogue" id="dialogue" hidden>
@@ -9015,6 +9067,17 @@
     plateRow.addEventListener('click', function(){ togglePlates(); });
     shelfListEl.appendChild(plateRow);
 
+    // katsastus: oma rivi tallissa, koska siellä mopo on nostettuna ja viat näkee
+    var katsRow = document.createElement('button');
+    katsRow.className = 'wideBtn';
+    katsRow.type = 'button';
+    katsRow.style.marginTop = '8px';
+    katsRow.textContent = inspectionValid()
+      ? '🔍 Katsastus voimassa — katso tarkastuslista'
+      : ('🔍 Katsastus (' + INSPECTION_FEE + ' €) — ' + (inspectionReady() ? 'mopo läpäisee' : 'puutteita'));
+    katsRow.addEventListener('click', function(){ openInspection(); });
+    shelfListEl.appendChild(katsRow);
+
     var tuneRow = document.createElement('button');
     tuneRow.className = 'wideBtn';
     tuneRow.type = 'button';
@@ -10888,6 +10951,22 @@
     }
     if(typeof dlgOpen !== 'undefined' && dlgOpen){
       if(k==='escape' || k==='e'){ e.preventDefault(); closeDialogue(); }
+      return;
+    }
+    // Teoriakoe ja katsastuslista vievät näppäimet: numerot vastaavat, Enter jatkaa.
+    if(typeof koeOpen !== 'undefined' && koeOpen){
+      e.preventDefault();
+      if(k === 'escape'){ koeClose(); return; }
+      if(k >= '1' && k <= '9'){
+        var nro = parseInt(k, 10) - 1;
+        var napit = koeListEl.children;
+        if(koeRun && napit[nro] && !napit[nro].disabled) theoryAnswer(nro);
+        return;
+      }
+      if(k === 'enter' || k === ' '){
+        var ekaNappi = koeBtnsEl.children[0];
+        if(ekaNappi && !ekaNappi.disabled) ekaNappi.click();
+      }
       return;
     }
     // Valokuvaustila ottaa liikkumisnäppäimet itselleen: muuten mopo lähtisi karkuun samalla
@@ -13216,7 +13295,7 @@
       baseRotY: 3.0,
       mesh: makeNpcFigure('normi', [0x1c1c22, 0x23232c, 0x4a5a74, 0xd6ab85, 0x4a4238], 1.79),
       lineIndex: 0,
-      lines: ['Ajokoe otetaan vastaan tässä. Maksu ' + 60 + ' euroa.']
+      lines: ['Ajokoe otetaan vastaan tässä. Ensin teoriakoe, sitten katsastettu mopo, sitten ajonäyttö. Maksu ' + 60 + ' euroa.']
     },
     {
       name: 'Kalamies',
@@ -13455,6 +13534,19 @@
   }
   function startExam(){
     if(examDone){ showToast(false, 'Ajokoe on jo tehty', 'Tämän kesän koe on takana.', 3000); return; }
+    // Teoriakoe ensin: merkit pitää osata ennen kuin ajonäyttöön päästetään.
+    if(!theoryPassed){
+      showToast(true, 'Teoriakoe puuttuu',
+        'Ajonäyttöä ei oteta vastaan ennen teoriakoetta. Valvoja ojentaa kysymyspaperin.', 5200);
+      openTheory();
+      return;
+    }
+    // Katsastus toiseksi: liikennekelvottomalla mopolla ei ajeta koetta.
+    if(!inspectionValid()){
+      showToast(true, 'Katsastus puuttuu',
+        inspectionWhyVoid() + ' Katsastus tehdään tallissa (' + INSPECTION_FEE + ' €).', 6000);
+      return;
+    }
     if(!mopedAssembled()){ showToast(true, 'Mopo on osina', 'Ajokokeeseen tullaan ajamalla, ei kävellen.', 3600); return; }
     if(money < EXAM_FEE){ showToast(true, 'Ajokoemaksu ' + EXAM_FEE + ' €', 'Kassassa on ' + Math.round(money) + ' €. Käy tienaamassa ensin.', 4200); return; }
     // kypärä on ehdoton: ilman sitä vastaanottaja ei päästä lähtöön ollenkaan
@@ -16850,6 +16942,13 @@
   var questStage = {};     // npc-nimi -> seuraavan vaiheen indeksi
   var pendingFines = [];   // postissa tulevat ylinopeussakot
   var DAMAGE_MAX_IMPACTS = 26;  // montako kolhua mallissa pidetaan muistissa
+  // Teoriakokeen ja katsastuksen tila kuuluu samaan varhaiseen lohkoon: loadGame() ajetaan
+  // ennen kuin V118:n moduuli on ajettu, joten "var theoryPassed = false" sen vieressa
+  // pyyhkisi ladatun arvon heti perassa.
+  var theoryPassed = false;     // teoriakoe lapaisty (sailyy kesasta toiseen)
+  var theoryBest = 0;           // paras tulos oikeita vastauksia
+  var theoryTries = 0;          // montako kertaa koetta on yritetty
+  var inspectionSummer = 0;     // minka kesan katsastus on voimassa (0 = ei katsastettu)
 
   // ==========================================================================
   // ---- NAPPAINKARTTA ----
@@ -17017,6 +17116,10 @@
         cutSeen: cutSeen,
         keyBind: keyBind,
         fpvOn: fpvOn,
+        theoryPassed: theoryPassed,
+        theoryBest: theoryBest,
+        theoryTries: theoryTries,
+        inspectionSummer: inspectionSummer,
         mouseSens: mouseSens,
         dartsThrowCount: dartsThrowCount,
         fishCaught: fishCaught,
@@ -17228,6 +17331,10 @@
       if(save.cutSeen && typeof save.cutSeen === 'object') cutSeen = save.cutSeen;
       keyApplySaved(save.keyBind);
       if(typeof save.fpvOn === 'boolean'){ fpvOn = save.fpvOn; fpvApplyVisibility(); }
+      if(typeof save.theoryPassed === 'boolean') theoryPassed = save.theoryPassed;
+      if(typeof save.theoryBest === 'number') theoryBest = save.theoryBest;
+      if(typeof save.theoryTries === 'number') theoryTries = save.theoryTries;
+      if(typeof save.inspectionSummer === 'number') inspectionSummer = save.inspectionSummer;
       if(typeof save.mouseSens === 'number') mouseSens = Math.max(0.2, Math.min(3, save.mouseSens));
       if(typeof save.dartsThrowCount === 'number') dartsThrowCount = save.dartsThrowCount;
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
@@ -19242,7 +19349,11 @@
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = nearNpc.exam
           ? (examDone ? 'Ajokoe on jo tehty tänä kesänä'
-                      : 'Paina <b>E</b>: aloita ajokoe (' + EXAM_FEE + ' €) · valmius ' + examReview().score + '/100')
+              : (!theoryPassed
+                  ? 'Paina <b>E</b>: teoriakoe liikennemerkeistä (' + THEORY_FEE + ' €)'
+                  : (!inspectionValid()
+                      ? 'Katsastus puuttuu — käy tallissa katsastuttamassa mopo'
+                      : 'Paina <b>E</b>: aloita ajokoe (' + EXAM_FEE + ' €) · valmius ' + examReview().score + '/100')))
           : ('Paina <b>E</b>: jutustele (' + nearNpc.name + ')');
       } else if(nearGrilli){
         mountHintEl.hidden = false;
@@ -20516,7 +20627,8 @@
   }
 
   function fpvAvailable(){
-    return !photoMode && !wrenchMode && !inStore && !cutsceneActive && !gamePaused;
+    return !photoMode && !wrenchMode && !inStore && !cutsceneActive && !gamePaused &&
+           !(typeof koeOpen !== 'undefined' && koeOpen);
   }
   function toggleFpv(){
     if(!fpvAvailable()){
@@ -20639,6 +20751,7 @@
   }
   function updateVillagerComments(dt){
     if(cutsceneActive || gamePaused || inStore) return;
+    if(typeof koeOpen !== 'undefined' && koeOpen) return;
     if(typeof dlgOpen !== 'undefined' && dlgOpen) return;
     commentTimer -= dt;
     if(commentTimer > 0) return;
@@ -20667,6 +20780,574 @@
   // sita ei voi vahentaa suoraan ilman etta keskiyo sotkee valit.
   var commentClock = 0;
   function gameClockSeconds(){ return commentClock; }
+
+  // ==========================================================================
+  // ---- TEORIAKOE JA KATSASTUS ----
+  // Ajokortti ei ole pelkka ajonaytto: ennen koeajoa pitaa osata merkit ja mopon pitaa olla
+  // katsastettu. Nama kaksi ovat pelissa oikeat portit ajokokeeseen, eivat koristeita.
+  //
+  // Merkit piirretaan kankaalle muotoina (ympyra, kolmio, kahdeksankulmio, nuoli), ei
+  // kuvatiedostoina: niin pelin ainoa tiedosto pysyy yhtena tiedostona ja merkit skaalautuvat
+  // teravina mihin kokoon tahansa.
+  // ==========================================================================
+  var koePanelEl = document.getElementById('koePanel');
+  var koeTitleEl = document.getElementById('koeTitle');
+  var koeStepEl  = document.getElementById('koeStep');
+  var koeSignEl  = document.getElementById('koeSign');
+  var koeTextEl  = document.getElementById('koeText');
+  var koeListEl  = document.getElementById('koeList');
+  var koeInfoEl  = document.getElementById('koeInfo');
+  var koeBtnsEl  = document.getElementById('koeBtns');
+  var koeScrimEl = document.getElementById('koeScrim');
+  var koeOpen = false;
+  var koeRun = null;          // teoriakokeen ajo: {kys:[], idx, oikein, vastattu}
+  var THEORY_FEE = 15;
+  var THEORY_COUNT = 10;      // montako kysymysta yhdessa kokeessa
+  var THEORY_PASS = 8;        // montako oikein vaaditaan
+  var INSPECTION_FEE = 25;
+
+  // ---- merkkien piirto ----
+  // Kaikki mitat ovat suhteessa kankaan kokoon, joten sama koodi piirtaa merkin niin
+  // paneeliin kuin mihin tahansa muuhun kokoon.
+  var SIGN_RED = '#c0392b', SIGN_WHITE = '#f4f1e8', SIGN_BLACK = '#17171a';
+  var SIGN_BLUE = '#1f4e9c', SIGN_YELLOW = '#f0c030';
+  function koeSignDraw(kind){
+    var c = koeSignEl, ctx = c.getContext('2d');
+    var S = c.width;
+    ctx.clearRect(0, 0, S, S);
+    var osat = String(kind).split(':');
+    var laji = osat[0], arvo = osat[1];
+    var cx = S/2, cy = S/2;
+    function ympyra(r, fill){ ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = fill; ctx.fill(); }
+    function rengas(r, lw, col){ ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.lineWidth = lw; ctx.strokeStyle = col; ctx.stroke(); }
+    function teksti(txt, px, col, dy){
+      ctx.fillStyle = col; ctx.font = '700 ' + Math.round(px) + 'px Arial, Helvetica, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, cx, cy + (dy || 0));
+    }
+    // kolmio: ylos (varoitus) tai alas (karkikolmio)
+    function kolmio(ylos, r, fill, reuna, lw){
+      var k = ylos ? -1 : 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + k*r);
+      ctx.lineTo(cx + r*0.92, cy - k*r*0.62);
+      ctx.lineTo(cx - r*0.92, cy - k*r*0.62);
+      ctx.closePath();
+      ctx.lineJoin = 'round';
+      if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+      if(reuna){ ctx.lineWidth = lw; ctx.strokeStyle = reuna; ctx.stroke(); }
+    }
+    function nuoli(x0, y0, x1, y1, leveys, col){
+      var dx = x1-x0, dy = y1-y0, d = Math.sqrt(dx*dx+dy*dy);
+      var ux = dx/d, uy = dy/d, px = -uy, py = ux;
+      var kanta = d*0.42;                       // karjen pituus
+      var hx = x1 - ux*kanta, hy = y1 - uy*kanta;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(x0 + px*leveys/2, y0 + py*leveys/2);
+      ctx.lineTo(hx + px*leveys/2, hy + py*leveys/2);
+      ctx.lineTo(hx + px*leveys, hy + py*leveys);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(hx - px*leveys, hy - py*leveys);
+      ctx.lineTo(hx - px*leveys/2, hy - py*leveys/2);
+      ctx.lineTo(x0 - px*leveys/2, y0 - py*leveys/2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    function ukko(x, y, k, col){
+      // yksinkertainen kavelija: paa, vartalo, kaksi jalkaa ja kasi
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = k*0.17; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(x, y - k*0.82, k*0.21, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x, y - k*0.60); ctx.lineTo(x - k*0.06, y + k*0.06);
+      ctx.moveTo(x - k*0.06, y + k*0.06); ctx.lineTo(x - k*0.34, y + k*0.72);
+      ctx.moveTo(x - k*0.06, y + k*0.06); ctx.lineTo(x + k*0.30, y + k*0.70);
+      ctx.moveTo(x + k*0.02, y - k*0.46); ctx.lineTo(x + k*0.34, y - k*0.16);
+      ctx.stroke();
+    }
+    function auto(x, y, w, col){
+      // tolkullinen sivukuva autosta: kori ja kaksi rengasta
+      var h = w*0.46;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(x - w/2, y + h*0.30);
+      ctx.lineTo(x - w/2, y - h*0.05);
+      ctx.lineTo(x - w*0.22, y - h*0.05);
+      ctx.lineTo(x - w*0.05, y - h*0.55);
+      ctx.lineTo(x + w*0.24, y - h*0.55);
+      ctx.lineTo(x + w*0.32, y - h*0.05);
+      ctx.lineTo(x + w/2, y - h*0.05);
+      ctx.lineTo(x + w/2, y + h*0.30);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(x - w*0.28, y + h*0.34, w*0.13, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + w*0.28, y + h*0.34, w*0.13, 0, Math.PI*2); ctx.fill();
+    }
+
+    if(laji === 'rajoitus' || laji === 'rajoitusPaattyy'){
+      ympyra(S*0.47, SIGN_WHITE);
+      if(laji === 'rajoitus'){
+        rengas(S*0.405, S*0.115, SIGN_RED);
+        teksti(arvo, S*0.44, SIGN_BLACK, S*0.02);
+      }else{
+        rengas(S*0.405, S*0.055, '#8a8a8a');
+        teksti(arvo, S*0.44, '#8a8a8a', S*0.02);
+        ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = S*0.035;
+        for(var li=-1; li<=1; li++){
+          ctx.beginPath();
+          ctx.moveTo(cx - S*0.30 + li*S*0.07, cy + S*0.30 + li*S*0.07);
+          ctx.lineTo(cx + S*0.30 + li*S*0.07, cy - S*0.30 + li*S*0.07);
+          ctx.stroke();
+        }
+      }
+    } else if(laji === 'stop'){
+      ctx.beginPath();
+      for(var i=0; i<8; i++){
+        var a = Math.PI/8 + i*Math.PI/4;
+        var x = cx + Math.cos(a)*S*0.47, y = cy + Math.sin(a)*S*0.47;
+        if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.fillStyle = SIGN_RED; ctx.fill();
+      ctx.lineWidth = S*0.035; ctx.strokeStyle = SIGN_WHITE; ctx.stroke();
+      teksti('STOP', S*0.23, SIGN_WHITE, S*0.01);
+    } else if(laji === 'karkikolmio'){
+      kolmio(false, S*0.46, SIGN_WHITE, SIGN_RED, S*0.085);
+    } else if(laji === 'etuajo'){
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI/4);
+      var d2 = S*0.33;
+      ctx.fillStyle = SIGN_WHITE; ctx.fillRect(-d2, -d2, d2*2, d2*2);
+      ctx.fillStyle = SIGN_YELLOW; ctx.fillRect(-d2*0.76, -d2*0.76, d2*1.52, d2*1.52);
+      ctx.restore();
+    } else if(laji === 'kiellettyAjosuunta'){
+      ympyra(S*0.47, SIGN_RED);
+      ctx.fillStyle = SIGN_WHITE;
+      ctx.fillRect(cx - S*0.30, cy - S*0.075, S*0.60, S*0.15);
+    } else if(laji === 'ajoKielletty'){
+      ympyra(S*0.47, SIGN_WHITE);
+      rengas(S*0.40, S*0.135, SIGN_RED);
+    } else if(laji === 'yksisuuntainen'){
+      ctx.fillStyle = SIGN_BLUE;
+      ctx.fillRect(cx - S*0.46, cy - S*0.24, S*0.92, S*0.48);
+      nuoli(cx - S*0.30, cy, cx + S*0.33, cy, S*0.13, SIGN_WHITE);
+    } else if(laji === 'suojatie'){
+      ctx.fillStyle = SIGN_BLUE;
+      ctx.fillRect(cx - S*0.42, cy - S*0.42, S*0.84, S*0.84);
+      kolmio(true, S*0.33, SIGN_WHITE, null, 0);
+      ukko(cx + S*0.01, cy + S*0.05, S*0.21, SIGN_BLACK);
+    } else if(laji === 'pysakointiKielletty'){
+      ympyra(S*0.47, SIGN_BLUE);
+      rengas(S*0.40, S*0.075, SIGN_RED);
+      ctx.strokeStyle = SIGN_RED; ctx.lineWidth = S*0.075;
+      ctx.beginPath();
+      ctx.moveTo(cx - S*0.28, cy + S*0.28); ctx.lineTo(cx + S*0.28, cy - S*0.28);
+      ctx.stroke();
+    } else if(laji === 'pysakointi'){
+      ctx.fillStyle = SIGN_BLUE;
+      ctx.fillRect(cx - S*0.42, cy - S*0.42, S*0.84, S*0.84);
+      teksti('P', S*0.60, SIGN_WHITE, S*0.02);
+    } else if(laji === 'kiertoliittyma'){
+      ympyra(S*0.47, SIGN_BLUE);
+      var kR = S*0.255, kLw = S*0.072, kLoppu = Math.PI*0.50;
+      for(var ki=0; ki<3; ki++){
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(ki*Math.PI*2/3);
+        ctx.strokeStyle = SIGN_WHITE; ctx.lineWidth = kLw; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.arc(0, 0, kR, Math.PI*0.10, kLoppu); ctx.stroke();
+        // nuolenkarki kaaren paahan, kulkusuuntaan (tangentti)
+        var kx = Math.cos(kLoppu)*kR, ky = Math.sin(kLoppu)*kR;
+        var tx = -Math.sin(kLoppu), ty = Math.cos(kLoppu);     // tangentti
+        var sx = Math.cos(kLoppu), sy = Math.sin(kLoppu);      // sade ulospain
+        ctx.fillStyle = SIGN_WHITE;
+        ctx.beginPath();
+        ctx.moveTo(kx + tx*kLw*1.6, ky + ty*kLw*1.6);
+        ctx.lineTo(kx + sx*kLw*1.05, ky + sy*kLw*1.05);
+        ctx.lineTo(kx - sx*kLw*1.05, ky - sy*kLw*1.05);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    } else if(laji === 'varoitusRisteys'){
+      kolmio(true, S*0.46, SIGN_WHITE, SIGN_RED, S*0.075);
+      ctx.fillStyle = SIGN_BLACK;
+      ctx.fillRect(cx - S*0.035, cy - S*0.20, S*0.07, S*0.44);
+      ctx.fillRect(cx - S*0.20, cy - S*0.01, S*0.40, S*0.07);
+    } else if(laji === 'tasoristeys'){
+      ctx.save(); ctx.translate(cx, cy);
+      for(var ri=0; ri<2; ri++){
+        ctx.save(); ctx.rotate(ri ? -Math.PI/4 : Math.PI/4);
+        ctx.fillStyle = SIGN_RED;  ctx.fillRect(-S*0.46, -S*0.085, S*0.92, S*0.17);
+        ctx.fillStyle = SIGN_WHITE;ctx.fillRect(-S*0.42, -S*0.052, S*0.84, S*0.104);
+        ctx.restore();
+      }
+      ctx.restore();
+    } else if(laji === 'mutka'){
+      kolmio(true, S*0.46, SIGN_WHITE, SIGN_RED, S*0.075);
+      ctx.strokeStyle = SIGN_BLACK; ctx.lineWidth = S*0.065; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - S*0.02, cy + S*0.21);
+      ctx.quadraticCurveTo(cx + S*0.21, cy + S*0.06, cx - S*0.02, cy - S*0.07);
+      ctx.stroke();
+      nuoli(cx - S*0.02, cy - S*0.02, cx - S*0.02, cy - S*0.19, S*0.09, SIGN_BLACK);
+    } else if(laji === 'lapsia'){
+      kolmio(true, S*0.46, SIGN_WHITE, SIGN_RED, S*0.075);
+      ukko(cx - S*0.10, cy + S*0.11, S*0.17, SIGN_BLACK);
+      ukko(cx + S*0.13, cy + S*0.13, S*0.13, SIGN_BLACK);
+    } else if(laji === 'taajama'){
+      ctx.fillStyle = SIGN_BLUE;
+      ctx.fillRect(cx - S*0.44, cy - S*0.36, S*0.88, S*0.72);
+      ctx.fillStyle = SIGN_WHITE;
+      // kolme taloa: pysty seina ja harjakatto
+      var talot = [[-0.22, 0.20, 0.16], [0.02, 0.26, 0.19], [0.26, 0.17, 0.14]];
+      for(var ti=0; ti<talot.length; ti++){
+        var tx = cx + S*talot[ti][0], th = S*talot[ti][1], tw = S*talot[ti][2];
+        var ty = cy + S*0.22;
+        ctx.fillRect(tx - tw/2, ty - th, tw, th);
+        ctx.beginPath();
+        ctx.moveTo(tx - tw*0.62, ty - th);
+        ctx.lineTo(tx, ty - th - tw*0.45);
+        ctx.lineTo(tx + tw*0.62, ty - th);
+        ctx.closePath(); ctx.fill();
+      }
+    } else if(laji === 'pakollinenAjosuunta'){
+      ympyra(S*0.47, SIGN_BLUE);
+      nuoli(cx, cy + S*0.29, cx, cy - S*0.31, S*0.145, SIGN_WHITE);
+    } else if(laji === 'ohituskielto'){
+      ympyra(S*0.47, SIGN_WHITE);
+      auto(cx - S*0.165, cy + S*0.04, S*0.31, SIGN_RED);
+      auto(cx + S*0.165, cy + S*0.04, S*0.31, SIGN_BLACK);
+      rengas(S*0.405, S*0.085, SIGN_RED);
+    }
+  }
+
+  // ---- kysymykset ----
+  // merkki:null tarkoittaa pelkkaa tekstikysymysta. oikea on indeksi vaihtoehdoissa.
+  var THEORY_Q = [
+    {merkki:'rajoitus:60', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Suurin sallittu nopeus on 60 km/h', 'Pienin sallittu nopeus on 60 km/h',
+        'Suositusnopeus on 60 km/h', 'Tietä on jäljellä 60 kilometriä'], oikea:0,
+     selitys:'Rajoitusmerkki kertoo suurimman sallitun nopeuden. Mopolla saa silti ajaa enintään 45 km/h.'},
+    {merkki:'rajoitusPaattyy:60', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Nopeusrajoitus päättyy', 'Nopeusrajoitus alkaa', 'Pysäköinti sallittu', 'Ohituskielto päättyy'], oikea:0,
+     selitys:'Yliviivattu rajoitusmerkki päättää rajoituksen. Seuraavaksi on voimassa yleisrajoitus tai uusi merkki.'},
+    {merkki:'stop', kysymys:'Mitä merkki vaatii sinulta?',
+     v:['Pysähdyn kokonaan ja väistän muuta liikennettä', 'Hidastan ja jatkan jos näen vapaaksi',
+        'Väistän vain oikealta tulevia', 'Pysähdyn vain jos muita on näkyvissä'], oikea:0,
+     selitys:'Pakollinen pysäyttäminen tarkoittaa täyttä pysähdystä, vaikka tie olisi tyhjä.'},
+    {merkki:'karkikolmio', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Väistämisvelvollisuus risteyksessä', 'Olet etuajo-oikeutetulla tiellä',
+        'Pakollinen pysäyttäminen', 'Varoitus risteyksestä, ei vaikuta väistämiseen'], oikea:0,
+     selitys:'Kärkikolmio velvoittaa väistämään risteävää liikennettä, mutta pysähtyä ei ole pakko jos tie on vapaa.'},
+    {merkki:'etuajo', kysymys:'Mitä keltainen vinoneliö tarkoittaa?',
+     v:['Olet etuajo-oikeutetulla tiellä', 'Väistämisvelvollisuus risteyksessä',
+        'Taajama alkaa', 'Pysäköintialue'], oikea:0,
+     selitys:'Merkki kertoo että sivuteiltä tulevat väistävät sinua. Se ei silti anna oikeutta ajaa holtittomasti.'},
+    {merkki:'kiellettyAjosuunta', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Ajo kielletty tähän suuntaan', 'Pysäköinti kielletty', 'Ohituskielto', 'Yksisuuntainen tie'], oikea:0,
+     selitys:'Punainen kilpi valkoisella palkilla kieltää ajon kyseiseen suuntaan - usein yksisuuntaisen kadun väärä pää.'},
+    {merkki:'ajoKielletty', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Ajoneuvolla ajo kielletty', 'Pysäköinti kielletty', 'Pysäyttäminen kielletty', 'Moottoritie alkaa'], oikea:0,
+     selitys:'Tyhjä punareunainen ympyrä kieltää ajoneuvolla ajon molempiin suuntiin.'},
+    {merkki:'yksisuuntainen', kysymys:'Mitä merkki kertoo?',
+     v:['Tie on yksisuuntainen nuolen suuntaan', 'Pakollinen ajosuunta nuolen mukaan',
+        'Ohituskaista alkaa', 'Kiertoliittymä edessä'], oikea:0,
+     selitys:'Sininen suorakaide valkoisella nuolella kertoo yksisuuntaisen tien. Vastaan ei siis pitäisi tulla ketään.'},
+    {merkki:'pakollinenAjosuunta', kysymys:'Mitä sininen nuolimerkki käskee?',
+     v:['Ajettava nuolen osoittamaan suuntaan', 'Suositeltava ajosuunta',
+        'Yksisuuntainen tie', 'Ohituskielto päättyy'], oikea:0,
+     selitys:'Siniset ympyrämerkit ovat määräyksiä: nuolen suuntaan on pakko ajaa.'},
+    {merkki:'suojatie', kysymys:'Mitä sinun pitää tehdä tämän merkin kohdalla?',
+     v:['Antaa tietä suojatielle astuvalle jalankulkijalle', 'Pysähtyä aina kokonaan',
+        'Väistää vain oikealta tulevia', 'Ei mitään, jalankulkija väistää'], oikea:0,
+     selitys:'Suojatiellä jalankulkijalla on etuajo-oikeus. Ajoneuvon on hidastettava ja tarvittaessa pysähdyttävä.'},
+    {merkki:'pysakointiKielletty', kysymys:'Mitä merkki kieltää?',
+     v:['Pysäköinnin merkin vaikutusalueella', 'Kaiken pysähtymisen',
+        'Ajon kyseiseen suuntaan', 'Ohittamisen'], oikea:0,
+     selitys:'Yksi punainen vinoviiva sinisessä ympyrässä kieltää pysäköinnin. Lyhyt pysähtyminen on sallittu.'},
+    {merkki:'kiertoliittyma', kysymys:'Kuka väistää kiertoliittymässä?',
+     v:['Liittymään saapuva väistää kiertotilassa ajavaa', 'Kiertotilassa ajava väistää saapuvaa',
+        'Oikealta tuleva väistää aina', 'Isompi ajoneuvo saa mennä ensin'], oikea:0,
+     selitys:'Kiertoliittymään saavutaan aina väistämisvelvollisena. Poistuessa näytetään oikealle vilkkua.'},
+    {merkki:'varoitusRisteys', kysymys:'Mistä merkki varoittaa?',
+     v:['Edessä on tienristeys', 'Edessä on rautatien tasoristeys',
+        'Edessä on suojatie', 'Edessä on tietyö'], oikea:0,
+     selitys:'Varoitusmerkki risteyksestä. Risteyksessä väistetään oikealta tulevaa, ellei muuta ole merkitty.'},
+    {merkki:'tasoristeys', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Rautatien tasoristeys ilman puomeja', 'Rautatien tasoristeys jossa on puomit',
+        'Tie päättyy', 'Vaarallinen risteys'], oikea:0,
+     selitys:'Andreaanristi varoittaa tasoristeyksestä. Ilman puomeja juna on aina etuajo-oikeutettu.'},
+    {merkki:'mutka', kysymys:'Mistä merkki varoittaa?',
+     v:['Edessä on mutka', 'Edessä on kiertoliittymä',
+        'Tie kapenee', 'Edessä on liukas ajorata'], oikea:0,
+     selitys:'Mutkamerkki kertoo kaarteen suunnan. Nopeus hiljennetään ennen mutkaa, ei mutkassa.'},
+    {merkki:'lapsia', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Varoitus lapsista - hiljennä vauhtia', 'Suojatie',
+        'Leikkikenttä, ajo kielletty', 'Koulun pysäköintialue'], oikea:0,
+     selitys:'Merkki on yleensä koulun tai leikkipaikan lähellä. Lapsi voi juosta tielle varoittamatta.'},
+    {merkki:'taajama', kysymys:'Mitä merkki tarkoittaa?',
+     v:['Taajama alkaa, nopeusrajoitus 50 km/h ellei toisin ole merkitty',
+        'Taajama päättyy', 'Pysäköintialue', 'Asuinalue jossa ajo on kielletty'], oikea:0,
+     selitys:'Taajamamerkki asettaa yleisrajoituksen 50 km/h. Se on voimassa kunnes taajama päättyy.'},
+    {merkki:'ohituskielto', kysymys:'Mitä merkki kieltää?',
+     v:['Moottorikäyttöisen ajoneuvon ohittamisen', 'Pysäköinnin',
+        'Kääntymisen vasemmalle', 'Ajon kahdella rinnakkain'], oikea:0,
+     selitys:'Ohituskielto on voimassa seuraavaan risteykseen tai kieltoa päättävään merkkiin asti.'},
+    {merkki:null, kysymys:'Mikä on mopon suurin sallittu rakenteellinen nopeus Suomessa?',
+     v:['45 km/h', '25 km/h', '60 km/h', 'Ei rajaa jos kypärä on päässä'], oikea:0,
+     selitys:'Mopo saa olla rakenteeltaan enintään 45 km/h. Virittäminen sen yli tekee ajoneuvosta luvattoman.'},
+    {merkki:null, kysymys:'Kenelle kypärä on pakollinen mopossa?',
+     v:['Sekä kuljettajalle että matkustajalle', 'Vain kuljettajalle',
+        'Vain alle 18-vuotiaille', 'Vain taajaman ulkopuolella'], oikea:0,
+     selitys:'Kypärä on pakollinen kaikille mopon kyydissä oleville. Ilman sitä tulee sakko.'},
+    {merkki:null, kysymys:'Saako mopolla ajaa pyörätiellä?',
+     v:['Ei, ellei merkki erikseen salli sitä', 'Saa aina',
+        'Saa jos pyöriä ei näy', 'Saa taajaman ulkopuolella'], oikea:0,
+     selitys:'Mopo kuuluu ajoradalle. Pyörätiellä ajo on sallittua vain jos lisäkilpi sallii mopot.'},
+    {merkki:null, kysymys:'Milloin mopon ajovalon on oltava päällä?',
+     v:['Aina ajettaessa', 'Vain pimeällä', 'Vain taajamassa', 'Vain sateella'], oikea:0,
+     selitys:'Valojen on oltava päällä ympäri vuorokauden. Valo ei ole sinua varten vaan muita varten.'},
+    {merkki:null, kysymys:'Mitä teet ennen kuin käännyt risteyksessä?',
+     v:['Näytän vilkkua ja tarkistan takaa tulevan liikenteen', 'Käännyn nopeasti ennen kuin muut ehtivät',
+        'Näytän vilkkua vasta käännöksen aikana', 'Riittää että katson peilistä'], oikea:0,
+     selitys:'Suuntamerkki näytetään ajoissa ja oma takatila tarkistetaan. Vilkku ei yksin anna oikeutta kääntyä.'},
+    {merkki:null, kysymys:'Mopo ei täytä katsastuksen vaatimuksia. Mitä se tarkoittaa?',
+     v:['Sillä ei saa ajaa tiellä ennen kuin viat on korjattu', 'Sillä saa ajaa varovasti',
+        'Sillä saa ajaa vain päiväsaikaan', 'Sillä saa ajaa jos sakon maksaa etukäteen'], oikea:0,
+     selitys:'Liikennekelvottomalla ajoneuvolla ei ajeta. Jarrut, renkaat ja valot ovat niitä osia joista ei tingitä.'}
+  ];
+
+  function koeShowPanel(){
+    koePanelEl.hidden = false;
+    if(koeScrimEl) koeScrimEl.hidden = false;
+    if(app) app.classList.add('koeing');
+    koeOpen = true;
+    input.fwd = input.back = input.left = input.right = false;
+  }
+  function koeClose(){
+    koePanelEl.hidden = true;
+    if(koeScrimEl) koeScrimEl.hidden = true;
+    if(app) app.classList.remove('koeing');
+    koeOpen = false;
+    koeRun = null;
+    koeSignEl.hidden = true;
+    koeInfoEl.hidden = true;
+  }
+  function koeBtn(teksti, fn, toinen){
+    var b = document.createElement('button');
+    b.className = 'koeBtn' + (toinen ? ' toinen' : '');
+    b.type = 'button';
+    b.textContent = teksti;
+    b.addEventListener('click', fn);
+    koeBtnsEl.appendChild(b);
+    return b;
+  }
+
+  // ---- teoriakoe ----
+  function theorySummary(){
+    if(theoryPassed) return 'Teoriakoe suoritettu (' + theoryBest + '/' + THEORY_COUNT + ').';
+    if(theoryTries > 0) return 'Teoriakoe hylätty, paras tulos ' + theoryBest + '/' + THEORY_COUNT + '.';
+    return 'Teoriakoetta ei ole vielä tehty.';
+  }
+  function openTheory(){
+    if(money < THEORY_FEE){
+      showToast(true, 'Teoriakoemaksu ' + THEORY_FEE + ' €',
+        'Kassassa on ' + Math.round(money) + ' €. Käy tienaamassa ensin.', 4200);
+      return;
+    }
+    // sekoitetaan kysymykset ja otetaan niista kymmenen
+    var pakka = THEORY_Q.slice();
+    for(var i=pakka.length-1; i>0; i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = pakka[i]; pakka[i] = pakka[j]; pakka[j] = tmp;
+    }
+    money -= THEORY_FEE;
+    updateMoneyDisplay();
+    theoryTries++;
+    koeRun = {kys: pakka.slice(0, THEORY_COUNT), idx: 0, oikein: 0, vastattu: false};
+    koeShowPanel();
+    theoryRender();
+    saveGame();
+  }
+  function theoryRender(){
+    var q = koeRun.kys[koeRun.idx];
+    koeTitleEl.textContent = 'Teoriakoe';
+    koeStepEl.textContent = 'Kysymys ' + (koeRun.idx+1) + '/' + koeRun.kys.length +
+                            ' · oikein ' + koeRun.oikein + ' · läpi vaaditaan ' + THEORY_PASS;
+    if(q.merkki){ koeSignEl.hidden = false; koeSignDraw(q.merkki); }
+    else koeSignEl.hidden = true;
+    koeTextEl.textContent = q.kysymys;
+    koeInfoEl.hidden = true;
+    koeListEl.innerHTML = '';
+    koeBtnsEl.innerHTML = '';
+    koeRun.vastattu = false;
+    // Vaihtoehdot sekoitetaan kerran kysymysta kohden ja muistetaan, jotta oikea vastaus
+    // ei ole aina ensimmaisena rivina.
+    if(!q._jarjestys){
+      var idx = [];
+      for(var a=0; a<q.v.length; a++) idx.push(a);
+      for(var b=idx.length-1; b>0; b--){
+        var c = Math.floor(Math.random()*(b+1));
+        var t2 = idx[b]; idx[b] = idx[c]; idx[c] = t2;
+      }
+      q._jarjestys = idx;
+    }
+    for(var n=0; n<q._jarjestys.length; n++){
+      (function(rivi, numero){
+        var btn = document.createElement('button');
+        btn.className = 'koeChoice';
+        btn.type = 'button';
+        btn.innerHTML = '<span class="koeNum">' + (numero+1) + '</span>' + q.v[rivi];
+        btn.addEventListener('click', function(){ theoryAnswer(numero); });
+        koeListEl.appendChild(btn);
+      })(q._jarjestys[n], n);
+    }
+  }
+  function theoryAnswer(numero){
+    if(!koeRun || koeRun.vastattu) return;
+    var q = koeRun.kys[koeRun.idx];
+    var valittu = q._jarjestys[numero];
+    var oikein = (valittu === q.oikea);
+    koeRun.vastattu = true;
+    if(oikein) koeRun.oikein++;
+    var napit = koeListEl.children;
+    for(var i=0; i<napit.length; i++){
+      napit[i].disabled = true;
+      if(q._jarjestys[i] === q.oikea) napit[i].className = 'koeChoice oikein';
+      else if(i === numero) napit[i].className = 'koeChoice vaarin';
+    }
+    koeInfoEl.hidden = false;
+    koeInfoEl.textContent = (oikein ? '✔ Oikein. ' : '✘ Väärin. ') + q.selitys;
+    koeBtnsEl.innerHTML = '';
+    var viimeinen = (koeRun.idx >= koeRun.kys.length - 1);
+    koeBtn(viimeinen ? 'Katso tulos ▸' : 'Seuraava ▸', theoryNext);
+  }
+  function theoryNext(){
+    if(!koeRun || !koeRun.vastattu) return;
+    if(koeRun.idx >= koeRun.kys.length - 1){ theoryFinish(); return; }
+    koeRun.idx++;
+    theoryRender();
+  }
+  function theoryFinish(){
+    var oikein = koeRun.oikein, yht = koeRun.kys.length;
+    var lapi = (oikein >= THEORY_PASS);
+    if(oikein > theoryBest) theoryBest = oikein;
+    if(lapi) theoryPassed = true;
+    koeRun = null;
+    koeSignEl.hidden = true;
+    koeTitleEl.textContent = lapi ? 'Teoriakoe hyväksytty' : 'Teoriakoe hylätty';
+    koeStepEl.textContent = 'Tulos ' + oikein + '/' + yht + ' · läpi vaaditaan ' + THEORY_PASS;
+    koeTextEl.textContent = lapi
+      ? 'Valvoja leimaa paperin. Merkit ovat hallussa - seuraavaksi mopo katsastukseen ja sitten ajokokeeseen.'
+      : 'Valvoja pudistaa päätään. Kokeen voi uusia heti, mutta maksu menee joka kerta.';
+    koeListEl.innerHTML = '';
+    koeInfoEl.hidden = false;
+    koeInfoEl.textContent = lapi
+      ? 'Teoriakoe on voimassa pysyvästi, myös ensi kesänä.'
+      : 'Vinkki: merkin muoto kertoo paljon. Kolmio varoittaa, ympyrä määrää ja sininen neliö opastaa.';
+    koeBtnsEl.innerHTML = '';
+    if(!lapi) koeBtn('Uusi koe (' + THEORY_FEE + ' €)', function(){ koeClose(); openTheory(); });
+    koeBtn('Sulje', koeClose, true);
+    if(lapi) showToast(false, '🪪 Teoriakoe hyväksytty', 'Tulos ' + oikein + '/' + yht + '. Seuraavaksi katsastus.', 5000);
+    saveGame();
+  }
+
+  // ---- katsastus ----
+  function inspectionItems(){
+    var lista = [];
+    function add(ok, teksti, korjaus){ lista.push({ok:!!ok, teksti:teksti, korjaus:korjaus}); }
+    var jarru = partById('jarrut'), rengas = partById('renkaat');
+    var akku = partById('akku'), pako = partById('pakoputki');
+    var cond = 0;
+    for(var i=0; i<parts.length; i++) cond += parts[i].condition;
+    cond = parts.length ? cond/parts.length : 0;
+    var vauriot = (typeof damageLevel === 'function') ? damageLevel() : 0;
+    add(mopedAssembled(), 'Mopo on kasassa ja ajokunnossa', 'Asenna puuttuvat osat tallissa.');
+    add(plateOn, 'Rekisterikilvet paikallaan', 'Asenna kilvet takaisin.');
+    add(jarru && jarru.condition >= 40, 'Jarrupalat kunnossa (väh. 40 %)', 'Vaihda tai korjaa jarrupalat.');
+    add(rengas && rengas.condition >= 35, 'Renkaat kunnossa (väh. 35 %)', 'Vaihda renkaat.');
+    add(akku && akku.condition >= 20, 'Valot ja akku toimivat (väh. 20 %)', 'Vaihda akku.');
+    add(!pako || pako.tierIndex === 0, 'Äänenvaimennin on vakio', 'Kilpaputki ei läpäise melumittausta - vaihda vakioputki takaisin.');
+    add(vauriot < 0.45, 'Kori ja peilit ehjät (vauriot alle 45 %)', 'Oikaise pellit tallissa.');
+    add(cond >= 45, 'Mopon keskikunto väh. 45 % (nyt ' + Math.round(cond) + ' %)', 'Huolla osat tallissa.');
+    return lista;
+  }
+  function inspectionReady(){
+    var l = inspectionItems();
+    for(var i=0; i<l.length; i++) if(!l[i].ok) return false;
+    return true;
+  }
+  // Katsastus on voimassa kesan loppuun, mutta raukeaa jos mopo ajetaan ramaksi tai siihen
+  // vaihdetaan kilpaputki. Muuten lapun saisi kerran ja sen jalkeen mopoa voisi kohdella miten vain.
+  function inspectionValid(){
+    if(inspectionSummer !== summerNumber) return false;
+    var pako = partById('pakoputki');
+    if(pako && pako.tierIndex > 0) return false;
+    if(!plateOn) return false;
+    if(typeof damageLevel === 'function' && damageLevel() > 0.45) return false;
+    return true;
+  }
+  function inspectionWhyVoid(){
+    if(inspectionSummer !== summerNumber) return 'Mopoa ei ole katsastettu tänä kesänä.';
+    var pako = partById('pakoputki');
+    if(pako && pako.tierIndex > 0) return 'Katsastus raukesi: mopossa on kilpaputki.';
+    if(!plateOn) return 'Katsastus raukesi: rekisterikilvet on irrotettu.';
+    if(typeof damageLevel === 'function' && damageLevel() > 0.45) return 'Katsastus raukesi: mopo on liian pahasti kolhiintunut.';
+    return '';
+  }
+  function openInspection(){
+    var lista = inspectionItems();
+    var puutteita = 0;
+    for(var i=0; i<lista.length; i++) if(!lista[i].ok) puutteita++;
+    koeShowPanel();
+    koeSignEl.hidden = true;
+    koeTitleEl.textContent = 'Katsastus';
+    koeStepEl.textContent = inspectionValid()
+      ? 'Mopo on katsastettu tälle kesälle.'
+      : (puutteita ? puutteita + ' kohtaa hylkäisi mopon' : 'Kaikki kohdat kunnossa');
+    koeTextEl.textContent = 'Katsastaja kiertää mopon ja käy läpi kahdeksan kohtaa. Tarkastus maksaa ' +
+                            INSPECTION_FEE + ' € eikä maksua palauteta hylkäyksestä.';
+    koeListEl.innerHTML = '';
+    for(var j=0; j<lista.length; j++){
+      var rivi = document.createElement('div');
+      rivi.className = 'koeRivi ' + (lista[j].ok ? 'ok' : 'ei');
+      rivi.innerHTML = '<b>' + (lista[j].ok ? '✔' : '✘') + '</b><span>' + lista[j].teksti +
+                       (lista[j].ok ? '' : ' — ' + lista[j].korjaus) + '</span>';
+      koeListEl.appendChild(rivi);
+    }
+    koeInfoEl.hidden = false;
+    koeInfoEl.textContent = inspectionValid()
+      ? 'Voimassa oleva katsastus riittää ajokokeeseen.'
+      : 'Katsastus on voimassa kesän loppuun. Se raukeaa jos kilvet irrotetaan, mopoon vaihdetaan kilpaputki tai pelti menee pahasti lommolle.';
+    koeBtnsEl.innerHTML = '';
+    var nappi = koeBtn('Katsasta (' + INSPECTION_FEE + ' €)', runInspection);
+    if(money < INSPECTION_FEE) nappi.disabled = true;
+    koeBtn('Sulje', koeClose, true);
+  }
+  function runInspection(){
+    if(money < INSPECTION_FEE) return;
+    money -= INSPECTION_FEE;
+    updateMoneyDisplay();
+    var lapi = inspectionReady();
+    if(lapi) inspectionSummer = summerNumber;
+    var lista = inspectionItems();
+    koeTitleEl.textContent = lapi ? 'Katsastus hyväksytty' : 'Katsastus hylätty';
+    koeStepEl.textContent = lapi ? 'Mopo on nyt katsastettu kesän loppuun' : 'Korjaa viat ja tule uudestaan';
+    koeTextEl.textContent = lapi
+      ? 'Katsastaja lyö leiman paperiin. Mopo on liikennekelpoinen ja ajokokeeseen voi ilmoittautua.'
+      : 'Katsastaja laskee kynän. Hylätyt kohdat on korjattava ennen uutta yritystä.';
+    koeListEl.innerHTML = '';
+    for(var j=0; j<lista.length; j++){
+      if(lista[j].ok) continue;
+      var rivi = document.createElement('div');
+      rivi.className = 'koeRivi ei';
+      rivi.innerHTML = '<b>✘</b><span>' + lista[j].teksti + ' — ' + lista[j].korjaus + '</span>';
+      koeListEl.appendChild(rivi);
+    }
+    koeInfoEl.hidden = false;
+    koeInfoEl.textContent = 'Maksu ' + INSPECTION_FEE + ' € veloitettiin.';
+    koeBtnsEl.innerHTML = '';
+    koeBtn('Sulje', koeClose, true);
+    showToast(!lapi, lapi ? '🔍 Katsastus hyväksytty' : '🔍 Katsastus hylätty',
+      lapi ? 'Mopo on liikennekelpoinen tämän kesän.' : 'Korjaa hylätyt kohdat ja tule uudestaan.', 5000);
+    saveGame();
+  }
 
   function openPauseMenu(){
     if(!gameStarted || gamePaused) return;
