@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:113-->
-<!--JONNE-NAME:Jonnen ajokoe 113-->
-<!--JONNE-DATE:2026-10-09-->
-<!--JONNE-NOTES:Vauriot näkyviin: naarmut, peilit ja vääntynyt keula|Nuotio miitissä, neljä radiokanavaa ja ikkunat syttyvät illalla|Kyläläisille kasvot ja ilmeet puhuessa|Oma koti: televisio, jääkaappi ja julisteet|Valokuvaustila P:llä ja puhelimen galleria-->
+<!--JONNE-VERSION:114-->
+<!--JONNE-NAME:Jonnen ajokoe 114-->
+<!--JONNE-DATE:2026-10-14-->
+<!--JONNE-NOTES:Moottorin kasaus: kahdeksan osaa nostetaan työpöydältä ja asennetaan moottoripukkiin|Oikea järjestys pakotettu: peli kertoo mikä osa puuttuu alta|Pultattavat osat menevät pulttiminipelin läpi|Valmis moottori täyttää mopon sylinteriosan-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -8658,6 +8658,10 @@
   function fillShelfWithOriginals(){
     garageShelf.length = 0;
     parts.forEach(function(p){
+      // Sylinteri EI ole hyllylla: se syntyy kun moottori kasataan tyopoydalla
+      // kahdeksasta osasta (ks. MOOTTORIN KASAUS). Muuten sen saisi paikalleen
+      // yhdella napin painalluksella ja koko kasaus menisi ohi.
+      if(p.id === 'sylinteri') return;
       if(!p.installed) garageShelf.push({partId:p.id, kind:'orig', tierIndex:p.tierIndex});
     });
   }
@@ -8968,6 +8972,441 @@
     showToast(true, 'Mopo ei ole tallissa', 'Aja mopo autotallille, siellä on työpöytä ja työkalut.', 3200);
     return false;
   }
+  // ==========================================================================
+  // ---- MOOTTORIN KASAUS ----
+  // Mopon kasaus oli tahan asti listarivien painelua: "Asenna sylinteri" ja osa
+  // ilmestyi. Moottori on nyt oma projektinsa, joka tehdaan tyopoydalla kasin:
+  // kahdeksan osaa makaa poydalla omina kappaleinaan, ne nostetaan yksi kerrallaan
+  // kateen ja asennetaan moottoripukkiin. Pelaaja NAKEE moottorin kasvavan.
+  //
+  // Jarjestys on pakotettu riippuvuuksilla eika juoksevalla numerolla: kytkimen saa
+  // paikalleen heti kampikammion jalkeen, vaikka sylinteri olisi viela asentamatta.
+  // Vaarasta osasta kerrotaan mika puuttuu ALTA - "ei kay" ilman syyta on turhauttavaa.
+  //
+  // Valmis moottori tayttaa parts-listan 'sylinteri'-osan, joten mopon kasaus,
+  // viritysketju ja tallennukset toimivat tasmalleen kuten ennenkin.
+  // ==========================================================================
+  var ENGINE_PARTS = [
+    {id:'kammio',      nimi:'Kampikammio',        bolts:0, vaatii:null,
+     vihje:'Moottorin runko. Kaikki muu kiinnittyy tahan.'},
+    {id:'akseli',      nimi:'Kampiakseli',        bolts:0, vaatii:'kammio',
+     vihje:'Menee kampikammion laakereihin.'},
+    {id:'vauhtipyora', nimi:'Vauhtipyora',        bolts:2, vaatii:'akseli',
+     vihje:'Kiristetaan kampiakselin paahan.'},
+    {id:'manta',       nimi:'Manta ja kiertokanki', bolts:0, vaatii:'akseli',
+     vihje:'Kiertokanki kiinni kampiakseliin.'},
+    {id:'sylinteriosa',nimi:'Sylinteri',          bolts:4, vaatii:'manta',
+     vihje:'Liukuu mannan paalle, pultit kammioon.'},
+    {id:'kansi',       nimi:'Sylinterinkansi',    bolts:4, vaatii:'sylinteriosa',
+     vihje:'Sylinterin paalle, neljalla pultilla.'},
+    {id:'kytkin',      nimi:'Kytkin',             bolts:3, vaatii:'kammio',
+     vihje:'Kampikammion oikealle kyljelle.'},
+    {id:'kotelo',      nimi:'Kytkinkotelo',       bolts:4, vaatii:'kytkin',
+     vihje:'Kansi kytkimen paalle.'}
+  ];
+  // Asennuspaikka moottorin omassa koordinaatistossa (metreina, y ylos).
+  var ENGINE_SPOTS = {
+    kammio:      [0,     0.13,  0],
+    akseli:      [0,     0.155, 0.015],
+    vauhtipyora: [-0.235, 0.155, 0],
+    manta:       [0,     0.27,  0],
+    sylinteriosa:[0,     0.37,  0],
+    kansi:       [0,     0.487, 0],
+    kytkin:      [0.185, 0.155, 0],
+    kotelo:      [0.225, 0.155, 0]
+  };
+  // Lepopaikat tyopoydalla: kaksi riviaa poydan VASEMMALLA puoliskolla. Oikea puoli
+  // jatetaan vapaaksi moottoripukille, ja keskusta sille kohdalle jossa E avaa hyllyn -
+  // muuten osan nostaminen soisi hyllypaneelin avaamisen.
+  var ENGINE_SLOTS = [
+    [-2.60, -3.00], [-2.10, -3.00], [-1.60, -3.00], [-1.10, -3.00],
+    [-2.60, -3.45], [-2.10, -3.45], [-1.60, -3.45], [-1.10, -3.45]
+  ];
+  // Osakohtainen lepokorkeus ja -asento poydalla. Yhteinen korkeus ei kelpaa: manta
+  // seisoisi pystyssa ja sen kiertokanki menisi poydan lapi.
+  var ENGINE_REST = {
+    kammio:      {y:0.14, rx:0},
+    akseli:      {y:0.10, rx:0},
+    vauhtipyora: {y:0.13, rx:0},
+    manta:       {y:0.07, rx:Math.PI/2},
+    sylinteriosa:{y:0.10, rx:0},
+    kansi:       {y:0.09, rx:0},
+    kytkin:      {y:0.11, rx:0},
+    kotelo:      {y:0.13, rx:0}
+  };
+  var ENGINE_STAND = [1.90, -3.25];     // moottoripukin paikka poydalla
+  var ENGINE_BENCH_Y = 0.92;            // tyopoydan pinta
+  var ENGINE_PICK_R = 1.5;              // kuinka lahelta osan voi nostaa
+  var ENGINE_INSTALL_R = 1.55;          // kuinka lahelta moottoriin asennetaan
+
+  var engineInstalled = {};             // id -> true
+  var engineCarry = null;               // kannossa olevan osan id
+  var engineRoot = null;                // pukin paalla oleva moottoriryhma
+  var engineMeshes = {};                // id -> mesh
+  var engineReadyShown = false;
+
+  function engineMat(col, rough, metal){
+    return new THREE.MeshStandardMaterial({color:col, roughness:rough, metalness:metal, flatShading:true});
+  }
+  // Yksi osa = yksi ryhma. Muodot ovat tahallaan karkeita: pelin muukin kalusto on
+  // samaa low poly -tyylia, ja pienet osat luetaan muodosta eika yksityiskohdista.
+  function makeEnginePart(id){
+    var g = new THREE.Group();
+    var alu   = engineMat(0x9aa0a6, 0.55, 0.35);
+    var tumma = engineMat(0x4e5358, 0.6, 0.4);
+    var teras = engineMat(0xc8ccd0, 0.35, 0.7);
+    var kupari= engineMat(0xb07a46, 0.45, 0.5);
+    var i;
+    if(id === 'kammio'){
+      // hieman tummempi kuin sylinteri, jotta osat erottuvat toisistaan valokuvassakin
+      var kammioMat = engineMat(0x848b91, 0.6, 0.3);
+      var runko = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.22), kammioMat);
+      g.add(runko);
+      var pohja = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.05, 0.26), tumma);
+      void alu;
+      pohja.position.y = -0.14;
+      g.add(pohja);
+      // laakeripesa kyljessa, jotta kampiakselin paikka nakyy
+      var pesa = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.24, 10), tumma);
+      pesa.rotation.z = Math.PI/2;
+      pesa.position.set(0, 0.02, 0);
+      g.add(pesa);
+    } else if(id === 'akseli'){
+      var akseli = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.46, 8), teras);
+      akseli.rotation.z = Math.PI/2;
+      g.add(akseli);
+      [-0.07, 0.07].forEach(function(ax){
+        var paino = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.045, 12), teras);
+        paino.rotation.z = Math.PI/2;
+        paino.position.x = ax;
+        g.add(paino);
+      });
+      var tappi = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.15, 6), teras);
+      tappi.rotation.z = Math.PI/2;
+      tappi.position.set(0, 0.055, 0);
+      g.add(tappi);
+    } else if(id === 'vauhtipyora'){
+      var kiekko = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.05, 16), teras);
+      kiekko.rotation.z = Math.PI/2;
+      g.add(kiekko);
+      // kaamit magneeton sisalla
+      for(i=0; i<6; i++){
+        var kaami = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.045, 0.03), kupari);
+        var a = i/6*Math.PI*2;
+        kaami.position.set(0.03, Math.sin(a)*0.075, Math.cos(a)*0.075);
+        g.add(kaami);
+      }
+    } else if(id === 'manta'){
+      var manta = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.085, 14), teras);
+      g.add(manta);
+      for(i=0; i<2; i++){
+        var rengas = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.006, 5, 14), tumma);
+        rengas.rotation.x = Math.PI/2;
+        rengas.position.y = 0.02 - i*0.018;
+        g.add(rengas);
+      }
+      var kanki = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.15, 0.022), teras);
+      kanki.position.y = -0.11;
+      g.add(kanki);
+      var silma = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 10), teras);
+      silma.rotation.x = Math.PI/2;
+      silma.position.y = -0.185;
+      g.add(silma);
+    } else if(id === 'sylinteriosa'){
+      var putki = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.09, 0.17, 12), alu);
+      g.add(putki);
+      for(i=0; i<4; i++){
+        var ripa = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.018, 12), alu);
+        ripa.position.y = -0.055 + i*0.042;
+        g.add(ripa);
+      }
+    } else if(id === 'kansi'){
+      var kansi = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.07, 0.21), alu);
+      g.add(kansi);
+      for(i=0; i<3; i++){
+        var kr = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.014, 0.21), alu);
+        kr.position.y = 0.045 + i*0.026;
+        g.add(kr);
+      }
+      var tulppa = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.09, 8), engineMat(0xd8d2c4, 0.4, 0.2));
+      tulppa.position.set(0.055, 0.115, 0);
+      tulppa.rotation.z = -0.2;
+      g.add(tulppa);
+    } else if(id === 'kytkin'){
+      var korit = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.055, 14), teras);
+      korit.rotation.z = Math.PI/2;
+      g.add(korit);
+      for(i=0; i<4; i++){
+        var jousi = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.04, 6), engineMat(0xc0392b, 0.5, 0.3));
+        var b = i/4*Math.PI*2;
+        jousi.rotation.z = Math.PI/2;
+        jousi.position.set(0.028, Math.sin(b)*0.06, Math.cos(b)*0.06);
+        g.add(jousi);
+      }
+    } else if(id === 'kotelo'){
+      var kuori = new THREE.Mesh(new THREE.SphereGeometry(0.125, 12, 8, 0, Math.PI*2, 0, Math.PI/2), alu);
+      kuori.rotation.z = -Math.PI/2;
+      g.add(kuori);
+      var reuna = new THREE.Mesh(new THREE.CylinderGeometry(0.128, 0.128, 0.022, 14), alu);
+      reuna.rotation.z = Math.PI/2;
+      g.add(reuna);
+    }
+    g.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+    return g;
+  }
+  // Pukki ja osat rakennetaan autotallin ryhman LAPSIKSI, jolloin tallin oma kierto
+  // (rotation.y = PI/2) hoituu itsestaan eika paikkoja tarvitse laskea kasin maailmaan.
+  function buildEngineBench(){
+    if(!autotalli) return;
+    engineRoot = new THREE.Group();
+    engineRoot.position.set(ENGINE_STAND[0], ENGINE_BENCH_Y, ENGINE_STAND[1]);
+    autotalli.add(engineRoot);
+    // pukki: kaksi palkkia ja aluslevy
+    var pukkiMat = engineMat(0x3a3f45, 0.8, 0.2);
+    var levy = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.035, 0.34), pukkiMat);
+    levy.position.y = 0.018;
+    engineRoot.add(levy);
+    // palkit kampikammion ULKOPUOLELLE: 0,17:ssa ne peittivat vauhtipyoran ja kytkimen
+    [-0.27, 0.27].forEach(function(px){
+      var palkki = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.30), pukkiMat);
+      palkki.position.set(px, 0.075, 0);
+      engineRoot.add(palkki);
+    });
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      var m = makeEnginePart(ep.id);
+      engineRestPose(m, ep.id, i);
+      autotalli.add(m);
+      engineMeshes[ep.id] = m;
+    }
+  }
+  // Yksi paikka jossa lepoasento maaritellaan - kaytetaan rakennuksessa, laskussa ja nollauksessa.
+  function engineRestPose(m, id, idx){
+    var r = ENGINE_REST[id] || {y:0.12, rx:0};
+    var slot = ENGINE_SLOTS[idx];
+    m.position.set(slot[0], ENGINE_BENCH_Y + r.y, slot[1]);
+    m.rotation.set(r.rx, (idx % 3 - 1) * 0.35, 0);
+    m.scale.setScalar(1);
+  }
+  function engineDef(id){
+    for(var i=0; i<ENGINE_PARTS.length; i++) if(ENGINE_PARTS[i].id === id) return ENGINE_PARTS[i];
+    return null;
+  }
+  function engineDone(){
+    for(var i=0; i<ENGINE_PARTS.length; i++) if(!engineInstalled[ENGINE_PARTS[i].id]) return false;
+    return true;
+  }
+  function engineInstalledCount(){
+    var n = 0;
+    for(var i=0; i<ENGINE_PARTS.length; i++) if(engineInstalled[ENGINE_PARTS[i].id]) n++;
+    return n;
+  }
+  // Seuraava osa jonka VOI asentaa - kaytetaan vihjeteksteissa.
+  function engineNext(){
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      if(engineInstalled[ep.id]) continue;
+      if(!ep.vaatii || engineInstalled[ep.vaatii]) return ep;
+    }
+    return null;
+  }
+  function engineWorldPos(obj){
+    var v = new THREE.Vector3();
+    obj.getWorldPosition(v);
+    return v;
+  }
+  // Mika osa poydalta nostetaan?
+  //
+  // Pelkka lahin EI toimi: osat ovat puolen metrin paassa toisistaan ja pelaaja seisoo
+  // metrin paassa poydasta, jolloin kaksi naapuriosaa ovat kaytannossa yhta kaukana ja
+  // kateen tarttui umpimahkaan vaara. Siksi mukaan otetaan KATSESUUNTA: suoraan edessa
+  // oleva osa voittaa kauempanakin, ja selan takana olevaa ei nosteta lainkaan.
+  // Nain osan valitsee kaantymalla sita kohti, kuten oikeallakin tyopoydalla.
+  function engineNearestLoose(){
+    if(!engineRoot) return null;
+    var best = null, bestScore = 1e9;
+    var fx = Math.sin(playerHeading), fz = Math.cos(playerHeading);
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      if(engineInstalled[ep.id] || engineCarry === ep.id) continue;
+      var m = engineMeshes[ep.id];
+      if(!m) continue;
+      var w = engineWorldPos(m);
+      var dx = w.x - player.position.x, dz = w.z - player.position.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      if(d > ENGINE_PICK_R) continue;
+      var dot = (d < 0.0001) ? 1 : (dx*fx + dz*fz)/d;   // 1 = suoraan edessa, -1 = takana
+      if(dot < -0.1) continue;
+      var score = d * (1.9 - dot);
+      if(score < bestScore){ bestScore = score; best = ep; }
+    }
+    return best;
+  }
+  function engineAtStand(){
+    if(!engineRoot) return false;
+    var w = engineWorldPos(engineRoot);
+    var dx = w.x - player.position.x, dz = w.z - player.position.z;
+    return Math.sqrt(dx*dx + dz*dz) <= ENGINE_INSTALL_R;
+  }
+  function enginePickUp(ep){
+    var m = engineMeshes[ep.id];
+    if(!m) return;
+    engineCarry = ep.id;
+    showToast(false, 'Nostit: ' + ep.nimi, ep.vihje + ' Vie se moottoripukille ja paina E.', 3600);
+  }
+  // Kannossa oleva osa roikkuu pelaajan edessa. Paikka lasketaan joka kehyksella,
+  // koska osa on edelleen autotallin ryhman lapsi - maailmapiste muunnetaan ryhman
+  // omaan koordinaatistoon, jolloin tallin kierto ei vaanna osaa vaaraan kohtaan.
+  var engineCarryV = new THREE.Vector3();
+  // Kohteena oleva osa kasvaa hieman: ilman tata pelaaja ei nae kumpaan osaan E tarttuu.
+  function updateEngineHighlight(){
+    if(!engineRoot) return;
+    var kohde = engineCarry ? null : engineNearestLoose();
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      if(engineInstalled[ep.id]) continue;
+      var m = engineMeshes[ep.id];
+      if(!m) continue;
+      var want = (kohde && kohde.id === ep.id) ? 1.16 : 1;
+      if(Math.abs(m.scale.x - want) > 0.001) m.scale.setScalar(want);
+    }
+  }
+  function updateEngineCarry(dt){
+    updateEngineHighlight();
+    if(!engineCarry || !autotalli) return;
+    var m = engineMeshes[engineCarry];
+    if(!m) return;
+    var h = playerHeading;
+    engineCarryV.set(
+      player.position.x + Math.sin(h)*0.42,
+      player.position.y + 0.95,
+      player.position.z + Math.cos(h)*0.42
+    );
+    autotalli.worldToLocal(engineCarryV);
+    m.position.copy(engineCarryV);
+    m.rotation.y += dt*1.2;    // hidas pyoritys kadessa, jotta osan nakee joka puolelta
+  }
+  function engineDropCarry(hiljaa){
+    if(!engineCarry) return;
+    var ep = engineDef(engineCarry);
+    var m = engineMeshes[engineCarry];
+    var idx = ENGINE_PARTS.indexOf(ep);
+    if(m && idx >= 0) engineRestPose(m, ep.id, idx);
+    engineCarry = null;
+    if(!hiljaa && ep) showToast(false, 'Laskit osan poydalle', ep.nimi + ' odottaa taas tyopoydalla.', 2600);
+  }
+  function engineAttach(ep){
+    var m = engineMeshes[ep.id];
+    var spot = ENGINE_SPOTS[ep.id];
+    if(!m || !spot || !engineRoot) return;
+    autotalli.remove(m);
+    engineRoot.add(m);
+    m.position.set(spot[0], spot[1], spot[2]);
+    m.rotation.set(0, 0, 0);
+    m.scale.setScalar(1);
+    engineInstalled[ep.id] = true;
+    engineCarry = null;
+  }
+  // Valmis moottori tayttaa parts-listan sylinterin, jolloin mopon kasaus jatkuu
+  // tasmalleen kuten ennen tata ominaisuutta.
+  function engineFinish(){
+    var cyl = partById('sylinteri');
+    if(cyl && !cyl.installed){
+      cyl.installed = true;
+      for(var sh = garageShelf.length - 1; sh >= 0; sh--){
+        if(garageShelf[sh].partId === 'sylinteri' && garageShelf[sh].kind === 'orig') garageShelf.splice(sh, 1);
+      }
+      updateMopedAssembly();
+      if(garageOpen) renderShelf();
+    }
+    if(!engineReadyShown){
+      engineReadyShown = true;
+      playCatchJingle();
+      showToast(false, 'Moottori on kasassa', 'Kaikki kahdeksan osaa paikallaan. Moottori on nyt mopossa - jatka muiden osien kanssa.', 6000);
+    }
+  }
+  function engineInstallCarried(){
+    var ep = engineDef(engineCarry);
+    if(!ep) return;
+    if(engineInstalled[ep.id]){ engineDropCarry(true); return; }
+    if(ep.vaatii && !engineInstalled[ep.vaatii]){
+      var puuttuu = engineDef(ep.vaatii);
+      showToast(true, ep.nimi + ' ei mene viela',
+        (puuttuu ? puuttuu.nimi : 'edellinen osa') + ' pitaa olla paikallaan ensin. ' + ep.vihje, 4600);
+      return;
+    }
+    if(ep.bolts > 0){
+      startBoltJob({
+        title: ep.nimi + ' kiinni',
+        bolts: ep.bolts,
+        word: 'pulttia',
+        onDone: function(){
+          engineAttach(ep);
+          engineAfterInstall(ep);
+        }
+      });
+      return;
+    }
+    engineAttach(ep);
+    engineAfterInstall(ep);
+  }
+  function engineAfterInstall(ep){
+    var n = engineInstalledCount();
+    if(engineDone()){ engineFinish(); }
+    else {
+      var seur = engineNext();
+      showToast(false, ep.nimi + ' paikallaan', n + '/' + ENGINE_PARTS.length + ' osaa kasassa.' +
+        (seur ? ' Seuraavaksi: ' + seur.nimi + '.' : ''), 4000);
+    }
+    saveGame();
+  }
+  // Yksi kutsu kayttoliittymalle: mita E tekee juuri nyt autotallissa?
+  function engineAction(){
+    if(!engineRoot || inStore) return null;
+    if(engineCarry){
+      var cep = engineDef(engineCarry);
+      if(engineAtStand()) return {tyyppi:'asenna', osa:cep};
+      return {tyyppi:'laske', osa:cep};
+    }
+    if(engineDone()) return null;
+    var loose = engineNearestLoose();
+    if(loose) return {tyyppi:'nosta', osa:loose};
+    return null;
+  }
+  function engineInteract(){
+    var a = engineAction();
+    if(!a) return false;
+    if(a.tyyppi === 'nosta'){ enginePickUp(a.osa); return true; }
+    if(a.tyyppi === 'laske'){ engineDropCarry(false); return true; }
+    engineInstallCarried();
+    return true;
+  }
+  function engineReset(){
+    engineCarry = null;
+    engineReadyShown = false;
+    engineInstalled = {};
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      var m = engineMeshes[ep.id];
+      if(!m) continue;
+      if(m.parent !== autotalli){ m.parent.remove(m); autotalli.add(m); }
+      engineRestPose(m, ep.id, i);
+    }
+  }
+  // Tallenteesta palautus: asennetut osat kiinni, loput poydalle.
+  function engineApplySaved(saved, kaikkiKasassa){
+    engineReset();
+    if(!saved && !kaikkiKasassa) return;
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      if(kaikkiKasassa || (saved && saved[ep.id])) engineAttach(ep);
+    }
+    engineCarry = null;
+    if(engineDone()) engineReadyShown = true;
+  }
+
+  buildEngineBench();
+
   function openGarage(){
     if(!requireMopedInGarage()) return;
     garageOpen = true;
@@ -10178,6 +10617,9 @@
       closeGarage();
       return;
     }
+    // Moottorin kasaus menee hyllypaneelin EDELLE: osat ovat samalla tyopoydalla,
+    // ja jos paneeli aukeaisi ensin, osaa ei paasisi koskaan nostamaan.
+    if(typeof engineInteract === 'function' && engineInteract()) return;
     // autotallin työpöytä: hyllypaneeli auki/kiinni
     var dxg = autotalliBenchPos.x - player.position.x;
     var dzg = autotalliBenchPos.z - player.position.z;
@@ -15517,7 +15959,7 @@
   var storyStages = [
     {
       short: 'Kasaa mopo autotallissa',
-      text: 'Kesä alkaa. Mopo on osina autotallin pukkien päällä ja kaikki osat odottavat hyllyllä. Mene työpöydän luo (E) ja kasaa ne yksi kerrallaan paikoilleen.',
+      text: 'Kesä alkaa. Mopo on osina autotallin pukkien päällä. Moottori on hajalla työpöydällä: nosta osat yksi kerrallaan (E) ja kasaa ne moottoripukkiin oikeassa järjestyksessä. Loput osat odottavat hyllyllä.',
       check: function(){ return mopedAssembled(); }
     },
     {
@@ -16333,6 +16775,7 @@
         fridgeMeals: fridgeMeals,
         photoShownAtMeet: photoShownAtMeet,
         campSatDay: campSatDay,
+        engine: engineInstalled,
         radioChannel: radioChannel,
         radioAuto: radioAuto,
         trickBest: trickBest,
@@ -16378,6 +16821,11 @@
       if(typeof save.fridgeMeals === 'number') fridgeMeals = Math.max(0, Math.min(3, save.fridgeMeals|0));
       if(typeof save.photoShownAtMeet === 'number') photoShownAtMeet = save.photoShownAtMeet|0;
       if(typeof save.campSatDay === 'number') campSatDay = save.campSatDay|0;
+      // Vanha tallennus ei tunne moottorin osia. Jos sylinteri oli siina asennettu,
+      // moottori on ollut kasassa - muuten osat jaisivat poydalle vaikka mopo kulkee.
+      if(save.engine && typeof save.engine === 'object') engineApplySaved(save.engine);
+      else if(partById('sylinteri') && partById('sylinteri').installed) engineApplySaved(null, true);
+      else engineApplySaved(null);
       if(typeof save.radioChannel === 'number') radioChannel = Math.max(0, Math.min(RADIO_CHANNELS.length-1, save.radioChannel|0));
       if(typeof save.radioAuto === 'boolean') radioAuto = save.radioAuto;
       updatePosters();
@@ -16644,6 +17092,7 @@
     canFuel = 0;
     fridgeMeals = 3;
     updatePosters();
+    engineReset();
     campSatDay = -1; radioChannel = 0; radioAuto = true;
     photos.length = 0; photoShownAtMeet = -1; photoMode = false; photoPending = false;
     if(photoFrameEl) photoFrameEl.hidden = true;
@@ -18389,6 +18838,7 @@
         var dgbx = autotalliBenchPos.x - player.position.x, dgbz = autotalliBenchPos.z - player.position.z;
         nearGarageBench = Math.sqrt(dgbx*dgbx+dgbz*dgbz) <= autotalliRadius;
       }
+      var engAct = (typeof engineAction === 'function') ? engineAction() : null;
 
       // hitsauspiste ja bensapumppu: omat vihjeensä, tarkistetaan ennen työpaikkoja koska
       // molemmat sijaitsevat saman työpaikan (romuttamo / huoltoasema) alueen sisällä
@@ -18415,6 +18865,16 @@
         mountHintEl.innerHTML = fuel >= 99.5
           ? 'Tankki on täynnä'
           : 'Paina <b>R</b> tai <b>E</b> tankataksesi · tankissa <b>' + Math.round(fuel) + ' %</b>';
+      } else if(engAct){
+        mountHintEl.hidden = false;
+        if(engAct.tyyppi === 'nosta'){
+          mountHintEl.innerHTML = 'Paina <b>E</b>: nosta ' + engAct.osa.nimi.toLowerCase() +
+            ' (' + engineInstalledCount() + '/' + ENGINE_PARTS.length + ' moottorista kasassa)';
+        } else if(engAct.tyyppi === 'asenna'){
+          mountHintEl.innerHTML = 'Paina <b>E</b>: asenna ' + engAct.osa.nimi.toLowerCase() + ' moottoriin';
+        } else {
+          mountHintEl.innerHTML = 'Kannat osaa: ' + engAct.osa.nimi + ' · vie se moottoripukille, tai <b>E</b> laskee sen poydalle';
+        }
       } else if(nearGarageBench){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = garageShelf.length
@@ -18574,6 +19034,7 @@
     updateBlinkers(moped, dt);   // oman mopon vilkut samalla koodilla kuin muidenkin
     updateHelmet();
     updatePhotoMode(dt);     // valokuvaustilan kameran ohjaus
+    updateEngineCarry(dt);   // kannossa oleva moottorin osa seuraa pelaajaa
     updateCampfire(dt);      // miitin nuotio: liekit, savu, valo ja rätinä
     updateFaceTalk(dt);      // puhuvan hahmon suu ja kulmat
     updateNpcBlink(dt);      // kyläläiset räpyttelevät
