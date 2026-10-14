@@ -280,6 +280,13 @@
     padding:18px 20px;width:330px;pointer-events:auto;text-align:center;
   }
   .boltGame[hidden]{display:none;}
+  .boltSearch{display:flex;gap:8px;justify-content:center;margin-top:8px;}
+  .boltSearch[hidden]{display:none;}
+  .boltSearch button{
+    background:rgba(251,246,233,0.10);border:1px solid var(--panel-line);color:inherit;
+    border-radius:8px;padding:9px 14px;font:700 12px/1 'Karla',sans-serif;cursor:pointer;
+  }
+  .boltSearch button:hover{background:rgba(251,246,233,0.2);}
   .boltTrack{position:relative;height:30px;margin:14px 0 8px;border-radius:8px;background:rgba(251,246,233,0.14);overflow:hidden;}
   .boltZone{position:absolute;top:0;bottom:0;background:rgba(122,196,96,0.55);border-left:1px solid rgba(180,240,150,0.8);border-right:1px solid rgba(180,240,150,0.8);}
   .boltSweet{position:absolute;top:0;bottom:0;background:rgba(226,187,43,0.55);}
@@ -504,6 +511,41 @@
   }
   .wheelieCombo.show{opacity:1;transform:translate(-50%,0) scale(1);}
   .wheelieCombo small{display:block;font:600 10px/1.2 'Karla',sans-serif;letter-spacing:.06em;text-transform:uppercase;opacity:.85;}
+  /* temppuketju: pisteet ja ketjun sisältö ruudun oikeassa laidassa */
+  .trickHud{
+    position:absolute;right:calc(16px + env(safe-area-inset-right,0px));
+    top:calc(34% ); text-align:right;pointer-events:none;
+    text-shadow:0 2px 10px rgba(0,0,0,0.55);
+  }
+  .trickHud[hidden]{display:none;}
+  .trickHud span{font:700 34px/1 'Teko',sans-serif;color:#ffd27a;display:block;}
+  .trickHud small{display:block;font:700 10.5px/1.3 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#f2ece0;opacity:.9;}
+  /* valokuvaustilan etsin: kulmamerkit ja ohjerivi alareunassa */
+  .photoFrame{position:absolute;inset:0;pointer-events:none;z-index:40;}
+  /* Kuvatessa ruudulta pois kaikki paitsi itse kuva, etsin ja ilmoitukset - muuten pelaaja
+     rajaa kuvaa mittaristo silmien edessa. Kuvaan HUD ei muutenkaan tule mukaan, koska
+     talteen kopioidaan vain WebGL-kangas. */
+  #app.photoing > *:not(canvas):not(.hud){display:none !important;}
+  #app.photoing .hud > *:not(#photoFrame):not(#toast){display:none !important;}
+  .photoFrame[hidden]{display:none;}
+  .pfCorner{position:absolute;width:38px;height:38px;border:2px solid rgba(251,246,233,0.85);}
+  .pfCorner.tl{left:7%;top:12%;border-right:0;border-bottom:0;}
+  .pfCorner.tr{right:7%;top:12%;border-left:0;border-bottom:0;}
+  .pfCorner.bl{left:7%;bottom:16%;border-right:0;border-top:0;}
+  .pfCorner.br{right:7%;bottom:16%;border-left:0;border-top:0;}
+  .pfBar{
+    position:absolute;left:50%;transform:translateX(-50%);bottom:calc(26px + env(safe-area-inset-bottom,0px));
+    background:rgba(20,22,26,0.72);border:1px solid var(--panel-line);border-radius:9px;
+    padding:7px 14px;font:700 11.5px/1.4 'Karla',sans-serif;color:#f2ece0;letter-spacing:.04em;text-align:center;max-width:90vw;
+  }
+  .photoGrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .photoGrid img{width:78px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--panel-line);cursor:pointer;}
+  .photoGrid img:hover{border-color:var(--accent);}
+  .photoNote{font:600 12px/1.5 'Karla',sans-serif;opacity:.75;}
+  .photoBtn{
+    width:100%;margin-top:7px;background:rgba(226,87,43,0.28);border:1px solid rgba(226,87,43,0.5);
+    border-radius:8px;color:var(--cream);font:700 12px 'Karla',sans-serif;padding:7px 8px;cursor:pointer;
+  }
 
   .toast{
     position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);
@@ -665,6 +707,8 @@
         <div id="raceRouteList"></div>
         <div class="phoneHead">🎒 Varusteet</div>
         <div id="inventoryList"></div>
+        <div class="phoneHead">📷 Kuvat</div>
+        <div id="photoGallery"></div>
       </div>
       <div class="phoneFoot">Sulje: <b>TAB</b></div>
     </div>
@@ -735,8 +779,13 @@
     </div>
     <div class="missionTracker" id="missionTracker"></div>
     <div class="wheelieCombo" id="wheelieCombo"><small>Keula</small><span id="wheelieComboText">x1</span></div>
+    <div class="trickHud" id="trickHud" hidden><span id="trickScoreText">0</span><small id="trickChainText">keula</small></div>
+    <div class="photoFrame" id="photoFrame" hidden>
+      <i class="pfCorner tl"></i><i class="pfCorner tr"></i><i class="pfCorner bl"></i><i class="pfCorner br"></i>
+      <div class="pfBar" id="photoBar">VALOKUVAUSTILA · A/D kierrä · W/S zoomaa · R/F korkeus · VÄLILYÖNTI kuvaa · P sulje</div>
+    </div>
     <div class="toast" id="toast"><div class="big" id="toastBig"></div><p id="toastText"></p></div>
-    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea</div>
+    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea · Kanisteri: <b>K</b> · Näyttely: <b>J</b> · Ryhmäajo: <b>B</b> · Valokuva: <b>P</b> · Radiokanava: <b>N</b></div>
     <div class="miniMapWrap" id="miniMapWrap">
       <canvas id="miniMap" width="196" height="196"></canvas>
       <div class="miniMapFoot">Koko kartta: <b>M</b></div>
@@ -803,6 +852,7 @@
       </div>
       <div class="boltPips" id="boltPips"><i></i><i></i><i></i></div>
       <div class="boltMsg" id="boltMsg">Kiristä kolme pulttia.</div>
+      <div class="boltSearch" id="boltSearch" hidden></div>
       <div class="boltHint">Välilyönti kun osoitin on vihreällä. Keltainen keskikohta = täysi kireys. Esc keskeyttää.</div>
     </div>
     <div class="wrenchHud" id="wrenchHud" hidden>
@@ -1518,10 +1568,154 @@
     postAOB = makePostTarget(bw, bh, false);
     aoSupported = !!(postRT.depthTexture);
   }
+  // ==========================================================================
+  // ---- VALOKUVAUSTILA ----
+  // Pelaaja rakentaa mopoa koko kesän mutta näkee sen vain takaapäin ajaessa. Valokuvaustila
+  // irrottaa kameran: se kiertää mopon (tai hahmon) ympäri, kuvan voi rajata ja ottaa talteen.
+  // Kuvat menevät puhelimen galleriaan, ja miitissä niitä voi näyttää muille maineen eteen.
+  //
+  // Kamera asetetaan renderWithPostin ALUSSA, eli vasta kun kaikki muu on jo päivittynyt.
+  // Jos se tehtäisiin missään aiemmassa kohdassa, ajosilmukan oma kameralogiikka kirjoittaisi
+  // sen yli samalla ruudulla - sama ansa joka kaatoi kuvakaappaukset aiemmin.
+  // ==========================================================================
+  var photoMode = false;
+  var photoAngle = 2.4, photoDist = 4.2, photoHeight = 1.5;
+  var photos = [];                 // {url, teksti} - vain tämän istunnon ajan
+  var PHOTO_MAX = 8;
+  var photoShownAtMeet = -1;       // minä kesäpäivänä kuvia on näytetty miitissä
+  var photoFrameEl = document.getElementById('photoFrame');
+  var photoBarEl = document.getElementById('photoBar');
+  function photoSubject(){
+    // ajaessa kohteena on mopo, muuten hahmo
+    return (mode === 'riding' || (typeof pushingMoped !== 'undefined' && pushingMoped)) ? moped.position : player.position;
+  }
+  function togglePhotoMode(){
+    if(mini.active || bolt.active || cutsceneActive || examRun) return;
+    photoMode = !photoMode;
+    if(photoFrameEl) photoFrameEl.hidden = !photoMode;
+    app.classList.toggle('photoing', photoMode);
+    if(photoMode){
+      photoAngle = (mode === 'riding' ? heading : playerHeading) + 2.4;
+      photoDist = 4.2; photoHeight = 1.5;
+      input.fwd = input.back = input.left = input.right = false;
+      showToast(false, '📷 Valokuvaustila', 'A/D kiertää, W/S zoomaa, R/F nostaa ja laskee. Välilyönti ottaa kuvan, P sulkee.', 5200);
+    }
+  }
+  var photoKeys = {a:false, d:false, w:false, s:false, r:false, f:false};
+  // Kameran ohjaus: omat näppäimet, jotta ajonäppäimet eivät liikuta mopoa kuvatessa.
+  function updatePhotoMode(dt){
+    if(!photoMode) return;
+    if(photoKeys.a) photoAngle += 1.5*dt;
+    if(photoKeys.d) photoAngle -= 1.5*dt;
+    if(photoKeys.w) photoDist = Math.max(1.3, photoDist - 3.2*dt);
+    if(photoKeys.s) photoDist = Math.min(16, photoDist + 3.2*dt);
+    if(photoKeys.r) photoHeight = Math.min(7, photoHeight + 2.2*dt);
+    if(photoKeys.f) photoHeight = Math.max(0.15, photoHeight - 2.2*dt);
+    if(photoBarEl){
+      photoBarEl.textContent = 'VALOKUVAUSTILA · etäisyys ' + photoDist.toFixed(1) + ' m · korkeus ' +
+        photoHeight.toFixed(1) + ' m · VÄLILYÖNTI kuvaa (' + photos.length + '/' + PHOTO_MAX + ') · P sulkee';
+    }
+  }
+  function photoApplyCamera(){
+    if(!photoMode) return;
+    var t = photoSubject();
+    camera.position.set(t.x + Math.sin(photoAngle)*photoDist, t.y + photoHeight, t.z + Math.cos(photoAngle)*photoDist);
+    camera.lookAt(t.x, t.y + 0.55, t.z);
+    camera.updateMatrixWorld(true);
+  }
+  // Kuva otetaan talteen pienennettynä: täysikokoinen PNG olisi satoja kilotavuja kappaleelta.
+  var photoPending = false;
+  function takePhoto(){
+    if(!photoMode) return;
+    if(photos.length >= PHOTO_MAX){
+      showToast(false, 'Galleria täynnä', 'Puhelimessa on jo ' + PHOTO_MAX + ' kuvaa. Poista jokin puhelimesta (TAB).', 3600);
+      return;
+    }
+    photoPending = true;
+  }
+  // Kangas ei säilö piirtopuskuria, joten kopiointi onnistuu vain heti renderin perään.
+  function photoGrab(){
+    if(!photoPending) return;
+    photoPending = false;
+    try{
+      var src = renderer.domElement;
+      var cw = 360, ch = Math.round(cw * src.height / Math.max(1, src.width));
+      var c = document.createElement('canvas');
+      c.width = cw; c.height = ch;
+      c.getContext('2d').drawImage(src, 0, 0, cw, ch);
+      var url = c.toDataURL('image/jpeg', 0.72);
+      photos.unshift({url: url, teksti: 'Päivä ' + summerDay + ' · ' + (mopedModels.filter(function(m){ return m.id === equippedMopedId; })[0] || {name:'mopo'}).name});
+      if(photos.length > PHOTO_MAX) photos.length = PHOTO_MAX;
+      renderPhotoGallery();
+      playExamBeep();
+      showToast(false, '📷 Kuva otettu', 'Galleriassa ' + photos.length + '/' + PHOTO_MAX + ' kuvaa. Katso puhelimesta (TAB).', 3000);
+    }catch(e){
+      showToast(true, 'Kuva ei tallentunut', 'Selain esti kuvan lukemisen.', 3000);
+    }
+  }
+  // Miitissä kuvien näyttäminen tuo mainetta kerran päivässä.
+  function showPhotosAtMeet(){
+    if(!photos.length){
+      showToast(false, 'Ei kuvia', 'Ota ensin kuvia mopostasi: paina P.', 3400);
+      return;
+    }
+    if(!atMeetSpot() || !meetEveningNow()){
+      showToast(false, 'Näytä kuvat miitissä', 'Porukka on koolla huoltoaseman pihassa klo ' + MEET_FROM + '-' + MEET_TO + '.', 4200);
+      return;
+    }
+    if(photoShownAtMeet === summerDay){
+      showToast(false, 'Jo näytetty tänään', 'Ota uusia kuvia huomiseksi.', 3000);
+      return;
+    }
+    photoShownAtMeet = summerDay;
+    var maine = Math.min(10, 2 + photos.length);
+    var raha = photos.length*3;
+    money += raha; updateMoneyDisplay();
+    repVillageAdd(maine);
+    showToast(false, '📷 Näytit kuvat porukalle', photos.length + ' kuvaa kiersi kädestä käteen. +' + raha + ' € ja mainetta.', 5000);
+    renderPhotoGallery();
+    saveGame();
+  }
+
+  // Galleria puhelimessa: pikkukuvat, poistonappi ja miitin naytto.
+  function renderPhotoGallery(){
+    var el = document.getElementById('photoGallery');
+    if(!el) return;
+    if(!photos.length){
+      el.innerHTML = '<div class="photoNote">Ei kuvia vielä. Paina <b>P</b> ja ota kuva mopostasi välilyönnillä.</div>';
+      return;
+    }
+    var html = '<div class="photoGrid">';
+    for(var i=0;i<photos.length;i++){
+      html += '<img src="' + photos[i].url + '" alt="' + photos[i].teksti + '" title="' + photos[i].teksti +
+              ' (klikkaa poistaaksesi)" data-pi="' + i + '">';
+    }
+    html += '</div>';
+    html += '<div class="photoNote" style="margin-top:6px">' + photos.length + '/' + PHOTO_MAX +
+            ' kuvaa · klikkaa kuvaa poistaaksesi sen<br>' +
+            (photoShownAtMeet === summerDay
+              ? '✅ Kuvat näytetty tänään'
+              : '📷 Näytä kuvat miitissä huoltoaseman pihassa klo ' + MEET_FROM + '-' + MEET_TO + '') +
+            '</div>';
+    html += '<button class="photoBtn" id="photoShowBtn" type="button">Näytä kuvat porukalle</button>';
+    el.innerHTML = html;
+    var imgs = el.querySelectorAll('img');
+    for(var k=0;k<imgs.length;k++){
+      imgs[k].addEventListener('click', function(){
+        var idx = parseInt(this.getAttribute('data-pi'), 10);
+        if(idx >= 0 && idx < photos.length){ photos.splice(idx, 1); renderPhotoGallery(); }
+      });
+    }
+    var btn = document.getElementById('photoShowBtn');
+    if(btn) btn.addEventListener('click', function(){ showPhotosAtMeet(); renderPhotoGallery(); });
+  }
+
   function renderWithPost(){
+    photoApplyCamera();   // valokuvaustilassa kamera asetetaan vasta tässä, kaiken muun jälkeen
     if(!postOn){
       renderer.setRenderTarget(null);
       renderer.render(scene, camera);
+      photoGrab();
       return;
     }
     resizePostTargets();
@@ -1575,6 +1769,7 @@
     postFinalMat.uniforms.texel.value.set(1/postW, 1/postH);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
+    photoGrab();
   }
 
   function onResize(){
@@ -3220,6 +3415,7 @@
         var jx = moped.position.x - mopedAirFromX, jz = moped.position.z - mopedAirFromZ;
         var jd = Math.sqrt(jx*jx + jz*jz);
         speed *= 0.88;   // laskeutuminen syö hieman vauhtia
+        if(jd > 4 && typeof trickAdd === 'function') trickAdd('hyppy', jd*6);
         if(jd > 6){
           var isBest = jd > jumpBest + 0.5;
           if(isBest){
@@ -4464,6 +4660,55 @@
     var mat2 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshStandardMaterial({color:0x4d4a42, roughness:1}));
     mat2.rotation.x = -Math.PI/2; mat2.position.set(0, 0.014, d/2 - 0.7);
     g.add(mat2);
+    // ---- televisio, jääkaappi ja julistepaikat ----
+    // Koti oli sänky ja keittiö: paikka jossa nukutaan, ei paikka jossa ollaan. Nyt oikealle
+    // seinustalle tulee televisio sohvineen, keittiöön jääkaappi josta voi syödä ja seinälle
+    // kolme julistepaikkaa, jotka täyttyvät kun julisteita ostaa kyläkaupasta.
+    var tvRunko = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.95, 0.14), darkMat);
+    tvRunko.position.set(w/2 - 0.5, 1.22, -1.4);
+    tvRunko.rotation.y = -Math.PI/2;
+    tvRunko.castShadow = true;
+    g.add(tvRunko);
+    var tvRuutu = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.78), new THREE.MeshStandardMaterial({
+      color:0x10161c, emissive:0x1b3348, emissiveIntensity:0.25, roughness:0.3
+    }));
+    tvRuutu.position.set(w/2 - 0.58, 1.22, -1.4);
+    tvRuutu.rotation.y = -Math.PI/2;
+    g.add(tvRuutu);
+    g.userData.tvScreen = tvRuutu;
+    var tvJalusta = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 1.4), lightWood);
+    tvJalusta.position.set(w/2 - 0.42, 0.35, -1.4); tvJalusta.castShadow = true;
+    g.add(tvJalusta);
+    coll.push({x:w/2 - 0.5, z:-1.4, r:0.7});
+    // sohva television eteen
+    var sohva = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.42, 2.0), fabricMat);
+    sohva.position.set(w/2 - 2.4, 0.26, -1.4); sohva.castShadow = true;
+    var selka = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.55, 2.0), fabricMat);
+    selka.position.set(w/2 - 2.05, 0.55, -1.4);
+    g.add(sohva, selka);
+    coll.push({x:w/2 - 2.3, z:-1.9, r:0.7});
+    coll.push({x:w/2 - 2.3, z:-0.9, r:0.7});
+    // jääkaappi keittiön päähän
+    var kaappiRunko = new THREE.Mesh(new THREE.BoxGeometry(0.66, 1.75, 0.72), whiteMat);
+    kaappiRunko.position.set(-w/2 + 0.45, 0.88, keittioZ + 2.2); kaappiRunko.castShadow = true;
+    g.add(kaappiRunko);
+    var kaappiOvi = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 0.66), new THREE.MeshStandardMaterial({color:0xdcdfe2, roughness:0.5, metalness:0.15}));
+    kaappiOvi.position.set(-w/2 + 0.79, 0.9, keittioZ + 2.2);
+    g.add(kaappiOvi);
+    var kahva2 = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.5,6), steelMat);
+    kahva2.position.set(-w/2 + 0.83, 1.1, keittioZ + 2.45);
+    g.add(kahva2);
+    coll.push({x:-w/2 + 0.55, z:keittioZ + 2.2, r:0.6});
+    // julistepaikat takaseinälle - tasot luodaan nyt, kuva vaihtuu kun juliste ostetaan
+    g.userData.posters = [];
+    [-2.2, 0.4, 3.0].forEach(function(px, i){
+      var juliste = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.5), new THREE.MeshStandardMaterial({
+        color:0xffffff, roughness:0.9, transparent:true, opacity:0
+      }));
+      juliste.position.set(px, 1.75, -d/2 + 0.06);
+      g.add(juliste);
+      g.userData.posters.push(juliste);
+    });
     g.userData.coll = coll;
     return g;
   }
@@ -4484,8 +4729,102 @@
 
   var kotiDoorInside = kotiSisaOrigin.clone().add(new THREE.Vector3(0, 0, 3.4));
   var kotiBedPos = kotiSisaOrigin.clone().add(new THREE.Vector3(-3.9, 0, -3.4));
+  var kotiTvPos = kotiSisaOrigin.clone().add(new THREE.Vector3(kotiRoomW/2 - 2.4, 0, -1.4));
+  var kotiFridgePos = kotiSisaOrigin.clone().add(new THREE.Vector3(-kotiRoomW/2 + 1.1, 0, 4.8));
   var kotiDoorOutside = new THREE.Vector3(homePos.x + 2.6, 0, homePos.z + 3.4);
   var kotiDoorRadius = 3.6, kotiBedRadius = 2.4;
+  var kotiTvRadius = 2.6, kotiFridgeRadius = 2.2;
+
+  // ==========================================================================
+  // ---- OMA KOTI: TELEVISIO, JÄÄKAAPPI JA JULISTEET ----
+  // Koti oli sänky: paikka jossa painetaan E ja päivä vaihtuu. Kalusteet olivat jo paikallaan
+  // mutta pelkkänä lavasteena. Nyt niillä on käyttö:
+  //   - televisio kuluttaa tunnin peliaikaa ja palauttaa voimia; ohjelmassa voi tulla vinkki
+  //   - jääkaapissa on kolme ateriaa päivässä, ilmaista ruokaa ilman Mac Donalds -reissua
+  //   - julisteet ostetaan kyläkaupasta ja ne parantavat yöunen laatua
+  // Raha saa näin käyttöä joka ei liity mopoon lainkaan.
+  // ==========================================================================
+  var POSTER_IDS = ['juliste1', 'juliste2', 'juliste3'];
+  var POSTER_TEX = [
+    ['MOPOMIITTI -96', '#2f3b2b', '#e2572b'],
+    ['CROSSITÄHTI',    '#2b2b2b', '#d8a021'],
+    ['KESÄJÄRVI',      '#2b4f8c', '#f2ece0']
+  ];
+  var fridgeMeals = 3;
+  function posterCount(){
+    var n = 0;
+    for(var i=0; i<POSTER_IDS.length; i++){
+      var it = storeItemById(POSTER_IDS[i]);
+      if(it && it.owned) n++;
+    }
+    return n;
+  }
+  // Ostettu juliste ilmestyy seinälle. Kutsutaan ostosta ja tallenteen latauksesta.
+  function updatePosters(){
+    if(!kotiSisa || !kotiSisa.userData.posters) return;
+    for(var i=0; i<kotiSisa.userData.posters.length; i++){
+      var pl = kotiSisa.userData.posters[i];
+      var it = storeItemById(POSTER_IDS[i]);
+      var on = !!(it && it.owned);
+      if(on && !pl.userData.done){
+        pl.material.map = makeSignTexture(POSTER_TEX[i][0], POSTER_TEX[i][1], POSTER_TEX[i][2]);
+        pl.material.needsUpdate = true;
+        pl.userData.done = true;
+      }
+      pl.material.opacity = on ? 1 : 0;
+    }
+  }
+  // ---- televisio ----
+  var TV_SHOWS = [
+    ['Urheiluruutu', 'Moottoriradalla ajettiin tänään. Voittaja kiitti huoltojoukkoja.'],
+    ['Tekniikan maailma', 'Kaksitahtimoottorissa öljy kulkee bensan mukana - liian laiha seos tappaa männän.'],
+    ['Sääennuste', 'Huomenna vaihtelevaa pilvisyyttä. Sateen jälkeen tie pysyy liukkaana pitkään.'],
+    ['Paikallisuutiset', 'Poliisi muistuttaa kypärän käytöstä. Tarkastuksia lisätään kesän aikana.'],
+    ['Mainoskatko', 'Kyläkaupasta nyt kaksitahtiöljyä, kanistereita ja julisteita.']
+  ];
+  function watchTv(){
+    if(mini.active || bolt.active) return;
+    // tunti peliaikaa kuluu
+    dayTime += 1/24;
+    if(dayTime >= 1){ dayTime -= 1; dayIndex = (dayIndex+1) % 7; advanceSummerDay(); }
+    health = Math.min(100, health + 8);
+    hunger = Math.max(0, hunger - 4);   // sohvalla tulee nälkä
+    updateVitalsDisplay();
+    var sh;
+    var de = (typeof dailyEventDef === 'function') ? dailyEventDef() : null;
+    if(de && !dailyEvent.done && Math.random() < 0.5){
+      sh = ['Paikallisuutiset', de.teksti + ' Paikka: ' + de.paikka + '.'];
+    } else {
+      sh = TV_SHOWS[Math.floor(Math.random()*TV_SHOWS.length)];
+    }
+    if(kotiSisa && kotiSisa.userData.tvScreen){
+      kotiSisa.userData.tvScreen.material.emissiveIntensity = 1.1;
+      kotiSisa.userData.tvScreen.material.needsUpdate = true;
+    }
+    showToast(false, '📺 ' + sh[0], sh[1] + ' (tunti kului, voimat palautuivat)', 5600);
+    saveGame();
+  }
+  // ---- jääkaappi ----
+  function eatFromFridge(){
+    if(mini.active || bolt.active) return;
+    if(hunger > 88){
+      showToast(false, 'Ei ole nälkä', 'Vatsa on täysi. Säästä ateria myöhemmäksi.', 3000);
+      return;
+    }
+    if(fridgeMeals <= 0){
+      showToast(true, 'Jääkaappi on tyhjä', 'Äiti täyttää sen yön aikana. Siihen asti ruokaa saa Mac Donaldsilta tai ruokabaarista.', 4600);
+      return;
+    }
+    fridgeMeals--;
+    hunger = Math.min(100, hunger + 35);
+    health = Math.min(100, health + 5);
+    if(typeof foodEaten !== 'undefined') foodEaten++;
+    if(typeof foodBoostLeft !== 'undefined') foodBoostLeft = Math.max(foodBoostLeft, 180);
+    updateVitalsDisplay();
+    showToast(false, '🍽️ Söit kotona', 'Jääkaapissa ' + fridgeMeals + ' ateriaa jäljellä. Täysi vatsa nostaa työpalkkoja hetken.', 4600);
+    saveGame();
+  }
+
 
   function enterHome(){
     inStore = true;
@@ -4598,7 +4937,9 @@
     if(fuel < 25) fuel = 25;
     // yön yli nukkuminen palauttaa kunnon, mutta aamulla on nälkä
     health = 100;
-    hunger = Math.max(25, hunger - 18);
+    // julisteet ja kotoisa huone: mitä enemmän seinällä on, sitä vähemmän nälkäisenä herää
+    hunger = Math.max(25, hunger - 18 + posterCount()*4);
+    fridgeMeals = 3;   // äiti täytti jääkaapin yön aikana
     healthWarned = false; hungerWarned = false;
     updateVitalsDisplay();
     // nukkuminen hyppää suoraan aamuun, joten mahdollinen pidätys laukeaa heti kun astut ulos
@@ -4629,6 +4970,11 @@
     {id:'ketjulukko',   name:'Ketjulukko',        gen:'ketjulukon',         desc:'Reppuun. Katkenneen ketjun saa jatkettua tien päällä G:llä.', price:6, owned:false, consumable:true, count:0},
     {id:'paikkaussarja',name:'Paikkaussarja',     gen:'paikkaussarjan',     desc:'Reppuun. Puhjenneen renkaan paikkaus tien päällä G:llä.', price:9, owned:false, consumable:true, count:0},
     {id:'kaksitahtioljy', name:'Kaksitahtiöljy',  gen:'kaksitahtiöljyn',   desc:'Pullo sekoitusöljyä. Kaadetaan bensan sekaan pumpulla O-napilla - ilman öljyä mäntä leikkaa kiinni.', price:5, owned:false, consumable:true, count:0},
+    {id:'juliste1', name:'Juliste: Mopomiitti -96', desc:'Oman huoneen seinälle. Kotoisa huone palauttaa yöunilla enemmän voimia.', price:12, owned:false},
+    {id:'juliste2', name:'Juliste: Crossitähti',       desc:'Oman huoneen seinälle. Kotoisa huone palauttaa yöunilla enemmän voimia.', price:12, owned:false},
+    {id:'juliste3', name:'Juliste: Kesäjärvi',         desc:'Oman huoneen seinälle. Kotoisa huone palauttaa yöunilla enemmän voimia.', price:12, owned:false},
+    {id:'momenttiavain', name:'Momenttiavain', desc:'Näyttää kiristyksen newtonmetreinä: osumaikkuna pysyy leveänä eikä avain luiskahda yhtä herkästi.', price:45, owned:false},
+    {id:'kanisteri', name:'Bensakanisteri', desc:'5 litran kanisteri. Täytä pumpulla ja kaada tankkiin kesken matkan K-napilla.', price:18, owned:false},
     {id:'kypara', name:'Kypärä', desc:'Punainen avokypärä. Pakollinen: ilman sitä partio sakottaa ja ajokokeesta tulee virhepisteitä.', price:45, owned:false}
   ];
   function storeItemById(id){
@@ -4680,6 +5026,7 @@
         if(it.id === 'kalastuslupa') kalastuslupaMesh.visible = true;
         if(it.id === 'onnenkolikko') onnenkolikkoMesh.visible = true;
         if(it.id === 'kypara') updateHelmet();
+        if(it.id.indexOf('juliste') === 0) updatePosters();
         renderStoreItems();
         if(inventoryOpen) renderInventory();
       });
@@ -7096,7 +7443,7 @@
     var mMouth    = new THREE.MeshStandardMaterial({color: new THREE.Color(0.42,0.20,0.18), roughness:0.7, flatShading:true});
     var mSkin     = new THREE.MeshStandardMaterial({color: skin, roughness:0.9, flatShading:true});
     var base = f.neckY;   // kasvot ovat pään luun lapsia, ja luu istuu kaulanivelessä
-    var eyes = [];
+    var eyes = [], brows = [];
     for(var si=0; si<2; si++){
       var sgn = si ? 1 : -1;
       var eg = new THREE.Group();
@@ -7120,7 +7467,10 @@
       brow.scale.set(h*0.165, h*0.024, h*0.030);
       brow.position.set(sgn*f.eyeX, f.browY - base, f.browZ - h*0.002);
       brow.rotation.z = -sgn*0.15;
+      brow.userData.restY = brow.position.y;
+      brow.userData.restZ = brow.rotation.z;
       g.add(brow);
+      brows.push(brow);
       // korva
       var ear = new THREE.Mesh(G.eye, mSkin);
       ear.scale.set(h*0.022, h*0.060, h*0.038);
@@ -7138,9 +7488,11 @@
     var mouth = new THREE.Mesh(G.bar, mMouth);
     mouth.scale.set(h*0.195, h*0.028, h*0.028);
     mouth.position.set(0, f.mouthY - base, f.mouthZ - h*0.012);
+    mouth.userData.restY = mouth.position.y;
+    mouth.userData.restSY = mouth.scale.y;
     g.add(mouth);
     g.traverse(function(o){ if(o.isMesh) o.castShadow = false; });
-    return {group: g, eyeL: eyes[0], eyeR: eyes[1]};
+    return {group: g, eyeL: eyes[0], eyeR: eyes[1], browL: brows[0], browR: brows[1], mouth: mouth, headH: h};
   }
 
   // Tehdas: jokainen hahmo tarvitsee OMAN luurankonsa (kloonaus jakaisi saman, jolloin kaikki
@@ -7183,7 +7535,11 @@
     if(limbs.head && skinnedTemplate.face){
       try{
         var fb = buildFace(skinnedTemplate.face);
-        if(fb){ limbs.head.add(fb.group); limbs.eyeL = fb.eyeL; limbs.eyeR = fb.eyeR; }
+        if(fb){
+          limbs.head.add(fb.group);
+          limbs.eyeL = fb.eyeL; limbs.eyeR = fb.eyeR;
+          limbs.browL = fb.browL; limbs.browR = fb.browR; limbs.mouth = fb.mouth; limbs.headH = fb.headH;
+        }
       }catch(fe2){ console.warn('Kasvojen rakennus epäonnistui:', fe2); }
     }
     figure.userData.hipY = skinnedTemplate.hipY;
@@ -8520,7 +8876,7 @@
       dmgRow.className = 'wideBtn';
       dmgRow.type = 'button';
       dmgRow.style.marginTop = '8px';
-      dmgRow.textContent = '🔨 Oikaise pelti (' + Math.round(damageLevel()*100) + ' % lommolla) ' + damageRepairCost() + ' €';
+      dmgRow.textContent = '🔨 Oikaise pelti, naarmut ja peilit (' + Math.round(damageLevel()*100) + ' % vauriolla) ' + damageRepairCost() + ' €';
       dmgRow.disabled = (money < damageRepairCost());
       dmgRow.addEventListener('click', function(){ startDamageRepair(); });
       shelfListEl.appendChild(dmgRow);
@@ -8657,7 +9013,10 @@
     // useampi pultti = hieman armollisempi alku, jottei kuuden pultin urakasta tule mahdotonta
     bolt.speed = 0.78 - Math.min(0.18, (bolt.needed - 3)*0.06);
     bolt.hits = 0; bolt.quality = 0; bolt.lockout = 0; bolt.done = false; bolt.doneTimer = 0;
-    bolt.zoneWidth = 0.30;
+    bolt.dropped = false;
+    if(boltSearchEl){ boltSearchEl.hidden = true; boltSearchEl.innerHTML = ''; }
+    // momenttiavaimella ikkuna on leveämpi alusta asti
+    bolt.zoneWidth = hasTorqueWrench() ? 0.40 : 0.30;
     bolt.zoneStart = 0.15 + Math.random()*(0.85 - bolt.zoneWidth - 0.15);
     boltTitleEl.textContent = cfg.title;
     boltMsgEl.textContent = 'Kiristä ' + boltCountWord(bolt.needed) + ' ' + bolt.word + '.';
@@ -8689,12 +9048,14 @@
   function layoutBoltZone(){
     boltZoneEl.style.left = (bolt.zoneStart*100) + '%';
     boltZoneEl.style.width = (bolt.zoneWidth*100) + '%';
-    var sweetW = bolt.zoneWidth*0.32;
+    var sweetW = bolt.zoneWidth*(hasTorqueWrench() ? 0.56 : 0.32);
     boltSweetEl.style.left = ((bolt.zoneStart + bolt.zoneWidth/2 - sweetW/2)*100) + '%';
     boltSweetEl.style.width = (sweetW*100) + '%';
   }
   function closeBoltOverlay(){
     bolt.active = false;
+    bolt.dropped = false;
+    if(boltSearchEl){ boltSearchEl.hidden = true; boltSearchEl.innerHTML = ''; }
     boltGameEl.hidden = true;
     if(bolt.panel === garagePanelEl){
       if(garageOpen){ garagePanelEl.hidden = false; renderShelf(); }
@@ -8708,20 +9069,88 @@
     if(!bolt.active) return;
     closeBoltOverlay();
   }
+  // ==========================================================================
+  // ---- MOMENTTIAVAIN JA PUTOAVAT PULTIT ----
+  // Pulttien kiristys oli pelkkä ajoitusmittari: osut vihreään tai et. Kaksi lisäystä tekevät
+  // siitä työkalupelin.
+  //
+  // MOMENTTIAVAIN on kaupasta ostettava kertahankinta. Se ei tee pelistä helppoa vaan
+  // LUETTAVAN: osumaikkuna ei kapene joka pultilla yhtä paljon, keskikohta on selvästi
+  // leveämpi ja ruudulla näkyy kiristys newtonmetreinä. Ilman sitä kiristys arvataan tuntumalla.
+  //
+  // PUTOAVA PULTTI on mokan seuraus. Kun avain luiskahtaa, pultti voi tipahtaa lattialle, ja
+  // sen etsimiseen menee aikaa - kolme paikkaa, yksi oikea. Momenttiavaimella pultti pysyy
+  // paremmin otteessa, joten tipahtamisen riski puolittuu.
+  // ==========================================================================
+  var BOLT_TORQUE_MAX = 28;   // newtonmetriä täydellä kireydellä
+  function hasTorqueWrench(){
+    var it = storeItemById('momenttiavain');
+    return !!(it && it.owned);
+  }
+  var boltSearchEl = document.getElementById('boltSearch');
+  var BOLT_SPOTS = ['Pöydän alla', 'Työkalulaatikossa', 'Pukin vieressä', 'Lattiakaivon reunalla', 'Rätin alla'];
+  // Pultti tipahti: pysäytetään mittari ja näytetään kolme etsintäpaikkaa.
+  function boltDrop(){
+    bolt.dropped = true;
+    bolt.lockout = 999;        // mittari seisoo kunnes pultti löytyy
+    var spots = BOLT_SPOTS.slice();
+    for(var i=spots.length-1; i>0; i--){ var j = Math.floor(Math.random()*(i+1)); var t = spots[i]; spots[i] = spots[j]; spots[j] = t; }
+    spots = spots.slice(0, 3);
+    var oikea = spots[Math.floor(Math.random()*spots.length)];
+    boltMsgEl.textContent = 'Pultti tipahti lattialle. Mistä se löytyy?';
+    if(!boltSearchEl) return;
+    boltSearchEl.hidden = false;
+    boltSearchEl.innerHTML = '';
+    spots.forEach(function(sp){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = sp;
+      b.addEventListener('click', function(){
+        if(sp === oikea){
+          boltFound();
+        } else {
+          b.disabled = true;
+          b.style.opacity = '0.4';
+          bolt.quality -= 0.12;
+          boltMsgEl.textContent = 'Ei täällä. Aika kuluu.';
+          playBoltSound(false, true);
+        }
+      });
+      boltSearchEl.appendChild(b);
+    });
+  }
+  function boltFound(){
+    bolt.dropped = false;
+    bolt.lockout = 0.3;
+    if(boltSearchEl){ boltSearchEl.hidden = true; boltSearchEl.innerHTML = ''; }
+    boltMsgEl.textContent = 'Löytyi. Jatketaan.';
+    playBoltSound(true);
+  }
+  // Mittarin lukema newtonmetreinä - vain momenttiavaimella.
+  function boltTorqueText(){
+    if(!hasTorqueWrench()) return '';
+    var centre = bolt.zoneStart + bolt.zoneWidth/2;
+    // osoittimen etäisyys keskeltä -> kireys: keskellä täysi momentti
+    var d = Math.abs(bolt.pos - centre) / Math.max(0.0001, bolt.zoneWidth);
+    var nm = Math.max(0, BOLT_TORQUE_MAX*(1 - Math.min(1, d)));
+    return ' · ' + nm.toFixed(1) + ' Nm';
+  }
+
   function boltStrike(){
-    if(!bolt.active || bolt.done || bolt.lockout > 0) return;
+    if(!bolt.active || bolt.done || bolt.lockout > 0 || bolt.dropped) return;
     var inZone = bolt.pos >= bolt.zoneStart && bolt.pos <= bolt.zoneStart + bolt.zoneWidth;
-    var sweetHalf = bolt.zoneWidth*0.16;
+    var sweetHalf = bolt.zoneWidth*(hasTorqueWrench() ? 0.28 : 0.16);
     var centre = bolt.zoneStart + bolt.zoneWidth/2;
     var perfect = Math.abs(bolt.pos - centre) <= sweetHalf;
     if(inZone){
       bolt.hits++;
       bolt.quality += perfect ? 1 : 0.6;
-      bolt.speed += 0.16;                 // seuraava pultti on vaikeampi
-      bolt.zoneWidth = Math.max(0.15, bolt.zoneWidth - 0.045);
+      bolt.speed += hasTorqueWrench() ? 0.10 : 0.16;   // momenttiavaimella tahti kiihtyy loivemmin
+      bolt.zoneWidth = Math.max(hasTorqueWrench() ? 0.21 : 0.15,
+                                bolt.zoneWidth - (hasTorqueWrench() ? 0.022 : 0.045));
       bolt.zoneStart = 0.12 + Math.random()*(0.88 - bolt.zoneWidth - 0.12);
       layoutBoltZone();
-      boltMsgEl.textContent = perfect ? 'Täysi kireys!' : 'Kiinni.';
+      boltMsgEl.textContent = (perfect ? 'Täysi kireys!' : 'Kiinni.') + boltTorqueText();
       playBoltSound(perfect);
       setBoltPips();
       if(bolt.hits >= (bolt.needed || 3)) finishBoltGame();
@@ -8730,6 +9159,8 @@
       bolt.quality -= 0.25;
       boltMsgEl.textContent = 'Ohi! Avain luiskahti.';
       playBoltSound(false, true);
+      // Luiskahtanut avain voi pudottaa pultin kädestä. Momenttiavain pitää pultin paremmin.
+      if(Math.random() < (hasTorqueWrench() ? 0.16 : 0.33)) boltDrop();
     }
   }
   function finishBoltGame(){
@@ -8903,6 +9334,63 @@
         ? 'Kaada kaksitahtiöljyä sekaan: paina O pumpun vieressä.'
         : 'Osta kaksitahtiöljyä kyläkaupasta ja kaada sitä bensan sekaan, tai moottori leikkaa kiinni.'), 6000);
     }
+  }
+
+  // ==========================================================================
+  // ---- BENSAKANISTERI ----
+  // Kartan kasvettua tankin loppuminen Kirkonkylän ja kodin välissä tarkoitti yli kilometrin
+  // työntämistä. Kanisteri on kaupasta ostettava kertahankinta, joka TÄYTETÄÄN pumpulla ja
+  // kaadetaan tankkiin missä tahansa. Se ei poista bensan loppumista vaan tekee siitä asian
+  // jonka voi ennakoida: kanisteri pitää muistaa täyttää ennen pitkää reissua.
+  // ==========================================================================
+  var canFuel = 0;     // kanisterin sisältö 0-100 (samoissa yksiköissä kuin tankki)
+  function hasJerrycan(){
+    var it = storeItemById('kanisteri');
+    return !!(it && it.owned);
+  }
+  function useJerrycan(){
+    if(mini.active || bolt.active || inStore) return;
+    if(!hasJerrycan()){
+      showToast(true, 'Ei kanisteria', 'Bensakanisterin saa kyläkaupasta 18 eurolla. Sillä voi tankata kesken matkan.', 4400);
+      return;
+    }
+    if(atFuelPump()){
+      // pumpulla kanisteri täytetään
+      var puuttuu = 100 - canFuel;
+      if(puuttuu < 0.5){ showToast(false, 'Kanisteri on täynnä', 'Viisi litraa varalla.', 2400); return; }
+      var hinta = Math.ceil(puuttuu * fuelPricePerPercent);
+      if(money < hinta){
+        var saa = money / fuelPricePerPercent;
+        canFuel = Math.min(100, canFuel + saa);
+        money = 0;
+        updateMoneyDisplay();
+        showToast(true, 'Rahat loppuivat', 'Kanisteriin tuli ' + Math.round(canFuel) + ' %.', 3600);
+        saveGame();
+        return;
+      }
+      money -= hinta;
+      canFuel = 100;
+      updateMoneyDisplay();
+      showToast(false, '⛽ Kanisteri täytetty', 'Viisi litraa varalla. -' + hinta + ' €. Kaada se tankkiin K-napilla kun bensa loppuu.', 4600);
+      saveGame();
+      return;
+    }
+    // muualla kanisteri kaadetaan tankkiin
+    if(canFuel < 0.5){
+      showToast(true, 'Kanisteri on tyhjä', 'Täytä se huoltoaseman pumpulla: aja pumpun viereen ja paina K.', 4200);
+      return;
+    }
+    var tilaa = 100 - fuel;
+    if(tilaa < 0.5){ showToast(false, 'Tankki on täynnä', 'Kanisteri jää varalle.', 2400); return; }
+    var siirto = Math.min(canFuel, tilaa);
+    fuel += siirto;
+    canFuel -= siirto;
+    maintDiluteOil(siirto);   // kanisterissa on pumppubensaa, joten seos laimenee
+    if(fuel > 0){ stalled = false; stallEl.classList.remove('show'); }
+    showToast(false, '⛽ Kaadoit kanisterin tankkiin', Math.round(siirto) + ' % lisää. Kanisterissa jäljellä ' + Math.round(canFuel) + ' %.' +
+      (maint.oil < 28 ? ' Seos on nyt laiha - kaada öljyä (O).' : ''), 5000);
+    if(inventoryOpen) renderInventory();
+    saveGame();
   }
 
   // ---- ÖLJYN KAATAMINEN ----
@@ -9197,13 +9685,13 @@
     // plate = rekisterikilven paikka mopon koordinaateissa. Jokainen malli on eri kokoinen ja eri
     // kohdassa, joten yhdellä yhteisellä paikalla kilpi leijui skoottereilla ilmassa pyörän sisällä.
     {id:'scoba', name:'Ekaskootteri', desc:'Skootteri jolla kaikki alkoi - jo omistuksessasi.', price:0, owned:true,
-      plate:[0, 0.58, -0.80]},
+      plate:[0, 0.58, -0.80], mirror:[0.25, 1.06, 0.24]},
     {id:'kickscooter', name:'Kevytskootteri', desc:'Ketterä toinen skootteri. Tulee valmiiksi tehdasmaalattuna, ei sovi tallin maalin-/tarransvaihtoon.', price:220, owned:false,
-      plate:[0, 0.33, -0.15]},
+      plate:[0, 0.33, -0.15], mirror:[0.20, 0.72, 0.64]},
     {id:'derbi', name:'Derbi 50cc', desc:'Oikea mopo eikä skootteri. Vakiona 120 km/h, kolmella viritysosalla 210 km/h ja 88BR-sylinterisarjalla 250 km/h.', price:520, owned:false,
-      perf:{accel:0.30, topspeed:0.30, brake:0.18, grip:0.16}, plate:[0, 0.46, -0.82]},
+      perf:{accel:0.30, topspeed:0.30, brake:0.18, grip:0.16}, plate:[0, 0.46, -0.82], mirror:[0.33, 1.05, 0.16]},
     {id:'monkey', name:'Sininen Monkey', desc:'Kaupan kruununjalokivi: nopein, vetävin ja pitävin pyörä koko kylässä. Tehdasmaalattu sininen, ei sovi tallin maalin-/tarranvaihtoon.', price:1000, owned:false,
-      perf:{accel:0.38, topspeed:0.32, brake:0.25, grip:0.20}, plate:[0, 0.42, -0.86]}
+      perf:{accel:0.38, topspeed:0.32, brake:0.25, grip:0.20}, plate:[0, 0.42, -0.86], mirror:[0.38, 0.98, 0.18]}
   ];
   var initialMopedOwnership = mopedModels.map(function(m){ return m.owned; });
   var mopedShopOpen = false;
@@ -9265,6 +9753,7 @@
     activeWheels = scobaOn ? scobaWheels : (kickOn ? kickWheels : (monkeyOn ? monkeyWheels : null));
     gearNow = 0;   // uusi mopo lähtee aina ykkösvaihteelta
     // jokaisella mopolla on oma vaurionsa - ajetaan tämän mallin lommot sen omaan geometriaan
+    if(typeof placeMirrors === 'function') placeMirrors();
     if(typeof damageByMoped !== 'undefined' && damageByMoped) damageRebuild();
   }
   // Ajoneuvomallin oma suorituskykybonus. Vain Monkeyllä on tällainen: se on kaupan kallein ja
@@ -9613,7 +10102,9 @@
     var ownedStoreItems = storeItems.filter(function(it){ return it.owned; });
     if(ownedStoreItems.length){
       ownedStoreItems.forEach(function(it){
-        html += '<div class="invRow"><span class="invName">'+it.name+'</span><span class="invVal">'+(it.consumable ? ((it.count||0)+' kpl') : 'Omistat ✓')+'</span></div>';
+        html += '<div class="invRow"><span class="invName">'+it.name+'</span><span class="invVal">'+
+          (it.consumable ? ((it.count||0)+' kpl')
+            : (it.id === 'kanisteri' ? (Math.round(canFuel)+' % bensaa') : 'Omistat \u2713'))+'</span></div>';
       });
     } else {
       html += '<div class="invRow"><span class="invName">Ei vielä ostoksia</span><span class="invVal">—</span></div>';
@@ -9722,11 +10213,16 @@
       if(Math.sqrt(dxhe*dxhe+dzhe*dzhe) <= kauppaInteractRadius){ exitHome(); return; }
       var dxhb = kotiBedPos.x - player.position.x, dzhb = kotiBedPos.z - player.position.z;
       if(Math.sqrt(dxhb*dxhb+dzhb*dzhb) <= kotiBedRadius){ sleepInBed(); return; }
+      var dxtv = kotiTvPos.x - player.position.x, dztv = kotiTvPos.z - player.position.z;
+      if(Math.sqrt(dxtv*dxtv+dztv*dztv) <= kotiTvRadius){ watchTv(); return; }
+      var dxfr = kotiFridgePos.x - player.position.x, dzfr = kotiFridgePos.z - player.position.z;
+      if(Math.sqrt(dxfr*dxfr+dzfr*dzfr) <= kotiFridgeRadius){ eatFromFridge(); return; }
       return; // kotona ei ole muita toimintoja
     }
     if(!inStore){
       var dxhd = kotiDoorOutside.x - player.position.x, dzhd = kotiDoorOutside.z - player.position.z;
       if(Math.sqrt(dxhd*dxhd+dzhd*dzhd) <= kotiDoorRadius){ enterHome(); return; }
+      if(typeof atCampfire === 'function' && atCampfire()){ sitByFire(); return; }
     }
     // ---- iso kauppa: ulko-ovi (kävele sisään), ja sisällä poistumispiste/tiski/pelikone ----
     if(!inStore){
@@ -9817,6 +10313,20 @@
       if(k==='escape' || k==='e'){ e.preventDefault(); closeDialogue(); }
       return;
     }
+    // Valokuvaustila ottaa liikkumisnäppäimet itselleen: muuten mopo lähtisi karkuun samalla
+    // kun kameraa kierretään.
+    if(photoMode){
+      if(k==='a'||k==='arrowleft'){ photoKeys.a = true; e.preventDefault(); return; }
+      if(k==='d'||k==='arrowright'){ photoKeys.d = true; e.preventDefault(); return; }
+      if(k==='w'||k==='arrowup'){ photoKeys.w = true; e.preventDefault(); return; }
+      if(k==='s'||k==='arrowdown'){ photoKeys.s = true; e.preventDefault(); return; }
+      if(k==='r'){ photoKeys.r = true; return; }
+      if(k==='f'){ photoKeys.f = true; return; }
+      if(k===' '){ if(!e.repeat) takePhoto(); e.preventDefault(); return; }
+      if(k==='p' || k==='escape'){ if(!e.repeat) togglePhotoMode(); return; }
+      if(k==='tab'){ e.preventDefault(); togglePhone(); return; }
+      return;
+    }
     if(k==='arrowup'||k==='w') input.fwd = true;
     if(k==='arrowdown'||k==='s') input.back = true;
     if(k==='arrowleft'||k==='a') input.left = true;
@@ -9857,6 +10367,11 @@
     if(k==='g' && !e.repeat){ roadsideRepair(); }   // hätäkorjaus repun varaosalla
     if(k==='h' && !e.repeat){ hailFriend(); }       // huuda kaverille: seuraa / kisa
     if(k==='o' && !e.repeat){ pourOil(); }          // kaada kaksitahtiöljyä bensan sekaan
+    if(k==='k' && !e.repeat){ useJerrycan(); }      // kanisteri: täytä pumpulla, kaada muualla
+    if(k==='j' && !e.repeat){ startShowContest(); } // mopokerhon näyttelykilpailu miitissä
+    if(k==='b' && !e.repeat){ startGroupRide(); }   // ryhmäajo miitistä
+    if(k==='p' && !e.repeat){ togglePhotoMode(); }  // valokuvaustila
+    if(k==='n' && !e.repeat){ cycleRadio(); }       // radiokanavan vaihto
     if(k==='q' && !e.repeat){ setSignal(-1); }      // vasen vilkku
     if(k==='c' && !e.repeat){ setSignal(1); }       // oikea vilkku
     // vaihteet: X ylös, Z alas (vain mopoilla joissa on vaihteisto)
@@ -9871,6 +10386,15 @@
   window.addEventListener('keyup', function(e){
     if(!gameStarted) return;
     var k = e.key.toLowerCase();
+    if(photoMode){
+      if(k==='a'||k==='arrowleft') photoKeys.a = false;
+      if(k==='d'||k==='arrowright') photoKeys.d = false;
+      if(k==='w'||k==='arrowup') photoKeys.w = false;
+      if(k==='s'||k==='arrowdown') photoKeys.s = false;
+      if(k==='r') photoKeys.r = false;
+      if(k==='f') photoKeys.f = false;
+      return;
+    }
     if(wrenchMode){
       if(k==='arrowup' || k==='r') wrenchKeyTighten = false;
       if(k==='arrowdown' || k==='f') wrenchKeyLoosen = false;
@@ -10447,35 +10971,91 @@
   // Sama periaate kuin poliisin sireenissä (oskillaattori suoraan Web Audiolla) - ladattua musiikkitiedostoa
   // ei ole käytettävissä, joten yksi lyhyt nuotti kerrallaan setIntervalilla, kukin nuotti oma oskillaattori
   // jolla pehmeä attack/decay-verhokäyrä, kiertäen yksinkertaista kesäistä nuottikulkua. ----
+  // ---- RADIOKANAVAT ----
+  // Yksi ainoa kesäsävelmä soi aiemmen aamusta iltaan samanlaisena. Nyt kanavia on neljä:
+  // tempo, aaltomuoto ja sävelkulku vaihtuvat, ja kanava valikoituu kellonajan mukaan. N
+  // vaihtaa käsin, jolloin automaattivalinta jää pois siihen asti kunnes kiertää takaisin.
+  //
+  // Nuotit soitetaan yksi kerrallaan ketjutetulla setTimeoutilla eikä setIntervalilla, koska
+  // kanavan tempo voi vaihtua kesken kaiken - kiinteä intervalli pitäisi purkaa ja rakentaa.
   var radioOwned = false;
-  var radioInterval = null;
+  var radioTimer = null;
   var radioStep = 0;
-  var radioNotes = [392.00,440.00,523.25,587.33,659.25,587.33,523.25,440.00,349.23,392.00,440.00,523.25,440.00,392.00,349.23,330.00];
-  function startRadio(){
-    radioOwned = true;
-    if(radioInterval) return;
-    ensureAudio();
-    if(!audioCtx) return;
-    radioInterval = setInterval(function(){
-      if(muted || !radioOwned || !audioCtx) return;
+  var RADIO_CHANNELS = [
+    {nimi:'Kesäradio', vari:'🌞', ms:260, aalto:'triangle', vol:0.10,
+     nuotit:[392.00,440.00,523.25,587.33,659.25,587.33,523.25,440.00,349.23,392.00,440.00,523.25,440.00,392.00,349.23,330.00]},
+    {nimi:'Rockkanava', vari:'🎸', ms:185, aalto:'sawtooth', vol:0.062,
+     nuotit:[164.81,164.81,196.00,164.81,220.00,196.00,164.81,146.83,164.81,164.81,246.94,220.00,196.00,164.81,146.83,130.81]},
+    {nimi:'Iltasoitto', vari:'🌇', ms:430, aalto:'sine', vol:0.085,
+     nuotit:[293.66,349.23,440.00,392.00,349.23,293.66,261.63,293.66,349.23,392.00,440.00,392.00,349.23,293.66,261.63,246.94]},
+    {nimi:'Yökanava', vari:'🌙', ms:700, aalto:'sine', vol:0.055,
+     nuotit:[196.00,233.08,261.63,233.08,196.00,174.61,196.00,146.83,174.61,196.00,233.08,196.00,164.81,146.83,130.81,146.83]}
+  ];
+  var radioChannel = 0;
+  var radioAuto = true;          // kanava seuraa kelloa kunnes pelaaja valitsee itse
+  function radioChannelForHour(h){
+    if(h >= 6 && h < 11) return 0;      // aamu: kesäradio
+    if(h >= 11 && h < 17) return 1;     // päivä: rock
+    if(h >= 17 && h < 22) return 2;     // ilta: iltasoitto
+    return 3;                           // yö
+  }
+  function radioNow(){
+    var idx = radioAuto ? radioChannelForHour(dayTime*24) : radioChannel;
+    return RADIO_CHANNELS[Math.max(0, Math.min(RADIO_CHANNELS.length-1, idx))];
+  }
+  function radioNowName(){
+    var c = radioNow();
+    return c.vari + ' ' + c.nimi + (radioAuto ? ' (automaatti)' : '');
+  }
+  function radioTick(){
+    radioTimer = null;
+    if(!radioOwned) return;
+    var ch = radioNow();
+    if(!muted && audioCtx){
       var t = audioCtx.currentTime;
       var osc = audioCtx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.value = radioNotes[radioStep % radioNotes.length];
+      osc.type = ch.aalto;
+      osc.frequency.value = ch.nuotit[radioStep % ch.nuotit.length];
       var noteGain = audioCtx.createGain();
+      var kesto = ch.ms/1000 * 1.45;
       noteGain.gain.setValueAtTime(0, t);
-      noteGain.gain.linearRampToValueAtTime(0.10, t+0.05);
-      noteGain.gain.exponentialRampToValueAtTime(0.001, t+0.38);
+      noteGain.gain.linearRampToValueAtTime(ch.vol, t + Math.min(0.09, kesto*0.2));
+      noteGain.gain.exponentialRampToValueAtTime(0.001, t + kesto);
       osc.connect(noteGain).connect(sfxOut());
       osc.start(t);
-      osc.stop(t+0.42);
+      osc.stop(t + kesto + 0.04);
       radioStep++;
-    }, 260);
+    }
+    radioTimer = setTimeout(radioTick, ch.ms);
+  }
+  function startRadio(){
+    radioOwned = true;
+    if(radioTimer) return;
+    ensureAudio();
+    if(!audioCtx) return;
+    radioTick();
   }
   function stopRadio(){
     radioOwned = false;
-    if(radioInterval){ clearInterval(radioInterval); radioInterval = null; }
+    if(radioTimer){ clearTimeout(radioTimer); radioTimer = null; }
     radioStep = 0;
+  }
+  // N kiertää kanavat läpi ja palaa sitten automaattiin
+  function cycleRadio(){
+    var it = storeItemById('radio');
+    if(!it || !it.owned){
+      showToast(false, 'Ei radiota', 'Kannettava radio löytyy kyläkaupasta. Ilman sitä ei ole mitään viritettävää.', 3800);
+      return;
+    }
+    if(radioAuto){ radioAuto = false; radioChannel = 0; }
+    else if(radioChannel >= RADIO_CHANNELS.length - 1){ radioAuto = true; }
+    else { radioChannel++; }
+    radioStep = 0;
+    var c = radioNow();
+    showToast(false, c.vari + ' ' + c.nimi, radioAuto
+      ? 'Automaattihaku takaisin päälle: kanava vaihtuu kellonajan mukaan.'
+      : 'Kanava valittu käsin. N vaihtaa seuraavaan.', 3400);
+    saveGame();
   }
 
   // ---- ympäristöäänet: linnunlaulu päivällä, sirkat yöllä, satunnainen ohiajavan auton huru - kaikki
@@ -11106,6 +11686,16 @@
       if(slUd.light) slUd.light.intensity = nightFactor*3.4;
     }
     streetlightGlowMat.opacity = nightFactor*0.85; // jaettu materiaali - yksi rivi päivittää kaikkien pylväiden hehkun
+    // talojen ikkunat syttyvät illalla. Lasi on JAETTU materiaali kaikilla taloilla, joten
+    // koko kylä syttyy yhdellä rivillä - sama temppu kuin katuvalojen hehkulla yllä.
+    var hpW = (typeof houseParts === 'function') ? houseParts() : null;
+    if(hpW && hpW.glassMat){
+      if(!hpW.glassMat.userData.yoVari){
+        hpW.glassMat.emissive = new THREE.Color(0xffc879);
+        hpW.glassMat.userData.yoVari = true;
+      }
+      hpW.glassMat.emissiveIntensity = nightFactor*1.15;
+    }
     headlightGlowMat.opacity = ((typeof damageLightBroken !== 'undefined') && damageLightBroken) ? 0 : nightFactor*0.8;
 
     var totalMinutes = Math.floor(dayTime*24*60);
@@ -11700,6 +12290,85 @@
     return 1 + Math.min(3, Math.floor(holdTime/1.6)); // hitaampi kasvu ja pienempi katto kuin ennen (oli max x5, nyt x4)
   }
 
+  // ==========================================================================
+  // ---- TEMPPUPISTEET JA KETJU ----
+  // Keula, stoppie, hyppyrit ja märän kelin luisu ovat kaikki jo pelissä, mutta niistä ei ole
+  // saanut mitään muuta kuin pienen keulapalkkion. Nyt ne ovat TEMPPUJA, jotka ketjuuntuvat:
+  // jokainen temppu kerryttää pisteitä, ja ketju pysyy elossa niin kauan kuin seuraava temppu
+  // alkaa kolmen sekunnin sisällä edellisestä. Kerroin kasvaa sen mukaan montako ERI temppua
+  // ketjussa on, joten paras tulos ei tule yhdestä pitkästä keulasta vaan niiden yhdistelystä.
+  //
+  // Ketju maksetaan vasta kun se katkeaa - kaatuminen nollaa koko ketjun, mikä tekee pitkän
+  // ketjun lopettamisesta ajoissa oman päätöksensä.
+  // ==========================================================================
+  var TRICK_CHAIN_GRACE = 3.0;     // sekuntia ilman temppua ennen kuin ketju katkeaa
+  var trickScore = 0;              // nykyisen ketjun pisteet
+  var trickBest = 0;               // kesän paras ketju
+  var trickGrace = 0;              // aikaa jäljellä ennen katkeamista
+  var trickKinds = {};             // mitä eri temppuja ketjussa on ollut
+  var trickKindCount = 0;
+  var trickLast = '';              // viimeisin temppu HUDiin
+  var trickHudEl = document.getElementById('trickHud');
+  var trickScoreTextEl = document.getElementById('trickScoreText');
+  var trickChainTextEl = document.getElementById('trickChainText');
+  var TRICK_NAMES = {keula:'keula', stoppie:'stoppie', hyppy:'hyppy', luisu:'luisu'};
+  function trickMult(){ return 1 + Math.min(3, Math.max(0, trickKindCount - 1)); }
+  function trickAdd(kind, pts){
+    if(mode !== 'riding' || crashed) return;
+    if(!trickKinds[kind]){ trickKinds[kind] = true; trickKindCount++; }
+    trickScore += pts*trickMult();
+    trickGrace = TRICK_CHAIN_GRACE;
+    trickLast = TRICK_NAMES[kind] || kind;
+  }
+  // Ketju katkeaa: pisteet kirjataan, rahaa ja mainetta isosta ketjusta.
+  function trickBank(kaatui){
+    if(trickScore < 1){ trickReset(); return; }
+    var pisteet = Math.round(trickScore);
+    if(kaatui){
+      showToast(true, 'Ketju katkesi', 'Kaaduit ja menetit ' + pisteet + ' temppupistettä.', 3400);
+      trickReset();
+      return;
+    }
+    var uusiEnnatys = pisteet > trickBest;
+    if(uusiEnnatys) trickBest = pisteet;
+    // palkkio kasvaa alilineaarisesti, jottei sataa pistettä voi tahkota loputtomiin
+    var raha = Math.round(Math.min(80, Math.pow(pisteet, 0.62)));
+    if(raha > 0){ money += raha; updateMoneyDisplay(); }
+    if(pisteet >= 250) repVillageAdd(4);
+    showToast(false, (uusiEnnatys ? '🏅 Uusi temppuennätys ' : 'Ketju: ') + pisteet + ' pistettä',
+      'Kerroin x' + trickMult() + ' · ' + trickKindCount + ' eri temppua · +' + raha + ' €' +
+      (uusiEnnatys ? '' : ' · ennätys ' + trickBest), 4200);
+    saveGame();
+    trickReset();
+  }
+  function trickReset(){
+    trickScore = 0; trickGrace = 0; trickKinds = {}; trickKindCount = 0; trickLast = '';
+    if(trickHudEl) trickHudEl.hidden = true;
+  }
+  // Kutsutaan joka ruudulla ajotilassa.
+  function trickTick(dt){
+    if(mode !== 'riding'){ if(trickScore > 0) trickBank(false); return; }
+    if(crashed){ if(trickScore > 0) trickBank(true); return; }
+    var v = Math.abs(speed);
+    // keula ja stoppie: pisteitä sekunnissa kulman mukaan
+    if(wheelieAngle > 0.25 && v > 2) trickAdd('keula', 8*dt*(0.5 + wheelieAngle/maxWheelieAngle));
+    if(stoppieAngle > 0.18 && v > 2) trickAdd('stoppie', 12*dt*(0.5 + stoppieAngle/maxStoppieAngle));
+    // luisu: märällä kelillä sivuluisu on oma temppunsa
+    if(typeof slipAngle !== 'undefined' && slipAngle > 0.22 && v > 6) trickAdd('luisu', 10*dt*Math.min(2, slipAngle*3));
+    if(trickGrace > 0){
+      trickGrace -= dt;
+      if(trickGrace <= 0) trickBank(false);
+    }
+    if(trickHudEl){
+      var nayta = trickScore >= 1;
+      trickHudEl.hidden = !nayta;
+      if(nayta){
+        trickScoreTextEl.textContent = Math.round(trickScore) + (trickMult() > 1 ? ' x' + trickMult() : '');
+        trickChainTextEl.textContent = trickLast + ' · ' + Math.ceil(trickGrace) + ' s';
+      }
+    }
+  }
+
   // ---- NPC-hahmot: kylän asukkaat joiden luona voi jutustella (E lähellä) ----
   // Hahmot ovat käyttäjän toimittamia 3D-malleja (tavallinen kyläläinen + kalamies). Alkuperäiset mallit
   // olivat raskaita (123k ja 134k kolmiota) ja täysin materiaalittomia - pelkkää harmaata pintaa ilman
@@ -11763,6 +12432,77 @@
     g.traverse(function(o){ if(o.isMesh){ o.castShadow = true; } });
     return g;
   }
+  // ==========================================================================
+  // ---- KYLÄLÄISTEN KASVOT ----
+  // Omalla hahmolla on silmät ja suu, kyläläisillä ei ollut mitään: pää oli sileä ihonvärinen
+  // kappale. Se näkyi heti kun kyläläisen kanssa alkoi jutella - puhuva tyhjä naama.
+  //
+  // Kyläläiset eivät ole nivelpainotettuja, joten pään luuta ei ole. Mitat otetaan samalla
+  // tavalla kuin omalla hahmolla - leveysprofiilista, ei arvaamalla - mutta suoraan NPC:n
+  // omasta geometriasta, ja kasvot ripustetaan ryhmään eikä luuhun.
+  // ==========================================================================
+  var npcFaceCache = {};
+  function npcFaceMeasure(kind){
+    if(npcFaceCache[kind] !== undefined) return npcFaceCache[kind];
+    npcFaceCache[kind] = null;
+    try{
+      var geom = npcGeometry(kind);
+      if(!geom) return null;
+      var pos = geom.getAttribute('position');
+      var n = pos.count;
+      var minY = 1e9, maxY = -1e9, i;
+      for(i=0; i<n; i++){ var y = pos.getY(i); if(y < minY) minY = y; if(y > maxY) maxY = y; }
+      var hgt = Math.max(0.0001, maxY - minY);
+      // kapein vaakaviipale ylävartalossa = kaula, levein sen yläpuolella = silmien taso
+      // HUOM: mallin origo ei ole hahmon keskiviivalla (ctr[0] siirtaa sita), joten leveys
+      // mitataan viipaleen omasta min-max-valista eika itseisarvosta origoon nahden.
+      var SL = 48, wLo = new Float64Array(SL), wHi = new Float64Array(SL), w = new Float64Array(SL);
+      for(i=0; i<SL; i++){ wLo[i] = 1e9; wHi[i] = -1e9; }
+      for(i=0; i<n; i++){
+        var si = Math.min(SL-1, Math.floor((pos.getY(i)-minY)/hgt*SL));
+        var xv = pos.getX(i);
+        if(xv < wLo[si]) wLo[si] = xv;
+        if(xv > wHi[si]) wHi[si] = xv;
+      }
+      for(i=0; i<SL; i++) w[i] = (wHi[i] > wLo[i]) ? (wHi[i]-wLo[i])*0.5 : 0;
+      var neckI = -1, neckW = 1e9, k;
+      for(k=Math.floor(SL*0.72); k<Math.floor(SL*0.94); k++){ if(w[k] < neckW){ neckW = w[k]; neckI = k; } }
+      if(neckI < 0) return null;
+      var neckY = minY + (neckI+0.5)/SL*hgt;
+      var eyeI = -1, eyeW = 0;
+      for(k=neckI+1; k<SL; k++){ if(w[k] > eyeW){ eyeW = w[k]; eyeI = k; } }
+      if(eyeI < 0) return null;
+      var eyeLvl = minY + (eyeI+0.5)/SL*hgt;
+      var headTop = maxY, hxLo = 1e9, hxHi = -1e9;
+      for(i=0; i<n; i++){ if(pos.getY(i) >= neckY){ var xv2 = pos.getX(i); if(xv2 < hxLo) hxLo = xv2; if(xv2 > hxHi) hxHi = xv2; } }
+      var headCX = (hxLo + hxHi)*0.5;                      // paan oma keskiviiva mallin avaruudessa
+      var headHalfW = Math.max(0.0001, (hxHi - hxLo)*0.5);
+      var headH = Math.max(0.0001, (headTop - eyeLvl)/0.45);
+      // pinnan syvyys säteellä, kuten omalla hahmolla - kiinteä arvo upottaisi silmät kalloon
+      var probe = new THREE.Mesh(geom, new THREE.MeshBasicMaterial());
+      probe.updateMatrixWorld(true);
+      var rc = new THREE.Raycaster(), rcD = new THREE.Vector3(0,0,-1), rcO = new THREE.Vector3();
+      function zAt(x, y, fb){
+        rcO.set(x, y, headHalfW*6 + 1);
+        rc.set(rcO, rcD);
+        var h2 = rc.intersectObject(probe, false);
+        return h2.length ? h2[0].point.z : fb;
+      }
+      var eyeX = headHalfW*0.36, zG = headHalfW*0.9;
+      npcFaceCache[kind] = {
+        minY: minY, hgt: hgt, cx: headCX,
+        neckY: neckY, top: headTop, h: headH, halfW: headHalfW,
+        eyeY: eyeLvl, eyeX: eyeX, eyeZ: zAt(headCX + eyeX, eyeLvl, zG),
+        browY: eyeLvl + headH*0.072, browZ: zAt(headCX + eyeX, eyeLvl + headH*0.072, zG),
+        noseY: eyeLvl - headH*0.150, noseZ: zAt(headCX, eyeLvl - headH*0.150, zG),
+        mouthY: eyeLvl - headH*0.270, mouthZ: zAt(headCX, eyeLvl - headH*0.270, zG)
+      };
+    }catch(e){
+      console.warn('Kyläläisen kasvojen mittaus epäonnistui (' + kind + '):', e);
+      npcFaceCache[kind] = null;
+    }
+    return npcFaceCache[kind];
+  }
   // pal = [kengät, housut, takki, iho, hiukset/hattu, kala]
   function makeNpcFigure(kind, pal, targetHeight){
     var geom = npcGeometry(kind);
@@ -11787,6 +12527,27 @@
     mesh.position.set(-m.ctr[0]*s, -m.mn[1]*s, -m.ctr[1]*s);
     var g = new THREE.Group();
     g.add(mesh);
+    // kasvot: mitat ovat mallin omassa koordinaatistossa, joten ne skaalataan ja siirretään
+    // samalla tavalla kuin itse verkko. neckY nollataan, jolloin buildFace sijoittaa osat
+    // suoraan ryhmän koordinaatistoon eikä kaulanivelen suhteen.
+    var fi = npcFaceMeasure(kind);
+    if(fi){
+      var off = new THREE.Vector3(-m.ctr[0]*s, -m.mn[1]*s, -m.ctr[1]*s);
+      var fb = buildFace({
+        neckY: 0, h: fi.h*s, halfW: fi.halfW*s,
+        skin: new THREE.Color(pal[3] === undefined ? 0xe0a978 : pal[3]),
+        hair: new THREE.Color(pal[4] === undefined ? 0x4a3524 : pal[4]),
+        eyeY:   fi.eyeY*s + off.y,   eyeX:   fi.eyeX*s,          eyeZ:   fi.eyeZ*s + off.z,
+        browY:  fi.browY*s + off.y,  browZ:  fi.browZ*s + off.z,
+        noseY:  fi.noseY*s + off.y,  noseZ:  fi.noseZ*s + off.z,
+        mouthY: fi.mouthY*s + off.y, mouthZ: fi.mouthZ*s + off.z
+      });
+      if(fb){
+        fb.group.position.x = fi.cx*s + off.x;   // kasvot paan omalle keskiviivalle
+        g.add(fb.group);
+        g.userData.face = fb;
+      }
+    }
     return g;
   }
   var npcChatCount = 0; // kasvaa joka kerta kun jonkun NPC:n kanssa jutustelee - käytetään tarinaan/tehtäviin
@@ -12493,6 +13254,344 @@
     }
   })();
 
+  // ==========================================================================
+  // ---- MOPOKERHON TAPAHTUMAT MIITISSÄ ----
+  // Miitti oli paikka jossa kaverit seisovat iltaisin. Nyt siellä on kaksi tapahtumaa, jotka
+  // molemmat käyttävät järjestelmiä jotka ovat jo pelissä mutta joista ei ole saanut mitään.
+  //
+  // NÄYTTELYKILPAILU (J) arvostelee mopon: viritysosat, pakoputki, maali ja tarrat, kunto,
+  // lommot ja huoltoarvot. Tuunaus on tähän asti ollut pelkkää koristelua - nyt se on pisteitä.
+  //
+  // RYHMÄAJO (B) lähtee miitistä: kaikki kaverit seuraavat sinua kolmen kohteen kautta. Palkkio
+  // riippuu siitä montako kaveria on vielä mukana kullakin rastilla, joten tahti pitää valita
+  // hitaimman mopon mukaan - kovaa ajamalla porukka hajoaa.
+  // ==========================================================================
+  var MEET_FROM = 18, MEET_TO = 23;
+  var showContestDay = -1;       // minä kesäpäivänä näyttelyyn on osallistuttu
+  // ==========================================================================
+  // ---- NUOTIO MIITISSÄ ----
+  // Ilta oli pelissä vain tummempi päivä: porukka seisoi pimeässä pihassa eikä siellä ollut
+  // mitään mihin jäädä. Nuotio antaa illalle oman paikan - valoa, ääntä ja syyn istua hetki.
+  //
+  // Maanpinnan korkeutta EI lueta tässä: maaston muokkaus ei ole vielä valmis kun ylätason
+  // koodi ajetaan. Korkeus haetaan vasta ensimmäisellä päivityskierroksella.
+  // ==========================================================================
+  var campPos = new THREE.Vector3(meetSpot.x - 11, 0, meetSpot.z + 11);
+  var campRadius = 3.6;
+  var campSatDay = -1;            // minä kesäiltana nuotiolla on jo istuttu
+  var campPlaced = false;
+  var campFlames = [], campSmoke = [];
+  var campLight = null, campGroup = null, campT = 0, campCrackleT = 0;
+  var CAMP_LINES = [
+    ['Jussi',        'Muistaks ku Aku yritti keulia tossa portin edessä? Meni suoraan pensaaseen.'],
+    ['Aku',          'Mä oon päässy tällä jo viiteenkytppiin. Alamäessä tosin.'],
+    ['Romu-Reiska',  'Mulla on pajassa yks vanha sylinteri. Se on ollu siellä -89 asti.'],
+    ['Jussi',        'Ens kesänä ajetaan järven ympäri. Koko porukka, yhdessä päivässä.'],
+    ['Aku',          'Kuulin et poliisi mittaa taas kirkonkylän tiellä. Aja varovasti.'],
+    ['Romu-Reiska',  'Nuotio on hyvä paikka miettiä. Mopot ei korjaa itteään mutta pää selkenee.']
+  ];
+  function campfireLit(){
+    var h = dayTime*24;
+    return (h >= MEET_FROM || h < 1.5);   // syttyy miitin alkaessa, kytee puolille öin
+  }
+  function buildCampfire(){
+    var g = new THREE.Group();
+    var stoneMat = new THREE.MeshStandardMaterial({color:0x6e6a63, roughness:0.95, flatShading:true});
+    var logMat   = new THREE.MeshStandardMaterial({color:0x4a3a26, roughness:0.95, flatShading:true});
+    var coalMat  = new THREE.MeshStandardMaterial({color:0x2a1c12, roughness:1, emissive:0x5a1c06, emissiveIntensity:0.30});
+    var i;
+    // kivikehä
+    for(i=0; i<9; i++){
+      var a = i/9*Math.PI*2;
+      var st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.17 + Math.random()*0.07, 0), stoneMat);
+      st.position.set(Math.sin(a)*0.92, 0.10, Math.cos(a)*0.92);
+      st.rotation.set(Math.random(), Math.random(), Math.random());
+      st.castShadow = true;
+      g.add(st);
+    }
+    // hiillos
+    var coal = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.62, 0.08, 12), coalMat);
+    coal.position.y = 0.04;
+    g.add(coal);
+    // halot vinottain sisäänpäin
+    for(i=0; i<5; i++){
+      var la = i/5*Math.PI*2 + 0.4;
+      var log = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 1.25, 7), logMat);
+      log.position.set(Math.sin(la)*0.34, 0.42, Math.cos(la)*0.34);
+      log.rotation.set(Math.cos(la)*0.62, 0, -Math.sin(la)*0.62);
+      log.castShadow = true;
+      g.add(log);
+    }
+    // liekit: kolme läpikuultavaa kartiota eri kokoa ja väriä, animoidaan erikseen
+    // HUOM: toneMapped=false ja additiivinen sekoitus. Ilman niita ACES-savytys vetaa liekin
+    // varit harmaiksi juuri silloin kun niiden pitaisi olla kirkkaimmat - tuli nayttaisi
+    // ruskealta paperilta. Additiivinen sekoitus saa paallekkaiset kartiot hehkumaan yhteen.
+    var flameCols = [0xff6a12, 0xffa827, 0xffdd7a];
+    for(i=0; i<3; i++){
+      var fm = new THREE.Mesh(new THREE.ConeGeometry(0.34 - i*0.08, 1.35 - i*0.30, 7),
+        new THREE.MeshBasicMaterial({color:flameCols[i], transparent:true, opacity:0.55 - i*0.09,
+          depthWrite:false, blending:THREE.AdditiveBlending, toneMapped:false}));
+      fm.position.set((Math.random()-0.5)*0.10, 0.62 + i*0.16, (Math.random()-0.5)*0.10);
+      fm.userData.ph = Math.random()*6.28;
+      fm.userData.baseY = fm.position.y;
+      g.add(fm);
+      campFlames.push(fm);
+    }
+    // savu: muutama kalvakka pallo joka nousee ja haalistuu
+    for(i=0; i<5; i++){
+      var sm = new THREE.Mesh(new THREE.SphereGeometry(0.16, 7, 5),
+        new THREE.MeshBasicMaterial({color:0x8d8a84, transparent:true, opacity:0.07, depthWrite:false}));
+      sm.userData.t = i/5;
+      g.add(sm);
+      campSmoke.push(sm);
+    }
+    // istumapolkyt: nuotiolle istutaan, joten siella pitaa olla jotain minka paalle istua
+    for(i=0; i<2; i++){
+      // oma ryhma per polkky: pelkilla Euler-kulmilla kierto menisi vaaraan jarjestykseen ja
+      // polkky osoittaisi nuotiota kohti poikittaisen sijaan
+      var pa = i*Math.PI + 0.7;
+      var penG = new THREE.Group();
+      penG.position.set(Math.sin(pa)*2.0, 0.22, Math.cos(pa)*2.0);
+      penG.rotation.y = pa;
+      var pen = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.9, 9), logMat);
+      pen.rotation.z = Math.PI/2;   // pituussuunta ryhman X-akselille eli nuotion kehan suuntaan
+      pen.castShadow = true;
+      penG.add(pen);
+      g.add(penG);
+    }
+    campLight = new THREE.PointLight(0xffa445, 0, 12, 2);
+    campLight.position.set(0, 0.85, 0);
+    g.add(campLight);
+    g.visible = false;
+    scene.add(g);
+    return g;
+  }
+  campGroup = buildCampfire();
+  function atCampfire(){
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = campPos.x - ref.x, dz = campPos.z - ref.z;
+    return Math.sqrt(dx*dx + dz*dz) <= campRadius;
+  }
+  function playFireCrackle(){
+    if(muted || !audioCtx) return;
+    var buf = (typeof crackleBuf === 'function') ? crackleBuf() : null;
+    if(!buf) return;
+    var t = audioCtx.currentTime;
+    var pops = 1 + Math.floor(Math.random()*3);
+    for(var i=0; i<pops; i++){
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = 0.35 + Math.random()*0.5;   // matalampi ja pehmeämpi kuin pakoputken rätinä
+      var lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 900 + Math.random()*900;
+      var g = audioCtx.createGain();
+      var at = t + i*(0.05 + Math.random()*0.14);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.03 + Math.random()*0.04, at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+      src.connect(lp).connect(g).connect(sfxOut());
+      src.start(at); src.stop(at + 0.2);
+    }
+  }
+  function updateCampfire(dt){
+    if(!campGroup) return;
+    if(!campPlaced){
+      // maaston korkeus luetaan vasta nyt - ylätasolla se olisi vielä muokkaamaton
+      campPos.y = terrainHeight(campPos.x, campPos.z);
+      campGroup.position.copy(campPos);
+      campPlaced = true;
+    }
+    var lit = campfireLit();
+    campGroup.visible = lit;
+    if(!lit){ if(campLight) campLight.intensity = 0; return; }
+    campT += dt;
+    var i;
+    // liekki: kaksi eritahtista siniä, jolloin lepatus ei ole säännöllinen
+    for(i=0; i<campFlames.length; i++){
+      var f = campFlames[i], ph = f.userData.ph;
+      var k = 0.78 + 0.34*Math.sin(campT*8.2 + ph) + 0.16*Math.sin(campT*15.7 + ph*2.1);
+      f.scale.set(0.85 + 0.2*Math.sin(campT*11 + ph), k, 0.85 + 0.2*Math.cos(campT*9.4 + ph));
+      f.position.y = f.userData.baseY + 0.05*Math.sin(campT*6.3 + ph);
+      f.rotation.y = campT*0.8 + ph;
+    }
+    // savu nousee ja haalistuu, sitten alkaa alusta
+    for(i=0; i<campSmoke.length; i++){
+      var sm = campSmoke[i];
+      sm.userData.t += dt*0.22;
+      if(sm.userData.t > 1) sm.userData.t -= 1;
+      var u = sm.userData.t;
+      sm.position.set(Math.sin(campT*0.6 + i)*0.3*u, 1.25 + u*2.1, Math.cos(campT*0.5 + i*1.7)*0.3*u);
+      sm.scale.setScalar(0.45 + u*1.4);
+      sm.material.opacity = 0.075*(1 - u)*(u < 0.15 ? u/0.15 : 1);
+    }
+    if(campLight) campLight.intensity = 2.0 + 0.7*Math.sin(campT*9.1) + 0.4*Math.sin(campT*17.3);
+    // rätinä vain kun pelaaja on kuuloetäisyydellä
+    campCrackleT -= dt;
+    if(campCrackleT <= 0){
+      campCrackleT = 0.4 + Math.random()*1.1;
+      var ref = (mode === 'riding') ? moped.position : player.position;
+      var ddx = campPos.x - ref.x, ddz = campPos.z - ref.z;
+      if(ddx*ddx + ddz*ddz < 225) playFireCrackle();
+    }
+  }
+  function sitByFire(){
+    if(!campfireLit()){
+      showToast(false, 'Nuotio on sammunut', 'Porukka sytyttää sen illalla klo ' + MEET_FROM + '. Tule takaisin pimeän tullen.', 4200);
+      return;
+    }
+    // tunti kuluu, sama kaava kuin television katselussa
+    dayTime += 1/24;
+    if(dayTime >= 1){ dayTime -= 1; dayIndex = (dayIndex+1) % 7; advanceSummerDay(); }
+    health = Math.min(100, health + 14);
+    hunger = Math.max(0, hunger - 6);
+    updateVitalsDisplay();
+    playFireCrackle();
+    var rivi = CAMP_LINES[Math.floor(Math.random()*CAMP_LINES.length)];
+    if(campSatDay !== summerDay){
+      campSatDay = summerDay;
+      repVillageAdd(3);
+      showToast(false, '🔥 ' + rivi[0], rivi[1] + ' (tunti kului, voimat palautuivat, maine kasvoi)', 6000);
+      saveGame();
+    } else {
+      showToast(false, '🔥 ' + rivi[0], rivi[1] + ' (tunti kului, voimat palautuivat)', 5200);
+    }
+  }
+  var groupRide = null;          // {idx, cps, mukana[], t}
+  function atMeetSpot(){
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = meetSpot.x - ref.x, dz = meetSpot.z - ref.z;
+    return Math.sqrt(dx*dx + dz*dz) <= 22;
+  }
+  function meetEveningNow(){
+    var h = dayTime*24;
+    return h >= MEET_FROM && h < MEET_TO;
+  }
+  // ---- näyttelykilpailu ----
+  function showContestScore(){
+    var osat = [];
+    var pts = 0;
+    // viritysosat
+    var tierSum = 0, tierMax = 0;
+    for(var i=0; i<parts.length; i++){
+      tierSum += parts[i].tierIndex;
+      tierMax += Math.max(1, parts[i].tiers.length - 1);
+    }
+    var vir = Math.round(30 * Math.min(1, tierSum/Math.max(1, tierMax*0.6)));
+    pts += vir; osat.push(['Viritysosat', vir, 30]);
+    // pakoputki
+    var pp = (kilpaPipeOwned && exhaustMode === 'kilpa') ? 10 : 0;
+    pts += pp; osat.push(['Pakoputki', pp, 10]);
+    // maali ja tarrat
+    var mt = tarraOwned ? 8 : 3;
+    pts += mt; osat.push(['Maali ja tarrat', mt, 8]);
+    // keskikunto
+    var cond = 0;
+    for(var c=0; c<parts.length; c++) cond += parts[c].condition;
+    cond = parts.length ? cond/parts.length/100 : 0;
+    var ck = Math.round(20*cond);
+    pts += ck; osat.push(['Osien kunto', ck, 20]);
+    // lommot
+    var dl = (typeof damageLevel === 'function') ? damageLevel() : 0;
+    var dk = Math.round(12*(1 - Math.min(1, dl)));
+    pts += dk; osat.push(['Pelti ehjänä', dk, 12]);
+    // huoltoarvot
+    var hsum = 0;
+    for(var m=0; m<MAINT.length; m++) hsum += (1 - maintDev(MAINT[m].key));
+    var hk = Math.round(10*(hsum/MAINT.length));
+    pts += hk; osat.push(['Huoltoarvot', hk, 10]);
+    // kaupan koristeet
+    var kor = 0;
+    ['essanssi','aurinkolasit','onnenkolikko','radio'].forEach(function(id){
+      var it = storeItemById(id);
+      if(it && it.owned) kor += 2.5;
+    });
+    kor = Math.round(kor);
+    pts += kor; osat.push(['Koristeet', kor, 10]);
+    return {pisteet: Math.min(100, pts), osat: osat};
+  }
+  function startShowContest(){
+    if(!atMeetSpot()){ showToast(false, 'Näyttely on miitissä', 'Aja huoltoaseman pihaan iltaisin klo ' + MEET_FROM + '-' + MEET_TO + '.', 4000); return; }
+    if(!meetEveningNow()){ showToast(false, 'Näyttely alkaa illalla', 'Mopokerho kokoontuu klo ' + MEET_FROM + '-' + MEET_TO + '. Tule silloin takaisin.', 4200); return; }
+    if(showContestDay === summerDay){ showToast(false, 'Jo osallistuttu tänään', 'Näyttely järjestetään joka ilta uudestaan.', 3200); return; }
+    if(!mopedAssembled()){ showToast(true, 'Mopo on osina', 'Näyttelyyn tullaan ajamalla.', 3200); return; }
+    showContestDay = summerDay;
+    var oma = showContestScore();
+    // kaverit arvostelevat omilla mopoillaan: taso seuraa heidän huippunopeuttaan
+    var rivals = [];
+    for(var i=0; i<friends.length; i++){
+      var taso = 38 + (friends[i].top*3.6 - 60)*0.55 + Math.random()*18;
+      rivals.push({nimi: friends[i].name, pisteet: Math.round(Math.max(20, Math.min(96, taso)))});
+    }
+    var kaikki = rivals.concat([{nimi:'Jonne', pisteet: oma.pisteet, me:true}]);
+    kaikki.sort(function(a,b){ return b.pisteet - a.pisteet; });
+    var sija = 1;
+    for(var k=0; k<kaikki.length; k++) if(kaikki[k].me) sija = k+1;
+    var palkinto = sija === 1 ? 90 : sija === 2 ? 45 : sija === 3 ? 20 : 0;
+    if(palkinto){ money += palkinto; updateMoneyDisplay(); }
+    repVillageAdd(sija === 1 ? 12 : sija === 2 ? 6 : 2);
+    var erittely = oma.osat.map(function(o){ return o[0] + ' ' + o[1] + '/' + o[2]; }).join(' · ');
+    var tulos = kaikki.map(function(r, idx){ return (idx+1) + '. ' + r.nimi + ' ' + r.pisteet; }).join('   ');
+    playCutscene('naytt' + summerDay, sija === 1 ? '🏆 Näyttely voitettu!' : 'Mopokerhon näyttely',
+      ['Porukka kiertää mopot läpi ja pisteyttää ne yksi kerrallaan.',
+       'Sinun mopo: ' + oma.pisteet + '/100. ' + erittely,
+       tulos,
+       sija === 1 ? 'Voitto! Palkintona ' + palkinto + ' € ja koko kerhon kunnioitus.'
+                  : (palkinto ? 'Sija ' + sija + '. Palkintorahaa ' + palkinto + ' €.' : 'Sija ' + sija + '. Ensi kerralla paremmin.')]);
+    saveGame();
+  }
+  // ---- ryhmäajo ----
+  function startGroupRide(){
+    if(groupRide){ groupRideEnd(false, 'Keskeytit ryhmäajon.'); return; }
+    if(!atMeetSpot()){ showToast(false, 'Ryhmäajo lähtee miitistä', 'Aja huoltoaseman pihaan iltaisin klo ' + MEET_FROM + '-' + MEET_TO + '.', 4000); return; }
+    if(!meetEveningNow()){ showToast(false, 'Ryhmäajo lähtee illalla', 'Porukka kokoontuu klo ' + MEET_FROM + '-' + MEET_TO + '.', 4000); return; }
+    if(mode !== 'riding'){ showToast(false, 'Nouse mopon selkään', 'Ryhmäajoon lähdetään ajamalla.', 3200); return; }
+    var cps = [kauppaIsoPos, romuPos, meetSpot];
+    groupRide = {idx:0, cps:cps, mukana:[], t:0};
+    for(var i=0; i<friends.length; i++) friends[i].state = 'follow';
+    showToast(false, '🛵 Ryhmäajo lähtee', 'Kolme rastia: kyläkauppa, romuttamo ja takaisin miittiin. Aja sellaista tahtia että porukka pysyy perässä.', 6000);
+  }
+  function groupRideFollowers(){
+    var n = 0;
+    for(var i=0; i<friends.length; i++){
+      var dx = friends[i].group.position.x - moped.position.x, dz = friends[i].group.position.z - moped.position.z;
+      if(Math.sqrt(dx*dx + dz*dz) < 55) n++;
+    }
+    return n;
+  }
+  function groupRideEnd(valmis, syy){
+    if(!groupRide) return;
+    var mukana = groupRide.mukana;
+    groupRide = null;
+    for(var i=0; i<friends.length; i++) if(friends[i].state === 'follow') friends[i].state = 'cruise';
+    if(!valmis){ showToast(true, 'Ryhmäajo päättyi', syy || 'Porukka hajosi.', 4000); return; }
+    var ka = 0;
+    for(var m=0; m<mukana.length; m++) ka += mukana[m];
+    ka = mukana.length ? ka/mukana.length : 0;
+    var raha = Math.round(25 + ka*22);
+    money += raha; updateMoneyDisplay();
+    repVillageAdd(Math.round(3 + ka*4));
+    showToast(false, '🛵 Ryhmäajo maalissa', 'Keskimäärin ' + ka.toFixed(1) + '/' + friends.length +
+      ' kaveria pysyi mukana. +' + raha + ' € ja mainetta.', 5600);
+    saveGame();
+  }
+  function updateGroupRide(dt){
+    if(!groupRide) return;
+    if(mode !== 'riding'){ groupRideEnd(false, 'Poistuit mopon selästä.'); return; }
+    groupRide.t += dt;
+    if(groupRide.t > 420){ groupRideEnd(false, 'Aika loppui kesken.'); return; }
+    var cp = groupRide.cps[groupRide.idx];
+    var dx = cp.x - moped.position.x, dz = cp.z - moped.position.z;
+    if(Math.sqrt(dx*dx + dz*dz) < 26){
+      groupRide.mukana.push(groupRideFollowers());
+      groupRide.idx++;
+      if(groupRide.idx >= groupRide.cps.length){ groupRideEnd(true, null); return; }
+      playExamBeep();
+      showToast(false, 'Rasti ' + groupRide.idx + '/' + groupRide.cps.length,
+        groupRideFollowers() + '/' + friends.length + ' kaveria mukana. Seuraava rasti merkitty nuolella.', 3600);
+    }
+  }
+
   npcCharacters.forEach(function(npc){
     // sisätilan hahmot seisovat huoneen lattialla (y=0), ulkona maaston korkeudella
     npc.mesh.position.set(npc.pos.x, npc.indoor ? 0 : terrainHeight(npc.pos.x, npc.pos.z), npc.pos.z);
@@ -12512,6 +13611,117 @@
       while(diff < -Math.PI) diff += Math.PI*2;
       npc.mesh.rotation.y += diff * Math.min(1, dt*2.5);
     }
+  }
+  // ==========================================================================
+  // ---- ILMEET JA PUHE ----
+  // Keskustelu oli tekstilaatikko: naama pysyi liikkumatta koko ajan. Nyt puhuja liikuttaa
+  // suutaan rivin verran, kulmakarvat kertovat sävyn ja oma hahmo nyökkää kun se vastaa.
+  //
+  // Sävy luetaan repliikistä: kysymysmerkki nostaa toisen kulman, huutomerkki molemmat,
+  // ja kiukkuiset sanat vetävät kulmat alas. Tämä on halpa temppu mutta toimii, koska
+  // pelaaja lukee saman rivin samaan aikaan.
+  // ==========================================================================
+  var FACE_ANGRY = /\b(en |älä|ala |turpa|hitto|perkele|vittu|ei käy|häivy|painu|typerä|idiootti|sakko|pidätet)/i;
+  var FACE_HAPPY = /\b(kiitos|hienoa|mahtava|hyvä|jes|onnea|siistii|siisti|kiva|loistava)/i;
+  function faceMood(text){
+    if(!text) return 0;
+    if(FACE_ANGRY.test(text)) return -1;            // kulmat alas
+    if(text.indexOf('?') !== -1) return 2;          // toinen kulma ylös
+    if(FACE_HAPPY.test(text) || text.indexOf('!') !== -1) return 1;  // kulmat ylös
+    return 0;
+  }
+  // Puhujia voi olla kaksi yhtä aikaa (oma hahmo kysyy, kyläläinen vastaa), joten lista.
+  var faceTalkers = [];
+  function faceSay(fb, text, nodLimb){
+    if(!fb || !fb.mouth) return;
+    // puhenopeus n. 14 merkkiä sekunnissa, rajat 0,7 s ja 6 s
+    var kesto = Math.max(0.7, Math.min(6, (text ? text.length : 20)/14));
+    for(var i=0; i<faceTalkers.length; i++){
+      if(faceTalkers[i].fb === fb){ faceTalkers.splice(i, 1); break; }
+    }
+    faceTalkers.push({fb: fb, t: 0, left: kesto, mood: faceMood(text), nod: nodLimb || null, nodT: 0});
+  }
+  function faceRest(fb){
+    if(!fb) return;
+    if(fb.mouth){
+      fb.mouth.scale.y = fb.mouth.userData.restSY;
+      if(fb.mouth.userData.restSX !== undefined) fb.mouth.scale.x = fb.mouth.userData.restSX;
+      fb.mouth.position.y = fb.mouth.userData.restY;
+    }
+    [fb.browL, fb.browR].forEach(function(b, i){
+      if(!b) return;
+      b.position.y = b.userData.restY;
+      b.rotation.z = b.userData.restZ;
+    });
+  }
+  function faceStop(fb){
+    for(var i=faceTalkers.length-1; i>=0; i--) if(faceTalkers[i].fb === fb) faceTalkers.splice(i, 1);
+    faceRest(fb);
+  }
+  function updateFaceTalk(dt){
+    for(var i=faceTalkers.length-1; i>=0; i--){
+      var tk = faceTalkers[i];
+      tk.t += dt; tk.left -= dt; tk.nodT += dt;
+      var fb = tk.fb, h = fb.headH || 0.22;
+      // suun aukeaminen: kaksi eritahtista siniä, jolloin rytmi ei ole konemainen
+      var open = 0.5 + 0.5*Math.sin(tk.t*17.5) * (0.6 + 0.4*Math.sin(tk.t*6.3));
+      open = Math.max(0, open);
+      var fade = Math.max(0, Math.min(1, tk.left*3));   // suu sulkeutuu rivin lopussa
+      if(fb.mouth){
+        // suu kapenee kun se aukeaa: pelkka korkeuden kasvu nayttaa postiluukulta
+        if(fb.mouth.userData.restSX === undefined) fb.mouth.userData.restSX = fb.mouth.scale.x;
+        fb.mouth.scale.y = fb.mouth.userData.restSY * (1 + open*2.6*fade);
+        fb.mouth.scale.x = fb.mouth.userData.restSX * (1 - open*0.16*fade);
+        fb.mouth.position.y = fb.mouth.userData.restY - h*0.012*open*fade;
+      }
+      // kulmat sävyn mukaan, pieni elävöittävä värinä päälle
+      var lift = (tk.mood === 1 ? 1 : (tk.mood === -1 ? -0.9 : 0)) + Math.sin(tk.t*2.1)*0.12;
+      if(fb.browL && fb.browR){
+        var kysy = (tk.mood === 2) ? 1 : 0;
+        fb.browL.position.y = fb.browL.userData.restY + h*0.030*(lift + kysy)*fade;
+        fb.browR.position.y = fb.browR.userData.restY + h*0.030*lift*fade;
+        fb.browL.rotation.z = fb.browL.userData.restZ + (tk.mood === -1 ?  0.22 : 0)*fade;
+        fb.browR.rotation.z = fb.browR.userData.restZ + (tk.mood === -1 ? -0.22 : 0)*fade;
+      }
+      // nyökkäys: vain jos puhujalla on oikea pään luu (oma hahmo ja kuskit)
+      if(tk.nod && tk.nod.rotation){
+        tk.nod.rotation.x = Math.sin(tk.nodT*4.2)*0.055*fade;
+      }
+      if(tk.left <= 0){
+        if(tk.nod && tk.nod.rotation) tk.nod.rotation.x = 0;
+        faceRest(fb);
+        faceTalkers.splice(i, 1);
+      }
+    }
+  }
+  // Kyläläisten räpäytys: oma rytmi per hahmo, jotta kylä ei räpsy yhtenä rivistönä.
+  function updateNpcBlink(dt){
+    for(var i=0; i<npcCharacters.length; i++){
+      var npc = npcCharacters[i];
+      var fb = npc.mesh && npc.mesh.userData ? npc.mesh.userData.face : null;
+      if(!fb || !fb.eyeL) continue;
+      if(npc._blinkT === undefined) npc._blinkT = 1 + Math.random()*5;
+      npc._blinkT -= dt;
+      if(npc._blinkT <= 0){ npc._blinkP = 1; npc._blinkT = 2.4 + Math.random()*4.5; }
+      npc._blinkP = Math.max(0, (npc._blinkP || 0) - dt*8.5);
+      var open = 1 - Math.sin(Math.min(1, npc._blinkP)*Math.PI)*0.94;
+      fb.eyeL.scale.y = open; fb.eyeR.scale.y = open;
+    }
+  }
+  function npcFaceOf(npc){
+    return (npc && npc.mesh && npc.mesh.userData) ? npc.mesh.userData.face : null;
+  }
+  // Oma hahmo: kasvot ovat nivelrakenteen limbs-oliossa, ei omassa fb-oliossa.
+  var playerFaceBitsCache = null;
+  function playerFaceBits(){
+    var L = (typeof playerLimbs !== 'undefined') ? playerLimbs : null;
+    if(!L || !L.mouth) return null;
+    // sama olio joka kerta: faceSay tunnistaa puhujan viitteestä, joten uusi olio joka
+    // kutsulla kasaisi päällekkäisiä puhujia samoille kasvoille
+    if(!playerFaceBitsCache || playerFaceBitsCache.mouth !== L.mouth){
+      playerFaceBitsCache = {mouth: L.mouth, browL: L.browL, browR: L.browR, headH: L.headH || 0.22};
+    }
+    return playerFaceBitsCache;
   }
   function chatWithNpc(npc){
     if(npc.drink){ akuEnergyDrink(npc); return; }
@@ -14140,6 +15350,7 @@
           return r.length ? '<br>⚠️ Puutteet: ' + r.map(function(x){ return x.nimi + ' (' + x.sakko + ' €)'; }).join(' · ')
                           : '<br>✅ Mopo on säännösten mukainen';
         })() +
+        '<br>🏅 Temppuennätys: <b>' + trickBest + '</b> pistettä · pisin hyppy ' + jumpBest.toFixed(1) + ' m' +
         '<br>🔧 Huolto: ' + MAINT.map(function(m){
           return m.ikoni + ' ' + Math.round(maint[m.key]) + (maintDev(m.key) > 0.18 ? '!' : '');
         }).join(' · ') +
@@ -14149,6 +15360,7 @@
         (morningFog > 0.15 ? ' · aamusumua' : '') +
         '</div>';
     }
+    renderPhotoGallery();
     // keikkalista
     missionsListEl.innerHTML = '';
     missions.forEach(function(m){
@@ -15113,6 +16325,14 @@
         maint: maint,
         questStage: questStage,
         signalMisses: signalMisses,
+        canFuel: canFuel,
+        fridgeMeals: fridgeMeals,
+        photoShownAtMeet: photoShownAtMeet,
+        campSatDay: campSatDay,
+        radioChannel: radioChannel,
+        radioAuto: radioAuto,
+        trickBest: trickBest,
+        showContestDay: showContestDay,
         usedOffer: usedOffer,
         usedOwned: usedOwned,
         dragWins: dragWins,
@@ -15150,6 +16370,15 @@
       if(save.dailyEvent && typeof save.dailyEvent.id === 'string') dailyEvent = {id: save.dailyEvent.id, done: !!save.dailyEvent.done};
       if(save.questStage && typeof save.questStage === 'object') questStage = save.questStage;
       if(typeof save.signalMisses === 'number') signalMisses = save.signalMisses|0;
+      if(typeof save.canFuel === 'number') canFuel = Math.max(0, Math.min(100, save.canFuel));
+      if(typeof save.fridgeMeals === 'number') fridgeMeals = Math.max(0, Math.min(3, save.fridgeMeals|0));
+      if(typeof save.photoShownAtMeet === 'number') photoShownAtMeet = save.photoShownAtMeet|0;
+      if(typeof save.campSatDay === 'number') campSatDay = save.campSatDay|0;
+      if(typeof save.radioChannel === 'number') radioChannel = Math.max(0, Math.min(RADIO_CHANNELS.length-1, save.radioChannel|0));
+      if(typeof save.radioAuto === 'boolean') radioAuto = save.radioAuto;
+      updatePosters();
+      if(typeof save.trickBest === 'number') trickBest = save.trickBest|0;
+      if(typeof save.showContestDay === 'number') showContestDay = save.showContestDay|0;
       if(save.usedOffer && typeof save.usedOffer.id === 'string') usedOffer = save.usedOffer;
       if(save.usedOwned && typeof save.usedOwned.id === 'string') usedOwned = save.usedOwned;
       updateHelmet();
@@ -15408,6 +16637,15 @@
     dailyEvent = null;
     maint = {oil:50, chain:50, plug:50, tyre:50};
     engineTemp = 20;
+    canFuel = 0;
+    fridgeMeals = 3;
+    updatePosters();
+    campSatDay = -1; radioChannel = 0; radioAuto = true;
+    photos.length = 0; photoShownAtMeet = -1; photoMode = false; photoPending = false;
+    if(photoFrameEl) photoFrameEl.hidden = true;
+    app.classList.remove('photoing');
+    trickReset(); trickBest = 0; showContestDay = -1;
+    if(groupRide) groupRideEnd(false, null);
     signalMisses = 0; signalSideNow = 0; signalLeftTime = 0; stopCheck = null; stopCooldown = 60;
     usedOffer = null; usedOwned = null; rollUsedOffer();
     questStage = {};
@@ -16677,6 +17915,10 @@
         mountHintEl.innerHTML = kickAttempts > 0
           ? 'Ei lähtenyt - polkaise uudestaan: <b>F</b>'
           : 'Paina <b>F</b> polkaistaksesi mopon käyntiin';
+      } else if(engineRunning && atMeetSpot() && meetEveningNow() && !examRun && !groupRide){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = '🏍️ Mopokerho koolla · <b>J</b>: näyttelykilpailu' +
+          (showContestDay === summerDay ? ' (tehty)' : '') + ' · <b>B</b>: ryhmäajo';
       } else if(engineRunning && friendNearest() && !examRun){
         // ajaessa näkyy myös kaverivihje, muuten H-nappia ei löytäisi kukaan
         var fr2 = friendNearest();
@@ -17069,15 +18311,21 @@
       }
       // kotitalon sisätila ja ulko-ovi
       var nearKotiDoor = false, nearKotiExit = false, nearKotiBed = false, nearKotiNpc = null;
+      var nearKotiTv = false, nearKotiFridge = false;
       if(inStore && indoorPlace === 'koti'){
         var dkxe = kotiDoorInside.x - player.position.x, dkze = kotiDoorInside.z - player.position.z;
         nearKotiExit = Math.sqrt(dkxe*dkxe+dkze*dkze) <= kauppaInteractRadius;
         var dkxb = kotiBedPos.x - player.position.x, dkzb = kotiBedPos.z - player.position.z;
         nearKotiBed = Math.sqrt(dkxb*dkxb+dkzb*dkzb) <= kotiBedRadius;
+        var dktx = kotiTvPos.x - player.position.x, dktz = kotiTvPos.z - player.position.z;
+        nearKotiTv = Math.sqrt(dktx*dktx+dktz*dktz) <= kotiTvRadius;
+        var dkfx = kotiFridgePos.x - player.position.x, dkfz = kotiFridgePos.z - player.position.z;
+        nearKotiFridge = Math.sqrt(dkfx*dkfx+dkfz*dkfz) <= kotiFridgeRadius;
       } else if(!inStore){
         var dkxd = kotiDoorOutside.x - player.position.x, dkzd = kotiDoorOutside.z - player.position.z;
         nearKotiDoor = !nearMoped && !nearTalli && Math.sqrt(dkxd*dkxd+dkzd*dkzd) <= kotiDoorRadius;
       }
+      var nearCamp = !inStore && !nearMoped && atCampfire();
 
       var nearKauppaExit = false, nearKauppaCounter = false, nearKauppaArcade = false;
       if(inStore && indoorPlace === 'kauppa'){
@@ -17202,9 +18450,23 @@
       } else if(nearKotiExit){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b> poistuaksesi ulos';
+      } else if(nearKotiTv){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = 'Paina <b>E</b>: katso televisiota (kuluttaa tunnin, palauttaa voimia)';
+      } else if(nearKotiFridge){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = fridgeMeals > 0
+          ? ('Paina <b>E</b>: syö jääkaapista (' + fridgeMeals + ' ateriaa jäljellä)')
+          : 'Jääkaappi on tyhjä - äiti täyttää sen yöksi';
       } else if(nearKotiBed){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = 'Paina <b>E</b> nukkuaksesi aamuun';
+        mountHintEl.innerHTML = 'Paina <b>E</b> nukkuaksesi aamuun' +
+          (posterCount() ? (' · ' + posterCount() + ' julistetta seinällä') : '');
+      } else if(nearCamp){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = campfireLit()
+          ? 'Paina <b>E</b>: istu nuotiolle (kuluttaa tunnin, palauttaa voimia)'
+          : 'Nuotio sytytetään illalla klo ' + MEET_FROM;
       } else if(nearKotiDoor){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b> mennäksesi sisään kotiin';
@@ -17307,6 +18569,12 @@
     updateTrafficStop(dt);   // partion pysäytys ja tienvarsitarkastus
     updateBlinkers(moped, dt);   // oman mopon vilkut samalla koodilla kuin muidenkin
     updateHelmet();
+    updatePhotoMode(dt);     // valokuvaustilan kameran ohjaus
+    updateCampfire(dt);      // miitin nuotio: liekit, savu, valo ja rätinä
+    updateFaceTalk(dt);      // puhuvan hahmon suu ja kulmat
+    updateNpcBlink(dt);      // kyläläiset räpyttelevät
+    trickTick(dt);           // temppuketju: keula, stoppie, hyppy ja luisu
+    updateGroupRide(dt);     // ryhmäajon rastit ja porukan koossa pysyminen
     updateFriends(dt);       // kaverit ajelevat kylällä, seuraavat tai kisaavat
     updateDragRace(dt);      // kiihdytyskisan lähtölaskenta ja maali
     updateExam(dt);          // ajokoe käynnissä: virhepisteet, ohjeet ja tarkistuspisteet
@@ -17449,6 +18717,20 @@
     var activePos = mode === 'riding' ? moped.position : player.position;
     var activeHeading = mode === 'riding' ? heading : playerHeading;
 
+    // ryhmäajon rasti menee nähtävyyksien edelle
+    if(groupRide && groupRide.cps[groupRide.idx]){
+      var gcp = groupRide.cps[groupRide.idx];
+      var gTo = gcp.clone().sub(activePos);
+      var gD = Math.sqrt(gTo.x*gTo.x + gTo.z*gTo.z);
+      waypointEl.classList.remove('arrived');
+      waypointEl.style.opacity = '1';
+      wpArrow.style.display = '';
+      wpArrow.style.transform = 'rotate(' + (activeHeading - Math.atan2(gTo.x, gTo.z)) + 'rad)';
+      wpLabel.innerHTML = '🛵 Rasti ' + (groupRide.idx+1) + '/' + groupRide.cps.length + ' · <b>' + Math.round(gD) + '</b> m · ' +
+        groupRideFollowers() + '/' + friends.length + ' mukana';
+      renderWithPost();
+      return;
+    }
     // ajokokeen aikana nuoli osoittaa seuraavaan tarkistuspisteeseen, ei lähimpään nähtävyyteen
     if(examRun && examCurrent()){
       var ecp = examCurrent();
@@ -19682,6 +20964,8 @@
     });
     var list = damageList(equippedMopedId);
     for(var i=0; i<list.length; i++) damageApplyImpact(root, list[i]);
+    damageVisualsSync(root, true);   // keula suoraksi ja kulma uudestaan puhtaalle mallille
+    scratchRebuild();
     damageApplyEffects();
   }
 
@@ -19720,6 +21004,7 @@
     list.push(imp);
     while(list.length > DAMAGE_MAX_IMPACTS) list.shift();
     damageApplyImpact(root, imp);
+    scratchAdd(imp);
 
     var lvl = Math.min(1, (damageLevelBy[equippedMopedId] || 0) + force*0.18 + 0.03);
     damageLevelBy[equippedMopedId] = lvl;
@@ -19727,6 +21012,7 @@
     if(damagePullBy[equippedMopedId] === undefined){
       damagePullBy[equippedMopedId] = (Math.random() < 0.5 ? -1 : 1);
     }
+    damageVisualsSync(root, false);   // kulman EROTUS riittää, koska kierrot summautuvat
     damageApplyEffects();
     playCrunch(force);
     if(lvl >= DAMAGE_LIGHT_BREAK && !damageLightBroken){
@@ -19750,6 +21036,236 @@
       headlightGlow.visible = !broke;
     }
     if(broke) headlightBeam.intensity = 0;
+  }
+
+  // ==========================================================================
+  // ---- VAURIO NÄKYVIIN: NAARMUT, PEILIT, VÄÄNTYNYT KEULA JA HIMMENNYT MAALI ----
+  // Kolhut muuttivat tähän asti vain pellin muotoa. Muodonmuutos on hieno mutta hiljainen:
+  // pelaaja ei kolarin jälkeen nähnyt mitään selvää eroa. Nyt sama vauriotaso näkyy neljällä
+  // tavalla jotka erottuvat myös kauempaa.
+  //
+  // Kaikki neljä luetaan SAMASTA kolhulistasta kuin pellin lommot, joten korjaus autotallilla
+  // palauttaa ne automaattisesti - mitään omaa tallennettavaa tilaa ei synny.
+  // ==========================================================================
+
+  // ---- naarmut ----
+  // Jokaisesta kolhusta jää litteä naarmulaikku siihen kohtaan mihin isku osui. Laikku on
+  // pelkkä kiekko jolla on läpinäkyvä raapaisutekstuuri - oikeat decalit vaatisivat geometrian
+  // leikkaamista, mikä olisi tähän aivan liikaa.
+  var scratchTexCache = null;
+  function scratchTexture(){
+    if(scratchTexCache) return scratchTexCache;
+    var c = document.createElement('canvas');
+    c.width = c.height = 128;
+    var x = c.getContext('2d');
+    x.clearRect(0, 0, 128, 128);
+    for(var i=0; i<16; i++){
+      var y0 = 20 + Math.random()*88, x0 = 14 + Math.random()*30;
+      var len = 22 + Math.random()*62;
+      x.strokeStyle = 'rgba(236,232,222,' + (0.30 + Math.random()*0.5).toFixed(2) + ')';
+      x.lineWidth = 0.7 + Math.random()*1.5;
+      x.beginPath();
+      x.moveTo(x0, y0);
+      x.lineTo(x0 + len, y0 + (Math.random()-0.5)*14);
+      x.stroke();
+    }
+    // reunat häivytetään, jottei laikun neliömäinen raja näy pellissä
+    var gr = x.createRadialGradient(64, 64, 20, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(0,0,0,0)');
+    gr.addColorStop(1, 'rgba(0,0,0,1)');
+    x.globalCompositeOperation = 'destination-out';
+    x.fillStyle = gr;
+    x.fillRect(0, 0, 128, 128);
+    scratchTexCache = new THREE.CanvasTexture(c);
+    return scratchTexCache;
+  }
+  var scratchGroup = new THREE.Group();
+  moped.add(scratchGroup);
+  var scratchMat = null;
+  var scratchRay = new THREE.Raycaster();
+  var scrO = new THREE.Vector3(), scrD = new THREE.Vector3();
+  function scratchAdd(imp){
+    var root = mopedModelRoot();
+    if(!root) return;
+    if(!scratchMat){
+      scratchMat = new THREE.MeshBasicMaterial({
+        map: scratchTexture(), transparent:true, opacity:0.8, depthWrite:false, toneMapped:false
+      });
+    }
+    // Iskukohta on mallin RAJALAATIKON laidalla, ei pellin pinnalla: suoraan siihen asetettu
+    // laikku jäisi leijumaan ilmaan mopon viereen. Siksi pinta haetaan säteellä - sama
+    // periaate kuin kasvojen piirteiden syvyydessä.
+    moped.updateMatrixWorld(true);
+    scrD.set(imp.d[0], imp.d[1], imp.d[2]).normalize();
+    scrO.set(imp.p[0], imp.p[1], imp.p[2]).addScaledVector(scrD, -0.55);
+    moped.localToWorld(scrO);
+    var dW = scrD.clone().applyQuaternion(moped.getWorldQuaternion(new THREE.Quaternion())).normalize();
+    scratchRay.set(scrO, dW);
+    scratchRay.far = 1.5;
+    var hits = scratchRay.intersectObject(root, true);
+    if(!hits.length) return;                    // isku ei osunut peltiin: ei naarmua
+    var hp = moped.worldToLocal(hits[0].point.clone());
+    var sz = 0.10 + (imp.r || 0.3)*0.42;
+    var q = new THREE.Mesh(new THREE.PlaneGeometry(sz, sz), scratchMat);
+    q.position.copy(hp).addScaledVector(scrD, -0.008);
+    q.lookAt(q.position.x - scrD.x, q.position.y - scrD.y, q.position.z - scrD.z);
+    q.rotation.z += Math.random()*Math.PI*2;
+    q.renderOrder = 3;
+    scratchGroup.add(q);
+  }
+  function scratchRebuild(){
+    while(scratchGroup.children.length) scratchGroup.remove(scratchGroup.children[0]);
+    var list = damageList(equippedMopedId);
+    for(var i=0; i<list.length; i++) scratchAdd(list[i]);
+  }
+
+  // ---- peilit ----
+  // Mopossa ei ollut peilejä lainkaan. Ne ovat pieni osa mutta juuri se osa joka ensimmäisenä
+  // menee rikki kaatumisessa, joten ne kertovat vauriosta yhdellä silmäyksellä.
+  var MIRROR_CRACK = 0.28;   // tästä vauriosta oikea peili vääntyy ja lasi säröilee
+  var MIRROR_SNAP  = 0.55;   // tästä se irtoaa kokonaan, tynkä jää
+  var mirrorRig = new THREE.Group();
+  var mirrorArms = [];
+  var mirrorGlassMat = null, mirrorCrackMat = null;
+  function mirrorCrackTexture(){
+    var c = document.createElement('canvas');
+    c.width = c.height = 64;
+    var x = c.getContext('2d');
+    x.fillStyle = '#9fb3bd';
+    x.fillRect(0, 0, 64, 64);
+    x.strokeStyle = 'rgba(30,38,44,0.85)';
+    x.lineWidth = 1.4;
+    for(var i=0; i<7; i++){
+      x.beginPath();
+      x.moveTo(32, 32);
+      var a = i/7*Math.PI*2 + Math.random()*0.5;
+      x.lineTo(32 + Math.cos(a)*40, 32 + Math.sin(a)*40);
+      x.stroke();
+    }
+    x.beginPath(); x.arc(32, 32, 11, 0, Math.PI*2); x.stroke();
+    return new THREE.CanvasTexture(c);
+  }
+  function buildMirrors(){
+    var armMat = new THREE.MeshStandardMaterial({color:0x23262a, roughness:0.5, metalness:0.4});
+    mirrorGlassMat = new THREE.MeshStandardMaterial({color:0xb9ccd6, roughness:0.08, metalness:0.9});
+    mirrorCrackMat = new THREE.MeshStandardMaterial({map: mirrorCrackTexture(), roughness:0.55, metalness:0.3});
+    for(var i=0; i<2; i++){
+      var sgn = i ? 1 : -1;
+      var arm = new THREE.Group();
+      // mitat pidettava pienina: 20 cm varsi nayttaa mopossa antennilta, ei peililta
+      var varsi = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.011, 0.105, 6), armMat);
+      varsi.position.y = 0.052;
+      arm.add(varsi);
+      var kuppi = new THREE.Mesh(new THREE.BoxGeometry(0.082, 0.054, 0.018), armMat);
+      kuppi.position.set(sgn*0.026, 0.118, 0);
+      arm.add(kuppi);
+      var lasi = new THREE.Mesh(new THREE.PlaneGeometry(0.068, 0.042), mirrorGlassMat);
+      lasi.position.set(sgn*0.026, 0.118, -0.011);
+      lasi.rotation.y = Math.PI;
+      arm.add(lasi);
+      arm.rotation.z = -sgn*0.22;
+      mirrorRig.add(arm);
+      mirrorArms.push({arm: arm, varsi: varsi, kuppi: kuppi, lasi: lasi, sgn: sgn});
+    }
+    moped.add(mirrorRig);
+  }
+  buildMirrors();
+  // Peilien paikka mallikohtaisesti: jokainen mopo on eri kokoinen, joten yksi yhteinen piste
+  // jättäisi peilit leijumaan ilmaan - sama ongelma joka rekisterikilvellä jo ratkaistiin.
+  function mirrorSpotFor(id){
+    for(var i=0; i<mopedModels.length; i++) if(mopedModels[i].id === id && mopedModels[i].mirror) return mopedModels[i].mirror;
+    return [0.21, 1.02, 0.56];   // proseduraalisen mopon tanko
+  }
+  function placeMirrors(){
+    var sp = mirrorSpotFor(equippedMopedId);
+    for(var i=0; i<mirrorArms.length; i++){
+      mirrorArms[i].arm.position.set(mirrorArms[i].sgn*sp[0], sp[1], sp[2]);
+    }
+  }
+  function updateMirrorDamage(){
+    var lvl = damageLevel();
+    for(var i=0; i<mirrorArms.length; i++){
+      var m = mirrorArms[i];
+      var oikea = (m.sgn > 0);           // oikea peili kärsii ensin
+      var crack = lvl >= MIRROR_CRACK && oikea;
+      var snap  = lvl >= MIRROR_SNAP  && oikea;
+      m.lasi.material = crack ? mirrorCrackMat : mirrorGlassMat;
+      m.kuppi.visible = !snap;
+      m.lasi.visible  = !snap;
+      // vääntynyt peili roikkuu: varsi kallistuu ja kuppi kiertyy sivuun
+      m.arm.rotation.z = -m.sgn*0.22 + (crack ? m.sgn*0.55 : 0);
+      m.arm.rotation.x = crack ? 0.35 : 0;
+      m.varsi.scale.y = snap ? 0.42 : 1;    // irronneesta jää tynkä
+      m.varsi.position.y = snap ? 0.022 : 0.052;
+      // vasen peili vääntyy vasta todella pahassa vauriossa
+      if(!oikea) m.arm.rotation.z = -m.sgn*0.22 + (lvl >= MIRROR_SNAP ? -m.sgn*0.30 : 0);
+    }
+  }
+
+  // ---- vääntynyt keula ----
+  // Keulan vääntymistä ei voi tehdä kiertämällä yhtä osaa: GLB-malleissa ei ole erillistä
+  // ohjaustankoa johon tarttua. Sen sijaan mallin ETUYLÄOSAN kärkipisteet kierretään
+  // ohjausakselin ympäri pehmeällä painotuksella - sama tekniikka kuin lommoissa.
+  // Kierrot summautuvat, joten osuman jälkeen riittää ajaa EROTUS, ei koko kulmaa uudestaan.
+  var damageBendNow = {};          // mopoId -> malliin jo ajettu kulma
+  var bendV = new THREE.Vector3();
+  function damageBendWanted(){
+    var lvl = damageLevel();
+    return damagePull() * Math.max(0, lvl - 0.18) * 0.26;
+  }
+  function damageApplyBend(root, ang){
+    if(!root || Math.abs(ang) < 0.0005) return;
+    var box = mopedLocalBox();
+    var zMid = box.min.z + (box.max.z - box.min.z)*0.52;
+    var yMid = box.min.y + (box.max.y - box.min.y)*0.40;
+    var zSpan = Math.max(0.0001, box.max.z - zMid);
+    var ySpan = Math.max(0.0001, box.max.y - yMid);
+    damageEachMesh(root, function(mesh, g){
+      var m = damageMeshMatrices(mesh);
+      var pos = g.attributes.position, arr = pos.array, moved = false;
+      for(var i=0; i<pos.count; i++){
+        bendV.set(arr[i*3], arr[i*3+1], arr[i*3+2]).applyMatrix4(m.to);
+        var wz = (bendV.z - zMid)/zSpan;
+        var wy = (bendV.y - yMid)/ySpan;
+        if(wz <= 0 || wy <= 0) continue;
+        var w = Math.min(1, wz)*Math.min(1, wy);
+        w = w*w*(3 - 2*w);
+        if(w < 0.002) continue;
+        var aw = ang*w;
+        var cw = Math.cos(aw), sw = Math.sin(aw);
+        var rx = bendV.x, rz = bendV.z - zMid;
+        bendV.x = rx*cw + rz*sw;
+        bendV.z = zMid - rx*sw + rz*cw;
+        bendV.applyMatrix4(m.from);
+        arr[i*3] = bendV.x; arr[i*3+1] = bendV.y; arr[i*3+2] = bendV.z;
+        moved = true;
+      }
+      if(moved){ pos.needsUpdate = true; g.computeVertexNormals(); }
+    });
+  }
+  function damageBendSync(root, nollaa){
+    if(nollaa) damageBendNow[equippedMopedId] = 0;
+    var want = damageBendWanted();
+    var now = damageBendNow[equippedMopedId] || 0;
+    damageApplyBend(root, want - now);
+    damageBendNow[equippedMopedId] = want;
+  }
+
+  // ---- himmennyt maali ----
+  // Naarmuinen pelti ei kiillä. Vain karheutta muutetaan - väri on pelaajan valitsema eikä
+  // sitä saa kirjoittaa yli, koska tuunauspaneeli asettaa sen suoraan samaan materiaaliin.
+  function damagePaintApply(){
+    if(!bodyMat) return;
+    if(bodyMat.userData.dmgRough === undefined) bodyMat.userData.dmgRough = bodyMat.roughness;
+    bodyMat.roughness = Math.min(1, bodyMat.userData.dmgRough + (1 - bodyMat.userData.dmgRough)*damageLevel()*0.8);
+    bodyMat.needsUpdate = true;
+  }
+
+  // yksi kutsu joka päivittää kaiken näkyvän vaurion
+  function damageVisualsSync(root, nollaa){
+    damageBendSync(root, nollaa);
+    updateMirrorDamage();
+    damagePaintApply();
   }
 
   // Ohjauksen veto: pahasti kolhittu mopo ei kulje suoraan. Kutsutaan ajosilmukasta.
@@ -20257,6 +21773,7 @@
       npc.lineIndex = (npc.lineIndex || 0) + 1;
     }
     dlgLineEl.textContent = greet;
+    faceSay(npcFaceOf(npc), greet);
     renderDialogueChoices();
     dlgEl.hidden = false;
     input.fwd = input.back = input.left = input.right = false;
@@ -20273,7 +21790,10 @@
       qb.style.borderLeft = '3px solid var(--accent)';
       qb.textContent = '⭐ ' + qstep.kysy;
       qb.addEventListener('click', function(){
-        dlgLineEl.textContent = questTry(dlgNpc);
+        faceSay(playerFaceBits(), qstep.kysy, (typeof playerLimbs !== 'undefined' && playerLimbs) ? playerLimbs.head : null);
+        var qvast = questTry(dlgNpc);
+        dlgLineEl.textContent = qvast;
+        faceSay(npcFaceOf(dlgNpc), qvast);
         renderDialogueChoices();
       });
       dlgChoices.appendChild(qb);
@@ -20290,9 +21810,12 @@
       btn.addEventListener('click', function(){
         if(t.q === 'Moi vaan.'){
           dlgLineEl.textContent = t.a;
+          faceSay(npcFaceOf(dlgNpc), t.a);
           setTimeout(closeDialogue, 900);
           return;
         }
+        // oma hahmo esittää kysymyksen: suu liikkuu ja pää nyökkää hetken
+        faceSay(playerFaceBits(), t.q, (typeof playerLimbs !== 'undefined' && playerLimbs) ? playerLimbs.head : null);
         var ans = t.a;
         if(ans === null){
           // erikoistapaukset: tehtäväneuvo, poliisijuoru ja hahmon oma repliikkilista
@@ -20314,6 +21837,7 @@
           renderDialogueChoices();
         }
         dlgLineEl.textContent = ans;
+        faceSay(npcFaceOf(dlgNpc), ans);
         if(t.effect) t.effect(dlgNpc);
       });
       dlgChoices.appendChild(btn);
@@ -20326,6 +21850,9 @@
     dlgChoices.appendChild(close);
   }
   function closeDialogue(){
+    faceStop(npcFaceOf(dlgNpc));
+    faceStop(playerFaceBits());
+    if(typeof playerLimbs !== 'undefined' && playerLimbs && playerLimbs.head) playerLimbs.head.rotation.x = 0;
     dlgOpen = false;
     dlgNpc = null;
     if(dlgEl) dlgEl.hidden = true;
