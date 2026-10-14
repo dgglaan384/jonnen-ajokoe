@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:114-->
-<!--JONNE-NAME:Jonnen ajokoe 114-->
+<!--JONNE-VERSION:117-->
+<!--JONNE-NAME:Jonnen ajokoe 117-->
 <!--JONNE-DATE:2026-10-14-->
-<!--JONNE-NOTES:Moottorin kasaus: kahdeksan osaa nostetaan työpöydältä ja asennetaan moottoripukkiin|Oikea järjestys pakotettu: peli kertoo mikä osa puuttuu alta|Pultattavat osat menevät pulttiminipelin läpi|Valmis moottori täyttää mopon sylinteriosan-->
+<!--JONNE-NOTES:Kypäränäkymä (V): kamera kuskin silmiin, leveämpi kuvakulma ja kypärän kehys|Kyläläiset kommentoivat ohi ajavaa mopoa sen kunnon, virityksen ja maineen mukaan|Kypäränäkymä mukana näppäinasetuksissa ja tallennuksessa-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -525,6 +525,19 @@
   .trickHud span{font:700 34px/1 'Teko',sans-serif;color:#ffd27a;display:block;}
   .trickHud small{display:block;font:700 10.5px/1.3 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#f2ece0;opacity:.9;}
   /* valokuvaustilan etsin: kulmamerkit ja ohjerivi alareunassa */
+  /* Kypäränäkymän kehys: pehmeä tummennus reunoilla, kuin kypärän aukosta katsoisi.
+     Pelkkä kameran siirto tuntui paljaalta - tämä tekee siitä kypärän. */
+  .fpvHelmet{
+    position:absolute;inset:0;pointer-events:none;z-index:0;
+    box-shadow:inset 0 0 120px 40px rgba(0,0,0,0.55), inset 0 0 40px 10px rgba(0,0,0,0.35);
+  }
+  .fpvHelmet[hidden]{display:none;}
+  .fpvHelmet::before, .fpvHelmet::after{
+    content:"";position:absolute;left:0;right:0;background:rgba(0,0,0,0.78);
+  }
+  .fpvHelmet::before{top:0;height:11%;}
+  /* alareuna ohuempi: tanko ja peilit nakyvat ruudun alalaidassa, ja kypara jaa niiden ylle */
+  .fpvHelmet::after{bottom:0;height:6%;}
   .photoFrame{position:absolute;inset:0;pointer-events:none;z-index:40;}
   /* Kuvatessa ruudulta pois kaikki paitsi itse kuva, etsin ja ilmoitukset - muuten pelaaja
      rajaa kuvaa mittaristo silmien edessa. Kuvaan HUD ei muutenkaan tule mukaan, koska
@@ -583,11 +596,78 @@
     padding:13px 16px;cursor:pointer;text-transform:uppercase;
   }
   .startMenu button.primary{background:var(--accent);border-color:var(--accent);}
+  /* ---- asetusten välilehdet ---- */
+  .setTabs{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap;}
+  .setTab{
+    flex:1 1 auto;min-width:92px;background:rgba(251,246,233,0.10);
+    border:1px solid rgba(251,246,233,0.22);border-radius:9px;color:#fbf6e9;
+    font:700 12px 'Karla',sans-serif;padding:9px 10px;cursor:pointer;
+  }
+  .setTab:hover{background:rgba(251,246,233,0.18);}
+  .setTab.active{background:rgba(226,87,43,0.34);border-color:rgba(226,87,43,0.65);}
+  .setGroup[hidden]{display:none;}
+
+  /* ---- hiiren herkkyys ---- */
+  .sensRow{display:flex;align-items:center;gap:12px;}
+  .sensRow input[type=range]{flex:1 1 auto;accent-color:#e2572b;}
+  .sensVal{
+    min-width:52px;text-align:right;font:700 15px 'Teko','Karla',sans-serif;letter-spacing:.04em;
+  }
+
+  /* ---- näppäimistö ----
+     Näppäimet piirretään oikean näppäimistön riveinä, jotta sidonnat näkee yhdellä
+     silmäyksellä siitä paikasta jossa sormi oikeasti on. */
+  .kbWrap{margin:4px 0 10px;}
+  .kbRow{display:flex;gap:5px;margin-bottom:5px;justify-content:center;}
+  .kbKey{
+    position:relative;flex:0 1 auto;min-width:0;width:56px;height:46px;padding:3px 2px;
+    background:rgba(251,246,233,0.07);border:1px solid rgba(251,246,233,0.20);
+    border-radius:7px;color:#fbf6e9;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    font:700 13px/1 'Karla',sans-serif;
+  }
+  .kbKey small{
+    display:block;margin-top:3px;font:600 7.5px/1.1 'Karla',sans-serif;
+    opacity:.78;text-align:center;letter-spacing:.01em;
+    /* ei katkoa kesken sanan: lyhyt nimi mahtuu, ja pitka saa mieluummin pienentya */
+    word-break:normal;overflow-wrap:normal;hyphens:none;white-space:nowrap;
+  }
+  .kbKey.bound{background:rgba(226,87,43,0.22);border-color:rgba(226,87,43,0.55);}
+  .kbKey.wide{width:96px;}
+  .kbKey.xwide{width:240px;}
+  .kbKey.waiting{background:rgba(245,197,24,0.35);border-color:#f5c518;color:#1b2119;}
+  .kbKey.waiting small{opacity:.9;}
+  .kbKey:hover{border-color:rgba(251,246,233,0.5);}
+  .kbHint{font:600 11.5px/1.5 'Karla',sans-serif;opacity:.78;margin:2px 0 10px;min-height:17px;}
+  .kbList{
+    max-height:170px;overflow-y:auto;border:1px solid rgba(251,246,233,0.16);
+    border-radius:9px;padding:6px 8px;margin-bottom:10px;
+  }
+  .kbListRow{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:4px 0;font:600 12px 'Karla',sans-serif;
+    border-bottom:1px solid rgba(251,246,233,0.08);
+  }
+  .kbListRow:last-child{border-bottom:none;}
+  .kbListRow b{font:700 11px 'Karla',sans-serif;letter-spacing:.06em;
+    background:rgba(251,246,233,0.12);border-radius:5px;padding:3px 7px;min-width:48px;text-align:center;}
+
+  /* ---- taukovalikko ---- */
+  .startScreen.paused .startTagline{opacity:.75;}
+  .pauseNote{
+    font:700 12px/1.5 'Karla',sans-serif;letter-spacing:.06em;text-transform:uppercase;
+    color:#f5c518;margin:0 0 10px;
+  }
+  .pauseNote[hidden]{display:none;}
+
   .startPane{
     background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:14px;
     padding:18px 22px;width:min(420px,88vw);text-align:left;
   }
   .startPane[hidden]{display:none;}
+  /* Nappaimistovalilehti tarvitsee leveamman paneelin: kymmenen nappainta rivissa
+     ei mahdu 420 pikseliin ilman etta tekstit kutistuvat lukukelvottomiksi. */
+  .startPane.leveaPane{width:min(680px,94vw);}
   .startPane h3{margin:0 0 12px;font:600 26px/1 'Teko',sans-serif;letter-spacing:.02em;}
   .startPane p{margin:0 0 8px;font:600 13px/1.6 'Karla',sans-serif;opacity:.88;}
   .startPane .credRole{opacity:.6;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px;}
@@ -663,6 +743,9 @@
 <div id="app">
   <div class="vignette"></div>
   <div class="hud">
+    <!-- Kypärän kehys on HUDin ensimmäinen lapsi: näin mittarit, kartta ja tehtäväruutu
+         piirtyvät sen päälle. Lopussa se tummensi koko käyttöliittymän reunat. -->
+    <div class="fpvHelmet" id="fpvHelmet" hidden></div>
     <div class="title-card">
       <div class="eyebrow">My Summer Jonne</div>
       <h1>Jonnen ajokoe</h1>
@@ -789,7 +872,7 @@
       <div class="pfBar" id="photoBar">VALOKUVAUSTILA · A/D kierrä · W/S zoomaa · R/F korkeus · VÄLILYÖNTI kuvaa · P sulje</div>
     </div>
     <div class="toast" id="toast"><div class="big" id="toastBig"></div><p id="toastText"></p></div>
-    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea · Kanisteri: <b>K</b> · Näyttely: <b>J</b> · Ryhmäajo: <b>B</b> · Valokuva: <b>P</b> · Radiokanava: <b>N</b></div>
+    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea · Kanisteri: <b>K</b> · Näyttely: <b>J</b> · Ryhmäajo: <b>B</b> · Valokuva: <b>P</b> · Radiokanava: <b>N</b> · Kypäränäkymä: <b>V</b></div>
     <div class="miniMapWrap" id="miniMapWrap">
       <canvas id="miniMap" width="196" height="196"></canvas>
       <div class="miniMapFoot">Koko kartta: <b>M</b></div>
@@ -904,6 +987,7 @@
     </div>
   </div>
   <div class="startScreen" id="startScreen">
+    <div class="pauseNote" id="pauseNote" hidden>Peli on tauolla</div>
     <div class="startEyebrow">My Summer Jonne</div>
     <h1 class="startTitle">Jonnen ajokoe</h1>
     <p class="startTagline">Kesäloma, mopo ja koko kylä tutkittavana. Rassaa, tienaa ja aja ajokokeeseen asti.</p>
@@ -993,38 +1077,71 @@
     </div>
     <div class="startPane" id="settingsPane" hidden>
       <h3>Asetukset</h3>
-      <div class="setRow">
-        <span>Äänet</span>
-        <div class="setBtns" id="setSound">
-          <button data-sound="on" type="button">Päällä</button>
-          <button data-sound="off" type="button">Pois</button>
+      <div class="setTabs" id="setTabs">
+        <button class="setTab active" data-settab="peli" type="button">Peli</button>
+        <button class="setTab" data-settab="grafiikka" type="button">Grafiikka</button>
+        <button class="setTab" data-settab="ohjaus" type="button">Ohjaus</button>
+        <button class="setTab" data-settab="nappaimet" type="button">Näppäimet</button>
+      </div>
+
+      <div class="setGroup" id="setGroupPeli">
+        <div class="setRow">
+          <span>Äänet</span>
+          <div class="setBtns" id="setSound">
+            <button data-sound="on" type="button">Päällä</button>
+            <button data-sound="off" type="button">Pois</button>
+          </div>
+        </div>
+        <div class="setRow">
+          <span>Vuorokauden pituus</span>
+          <div class="setBtns" id="setDayLen">
+            <button data-daylen="600" type="button">Lyhyt</button>
+            <button data-daylen="900" type="button">Normaali</button>
+            <button data-daylen="1500" type="button">Pitkä</button>
+          </div>
+        </div>
+        <button class="wideBtn" id="setResetSave" type="button">Nollaa tallennus ja aloita alusta</button>
+      </div>
+
+      <div class="setGroup" id="setGroupGrafiikka" hidden>
+        <div class="setRow">
+          <span>Grafiikka</span>
+          <div class="setBtns" id="setQuality">
+            <button data-quality="low" type="button">Kevyt</button>
+            <button data-quality="med" type="button">Normaali</button>
+            <button data-quality="high" type="button">Paras</button>
+          </div>
+        </div>
+        <p class="setHint" id="qualityHint">Kevyt: pienempi tarkkuus, ei varjoja eikä katuvaloja - vanhoille ja hitaille koneille.</p>
+        <div class="setRow">
+          <span>Varjot</span>
+          <div class="setBtns" id="setShadows">
+            <button data-shadows="on" type="button">Päällä</button>
+            <button data-shadows="off" type="button">Pois</button>
+          </div>
         </div>
       </div>
-      <div class="setRow">
-        <span>Vuorokauden pituus</span>
-        <div class="setBtns" id="setDayLen">
-          <button data-daylen="600" type="button">Lyhyt</button>
-          <button data-daylen="900" type="button">Normaali</button>
-          <button data-daylen="1500" type="button">Pitkä</button>
+
+      <div class="setGroup" id="setGroupOhjaus" hidden>
+        <div class="setRow col">
+          <span>Hiiren herkkyys</span>
+          <div class="sensRow">
+            <input id="setSens" type="range" min="20" max="300" step="5" value="100">
+            <span class="sensVal" id="setSensVal">1.00×</span>
+          </div>
         </div>
+        <p class="setHint">Kameraa käännetään pitämällä hiiren vasenta nappia pohjassa. Herkkyys kertoo kuinka paljon kamera kääntyy samasta liikkeestä.</p>
+        <button class="wideBtn" id="setSensReset" type="button">Palauta herkkyys oletukseen</button>
       </div>
-      <div class="setRow">
-        <span>Grafiikka</span>
-        <div class="setBtns" id="setQuality">
-          <button data-quality="low" type="button">Kevyt</button>
-          <button data-quality="med" type="button">Normaali</button>
-          <button data-quality="high" type="button">Paras</button>
-        </div>
+
+      <div class="setGroup" id="setGroupNappaimet" hidden>
+        <p class="setHint">Klikkaa näppäintä ja paina sitten uutta näppäintä. Jos näppäin on jo käytössä, toiminnot vaihtavat paikkaa. Nuolinäppäimet liikuttavat aina, vaikka WASD olisi vaihdettu.</p>
+        <div class="kbHint" id="kbHint"></div>
+        <div class="kbWrap" id="kbWrap"></div>
+        <div class="kbList" id="kbList"></div>
+        <button class="wideBtn" id="kbReset" type="button">Palauta oletusnäppäimet</button>
       </div>
-      <p class="setHint" id="qualityHint">Kevyt: pienempi tarkkuus, ei varjoja eikä katuvaloja - vanhoille ja hitaille koneille.</p>
-      <div class="setRow">
-        <span>Varjot</span>
-        <div class="setBtns" id="setShadows">
-          <button data-shadows="on" type="button">Päällä</button>
-          <button data-shadows="off" type="button">Pois</button>
-        </div>
-      </div>
-      <button class="wideBtn" id="setResetSave" type="button">Nollaa tallennus ja aloita alusta</button>
+
       <button class="wideBtn" id="settingsBackBtn" type="button">Takaisin</button>
     </div>
     <div class="startPane" id="creditsPane" hidden>
@@ -10749,7 +10866,21 @@
   var gameStarted = false;
   window.addEventListener('keydown', function(e){
     if(!gameStarted) return;
+    if(typeof kbWaiting !== 'undefined' && kbWaiting) return;   // nappainsidontaa odotetaan
     var k = e.key.toLowerCase();
+    // Tauolla valikko omistaa nappaimet. ESC perautuu ensin alipaneelista valikkoon
+    // ja vasta tyhjasta valikosta takaisin peliin.
+    if(gamePaused){
+      if(k === 'escape' && !e.repeat){
+        var paneAuki = (settingsPaneEl && !settingsPaneEl.hidden) ||
+                       (creditsPaneEl && !creditsPaneEl.hidden) ||
+                       (typeof lookPaneEl !== 'undefined' && lookPaneEl && !lookPaneEl.hidden) ||
+                       (typeof mpPaneEl !== 'undefined' && mpPaneEl && !mpPaneEl.hidden);
+        if(paneAuki) showStartPane(null);
+        else closePauseMenu();
+      }
+      return;
+    }
     // Välikohtaus ja keskustelu vievät näppäimet itselleen, jottei mopo lähde karkuun kesken puheen
     if(typeof cutsceneActive !== 'undefined' && cutsceneActive){
       if(k===' ' || k==='enter' || k==='escape'){ e.preventDefault(); cutsceneNext(); }
@@ -10761,99 +10892,109 @@
     }
     // Valokuvaustila ottaa liikkumisnäppäimet itselleen: muuten mopo lähtisi karkuun samalla
     // kun kameraa kierretään.
+    var act = keyAction(k);
     if(photoMode){
-      if(k==='a'||k==='arrowleft'){ photoKeys.a = true; e.preventDefault(); return; }
-      if(k==='d'||k==='arrowright'){ photoKeys.d = true; e.preventDefault(); return; }
-      if(k==='w'||k==='arrowup'){ photoKeys.w = true; e.preventDefault(); return; }
-      if(k==='s'||k==='arrowdown'){ photoKeys.s = true; e.preventDefault(); return; }
-      if(k==='r'){ photoKeys.r = true; return; }
-      if(k==='f'){ photoKeys.f = true; return; }
-      if(k===' '){ if(!e.repeat) takePhoto(); e.preventDefault(); return; }
-      if(k==='p' || k==='escape'){ if(!e.repeat) togglePhotoMode(); return; }
-      if(k==='tab'){ e.preventDefault(); togglePhone(); return; }
+      if(act==='left' ||k==='arrowleft'){ photoKeys.a = true; e.preventDefault(); return; }
+      if(act==='right'||k==='arrowright'){ photoKeys.d = true; e.preventDefault(); return; }
+      if(act==='fwd'  ||k==='arrowup'){ photoKeys.w = true; e.preventDefault(); return; }
+      if(act==='back' ||k==='arrowdown'){ photoKeys.s = true; e.preventDefault(); return; }
+      if(act==='tankkaa'){ photoKeys.r = true; return; }
+      if(act==='kaynnista'){ photoKeys.f = true; return; }
+      if(act==='jarru'){ if(!e.repeat) takePhoto(); e.preventDefault(); return; }
+      if(act==='valokuva' || k==='escape'){ if(!e.repeat) togglePhotoMode(); return; }
+      if(act==='puhelin'){ e.preventDefault(); togglePhone(); return; }
       return;
     }
-    if(k==='arrowup'||k==='w') input.fwd = true;
-    if(k==='arrowdown'||k==='s') input.back = true;
-    if(k==='arrowleft'||k==='a') input.left = true;
-    if(k==='arrowright'||k==='d') input.right = true;
+    if(act==='fwd'  || k==='arrowup') input.fwd = true;
+    if(act==='back' || k==='arrowdown') input.back = true;
+    if(act==='left' || k==='arrowleft') input.left = true;
+    if(act==='right'|| k==='arrowright') input.right = true;
     // ruuvitila ottaa näppäimet itselleen: E asettaa osan, Q vaihtaa työkalua, G korjaa kierteen
     if(wrenchMode){
       // kiristys näppäimillä: nuolet eivät saa samalla liikuttaa hahmoa
-      if(k==='arrowup' || k==='r'){ input.fwd = false; wrenchKeyTighten = true; e.preventDefault(); return; }
-      if(k==='arrowdown' || k==='f'){ input.back = false; wrenchKeyLoosen = true; e.preventDefault(); return; }
+      if(k==='arrowup' || act==='tankkaa'){ input.fwd = false; wrenchKeyTighten = true; e.preventDefault(); return; }
+      if(k==='arrowdown' || act==='kaynnista'){ input.back = false; wrenchKeyLoosen = true; e.preventDefault(); return; }
       if(k==='escape'){ exitWrenchMode(); return; }
-      if(k==='e' && !e.repeat){ wrenchSeatPart(); return; }
-      if(k==='q' && !e.repeat){ wrenchCycleTool(); return; }
-      if(k==='g' && !e.repeat){ wrenchFixThread(); return; }
+      if(act==='toiminto' && !e.repeat){ wrenchSeatPart(); return; }
+      if(act==='vilkkuV' && !e.repeat){ wrenchCycleTool(); return; }
+      if(act==='hatakorjaus' && !e.repeat){ wrenchFixThread(); return; }
       if(k==='1'){ wrenchSelectTool('kiintoavain'); return; }
       if(k==='2'){ wrenchSelectTool('ruuvimeisseli'); return; }
       if(k==='3'){ wrenchSelectTool('tulppa-avain'); return; }
-      if(k===' '||k==='m'||k==='tab'){ e.preventDefault(); return; }
+      if(act==='jarru'||act==='kartta'||act==='puhelin'){ e.preventDefault(); return; }
       setFirstInput();
       return;
     }
     // pulttien kiristys vie välilyönnin itselleen niin kauan kuin minipeli on auki
     if(bolt.active){
-      if(k===' '){ e.preventDefault(); if(!e.repeat) boltStrike(); return; }
+      if(act==='jarru'){ e.preventDefault(); if(!e.repeat) boltStrike(); return; }
       if(k==='escape'){ cancelBoltGame(); return; }
     }
     // uudet minipelit (tankkaus/kaasutin/paikkaus/hitsaus) vievät välilyönnin samalla tavalla
     if(mini.active){
-      if(k===' '){ e.preventDefault(); if(!e.repeat) miniSpace(true); return; }
+      if(act==='jarru'){ e.preventDefault(); if(!e.repeat) miniSpace(true); return; }
       if(k==='escape'){ cancelMini(); return; }
       return;   // minipelin aikana muut näppäimet eivät ohjaa hahmoa tai avaa paneeleita
     }
-    if(k===' ') input.back = true;
-    if(k==='control') input.wheelie = true;
-    if(k==='r'){ refuel(); }
-    if(k==='f' && !e.repeat){ kickStart(); }
-    if(k==='e' && !e.repeat){ handleInteract(); }
-    if(k==='m' && !e.repeat){ toggleBigMap(); }
-    if(k==='g' && !e.repeat){ roadsideRepair(); }   // hätäkorjaus repun varaosalla
-    if(k==='h' && !e.repeat){ hailFriend(); }       // huuda kaverille: seuraa / kisa
-    if(k==='o' && !e.repeat){ pourOil(); }          // kaada kaksitahtiöljyä bensan sekaan
-    if(k==='k' && !e.repeat){ useJerrycan(); }      // kanisteri: täytä pumpulla, kaada muualla
-    if(k==='j' && !e.repeat){ startShowContest(); } // mopokerhon näyttelykilpailu miitissä
-    if(k==='b' && !e.repeat){ startGroupRide(); }   // ryhmäajo miitistä
-    if(k==='p' && !e.repeat){ togglePhotoMode(); }  // valokuvaustila
-    if(k==='n' && !e.repeat){ cycleRadio(); }       // radiokanavan vaihto
-    if(k==='q' && !e.repeat){ setSignal(-1); }      // vasen vilkku
-    if(k==='c' && !e.repeat){ setSignal(1); }       // oikea vilkku
-    // vaihteet: X ylös, Z alas (vain mopoilla joissa on vaihteisto)
-    if(k==='x' && !e.repeat && mode === 'riding'){ shiftGear(1); }
-    if(k==='z' && !e.repeat && mode === 'riding'){ shiftGear(-1); }
-    if(k==='escape' && garageOpen){ closeGarage(); }
-    if(k==='escape' && !tunePanel.hidden){ tunePanel.hidden = true; }
-    if(k==='escape'){ closeAudioPanel(); }
-    if(k==='tab' && !e.repeat){ e.preventDefault(); togglePhone(); }
+    if(act==='jarru'){ input.back = true; e.preventDefault(); }
+    if(act==='keula') input.wheelie = true;
+    if(act==='tankkaa'){ refuel(); }
+    if(act==='kaynnista' && !e.repeat){ kickStart(); }
+    if(act==='toiminto' && !e.repeat){ handleInteract(); }
+    if(act==='kartta' && !e.repeat){ toggleBigMap(); }
+    if(act==='hatakorjaus' && !e.repeat){ roadsideRepair(); }   // hätäkorjaus repun varaosalla
+    if(act==='huuda' && !e.repeat){ hailFriend(); }             // huuda kaverille: seuraa / kisa
+    if(act==='oljy' && !e.repeat){ pourOil(); }                 // kaada kaksitahtiöljyä bensan sekaan
+    if(act==='kanisteri' && !e.repeat){ useJerrycan(); }        // kanisteri: täytä pumpulla, kaada muualla
+    if(act==='nayttely' && !e.repeat){ startShowContest(); }    // mopokerhon näyttelykilpailu miitissä
+    if(act==='ryhmaajo' && !e.repeat){ startGroupRide(); }      // ryhmäajo miitistä
+    if(act==='valokuva' && !e.repeat){ togglePhotoMode(); }     // valokuvaustila
+    if(act==='kypara' && !e.repeat){ toggleFpv(); }             // kypäränäkymä
+    if(act==='radio' && !e.repeat){ cycleRadio(); }             // radiokanavan vaihto
+    if(act==='vilkkuV' && !e.repeat){ setSignal(-1); }
+    if(act==='vilkkuO' && !e.repeat){ setSignal(1); }
+    if(act==='vaihdeYlos' && !e.repeat && mode === 'riding'){ shiftGear(1); }
+    if(act==='vaihdeAlas' && !e.repeat && mode === 'riding'){ shiftGear(-1); }
+    // ESC: ensin avoimet paneelit, ja vasta kun mitaan ei ollut auki, taukovalikko
+    if(k==='escape'){
+      var suljettiin = false;
+      if(garageOpen){ closeGarage(); suljettiin = true; }
+      if(!tunePanel.hidden){ tunePanel.hidden = true; suljettiin = true; }
+      if(audioPanelEl && !audioPanelEl.hidden){ closeAudioPanel(); suljettiin = true; }
+      if(missionPanel && !missionPanel.hidden){ missionPanel.hidden = true; suljettiin = true; }
+      if(bigMapOpen){ toggleBigMap(); suljettiin = true; }
+      if(!suljettiin && !e.repeat) openPauseMenu();
+      return;
+    }
+    if(act==='puhelin' && !e.repeat){ e.preventDefault(); togglePhone(); }
     setFirstInput();
   });
   window.addEventListener('keyup', function(e){
-    if(!gameStarted) return;
+    if(!gameStarted || gamePaused) return;
     var k = e.key.toLowerCase();
+    var act = keyAction(k);
     if(photoMode){
-      if(k==='a'||k==='arrowleft') photoKeys.a = false;
-      if(k==='d'||k==='arrowright') photoKeys.d = false;
-      if(k==='w'||k==='arrowup') photoKeys.w = false;
-      if(k==='s'||k==='arrowdown') photoKeys.s = false;
-      if(k==='r') photoKeys.r = false;
-      if(k==='f') photoKeys.f = false;
+      if(act==='left' ||k==='arrowleft') photoKeys.a = false;
+      if(act==='right'||k==='arrowright') photoKeys.d = false;
+      if(act==='fwd'  ||k==='arrowup') photoKeys.w = false;
+      if(act==='back' ||k==='arrowdown') photoKeys.s = false;
+      if(act==='tankkaa') photoKeys.r = false;
+      if(act==='kaynnista') photoKeys.f = false;
       return;
     }
     if(wrenchMode){
-      if(k==='arrowup' || k==='r') wrenchKeyTighten = false;
-      if(k==='arrowdown' || k==='f') wrenchKeyLoosen = false;
+      if(k==='arrowup' || act==='tankkaa') wrenchKeyTighten = false;
+      if(k==='arrowdown' || act==='kaynnista') wrenchKeyLoosen = false;
     }
-    if(k==='arrowup'||k==='w') input.fwd = false;
-    if(k==='arrowdown'||k==='s') input.back = false;
-    if(k==='arrowleft'||k==='a') input.left = false;
-    if(k==='arrowright'||k==='d') input.right = false;
-    if(k===' '){
+    if(act==='fwd'  || k==='arrowup') input.fwd = false;
+    if(act==='back' || k==='arrowdown') input.back = false;
+    if(act==='left' || k==='arrowleft') input.left = false;
+    if(act==='right'|| k==='arrowright') input.right = false;
+    if(act==='jarru'){
       if(mini.active){ miniSpace(false); }
       input.back = false;
     }
-    if(k==='control') input.wheelie = false;
+    if(act==='keula') input.wheelie = false;
   });
 
   // ladattu moottoriääni (mp3, upotettu base64:na jotta yksitiedostoinen peli toimii itsenäisesti)
@@ -16695,6 +16836,132 @@
   // Yksi tasainen JSON-olio, jokainen lista tallennetaan id:n (tai pois-listalla nimen) mukaan avattuna
   // objektina position sijaan - näin vanhempi tallennus ei mene sekaisin vaikka listojen järjestys tai
   // pituus muuttuisi myöhemmissä versioissa (puuttuva avain jätetään vain huomiotta, oletusarvo pysyy). ----
+  // ---- tallennettava tila joka ASETETAAN latauksessa ----
+  // Nama viisi oliota alustetaan tassa eika omien lohkojensa yhteydessa kauempana
+  // tiedostossa. Syy on sama ansa joka on kaatanut tassa projektissa asioita ennenkin:
+  // var nostaa NIMEN ylos mutta ei ARVOA. loadGame() ajetaan kohdassa jossa nama lohkot
+  // ovat viela ajamatta, joten lataus sijoitti arvon ja myohempi "var x = {}" pyyhki sen
+  // tyhjaksi heti perassa. Kaytannossa: avausvalikohtaus tuli joka kaynnistyksella uudestaan,
+  // mopon kolhut katosivat ja kylalaisten tarinaketjut nollautuivat joka latauksella.
+  var cutSeen = {};        // jo nahdyt valikohtaukset, id -> true
+  var damageByMoped = {};  // mopoId -> lista kolhuja
+  var damageLevelBy = {};  // mopoId -> 0..1 kokonaisvaurio
+  var damagePullBy  = {};  // mopoId -> ohjauksen veto (-1..1)
+  var questStage = {};     // npc-nimi -> seuraavan vaiheen indeksi
+  var pendingFines = [];   // postissa tulevat ylinopeussakot
+  var DAMAGE_MAX_IMPACTS = 26;  // montako kolhua mallissa pidetaan muistissa
+
+  // ==========================================================================
+  // ---- NAPPAINKARTTA ----
+  // Nappaimet olivat hajallaan keydown-kasittelijassa kovakoodattuina vertailuina
+  // (k === 'e'), joten niita ei voinut vaihtaa eika niista saanut listaa ruudulle.
+  // Nyt jokaisella toiminnolla on NIMI, ja yksi kartta kertoo mika nappain sen tekee.
+  //
+  // Nuolinappaimet jaavat aina liikkumisen vaihtoehdoksi riippumatta sidonnoista:
+  // ne ovat se varatie jolla peliin paasee takaisin jos sidonnat menevat solmuun.
+  // ==========================================================================
+  var KEY_ACTIONS = [
+    {id:'fwd',         nimi:'Eteenpäin',        oletus:'w',       ryhma:'Liikkuminen'},
+    {id:'back',        nimi:'Taakse / jarru',   lyhyt:'Taakse',   oletus:'s',       ryhma:'Liikkuminen'},
+    {id:'left',        nimi:'Vasemmalle',       oletus:'a',       ryhma:'Liikkuminen'},
+    {id:'right',       nimi:'Oikealle',         oletus:'d',       ryhma:'Liikkuminen'},
+    {id:'jarru',       nimi:'Jarru / stoppie',  lyhyt:'Jarru',    oletus:' ',       ryhma:'Liikkuminen'},
+    {id:'keula',       nimi:'Keulinta',         oletus:'control', ryhma:'Liikkuminen'},
+    {id:'vaihdeYlos',  nimi:'Vaihde ylös',      oletus:'x',       ryhma:'Liikkuminen'},
+    {id:'vaihdeAlas',  nimi:'Vaihde alas',      oletus:'z',       ryhma:'Liikkuminen'},
+    {id:'toiminto',    nimi:'Toiminto / E',     lyhyt:'Toiminto', oletus:'e',       ryhma:'Toiminnot'},
+    {id:'kaynnista',   nimi:'Käynnistä mopo',   lyhyt:'Käynnistä',oletus:'f',       ryhma:'Toiminnot'},
+    {id:'tankkaa',     nimi:'Tankkaa',          oletus:'r',       ryhma:'Toiminnot'},
+    {id:'hatakorjaus', nimi:'Hätäkorjaus',      lyhyt:'Hätäkorj.',oletus:'g',       ryhma:'Toiminnot'},
+    {id:'oljy',        nimi:'Kaada öljyä',      oletus:'o',       ryhma:'Toiminnot'},
+    {id:'kanisteri',   nimi:'Kanisteri',        oletus:'k',       ryhma:'Toiminnot'},
+    {id:'huuda',       nimi:'Huuda kaverille',  lyhyt:'Huuda',    oletus:'h',       ryhma:'Toiminnot'},
+    {id:'nayttely',    nimi:'Näyttely',         oletus:'j',       ryhma:'Toiminnot'},
+    {id:'ryhmaajo',    nimi:'Ryhmäajo',         oletus:'b',       ryhma:'Toiminnot'},
+    {id:'vilkkuV',     nimi:'Vilkku vasen',     lyhyt:'Vilkku V', oletus:'q',       ryhma:'Toiminnot'},
+    {id:'vilkkuO',     nimi:'Vilkku oikea',     lyhyt:'Vilkku O', oletus:'c',       ryhma:'Toiminnot'},
+    {id:'kartta',      nimi:'Kartta',           oletus:'m',       ryhma:'Näkymät'},
+    {id:'puhelin',     nimi:'Puhelin',          oletus:'tab',     ryhma:'Näkymät'},
+    {id:'valokuva',    nimi:'Valokuvaustila',   lyhyt:'Valokuva', oletus:'p',       ryhma:'Näkymät'},
+    {id:'kypara',      nimi:'Kypäränäkymä',     lyhyt:'Kypärä',   oletus:'v',       ryhma:'Näkymät'},
+    {id:'radio',       nimi:'Radiokanava',      lyhyt:'Radio',    oletus:'n',       ryhma:'Näkymät'}
+  ];
+  // Naita ei voi sitoa: ne on varattu valikoille ja selaimelle.
+  var KEY_VARATUT = {'escape':1, 'enter':1, 'arrowup':1, 'arrowdown':1, 'arrowleft':1, 'arrowright':1, 'f5':1, 'f11':1, 'f12':1};
+
+  var keyBind = {};        // toiminto -> nappain
+  var keyOfAction = {};    // nappain  -> toiminto (kaanteinen, rakennetaan uudestaan joka muutoksella)
+
+  function keyActionDef(id){
+    for(var i=0; i<KEY_ACTIONS.length; i++) if(KEY_ACTIONS[i].id === id) return KEY_ACTIONS[i];
+    return null;
+  }
+  function keyBindDefaults(){
+    keyBind = {};
+    for(var i=0; i<KEY_ACTIONS.length; i++) keyBind[KEY_ACTIONS[i].id] = KEY_ACTIONS[i].oletus;
+    keyRebuildReverse();
+  }
+  function keyRebuildReverse(){
+    keyOfAction = {};
+    for(var id in keyBind){
+      if(!Object.prototype.hasOwnProperty.call(keyBind, id)) continue;
+      if(keyBind[id]) keyOfAction[keyBind[id]] = id;
+    }
+  }
+  // Mika toiminto tama painallus on? Palauttaa null jos nappainta ei ole sidottu.
+  function keyAction(k){
+    return Object.prototype.hasOwnProperty.call(keyOfAction, k) ? keyOfAction[k] : null;
+  }
+  function keyIs(k, id){ return keyBind[id] === k; }
+  // Nappaimen nimi ruudulle: valilyonti ja ohjausnappaimet eivat nay merkkeina.
+  function keyLabel(k){
+    if(k === ' ') return 'VÄLI';
+    if(k === 'control') return 'CTRL';
+    if(k === 'shift') return 'SHIFT';
+    if(k === 'tab') return 'TAB';
+    if(k === 'alt') return 'ALT';
+    if(!k) return '–';
+    return k.toUpperCase();
+  }
+  // Sidonta: jos nappain oli jo toisella toiminnolla, toiminnot VAIHTAVAT paikkaa.
+  // Nain mikaan toiminto ei jaa vahingossa kokonaan ilman nappainta.
+  function keySet(actionId, k){
+    if(!keyActionDef(actionId)) return {ok:false, syy:'Tuntematon toiminto.'};
+    if(!k) return {ok:false, syy:'Tyhjä näppäin.'};
+    if(KEY_VARATUT[k]) return {ok:false, syy:'Näppäin ' + keyLabel(k) + ' on varattu valikoille.'};
+    var vanha = keyBind[actionId];
+    var toinen = keyAction(k);
+    if(toinen === actionId) return {ok:true, vaihtui:null};
+    if(toinen) keyBind[toinen] = vanha;
+    keyBind[actionId] = k;
+    keyRebuildReverse();
+    saveGame();
+    return {ok:true, vaihtui: toinen};
+  }
+  function keyApplySaved(saved){
+    keyBindDefaults();
+    if(!saved || typeof saved !== 'object') return;
+    for(var i=0; i<KEY_ACTIONS.length; i++){
+      var a = KEY_ACTIONS[i];
+      var v = saved[a.id];
+      if(typeof v === 'string' && v && !KEY_VARATUT[v]) keyBind[a.id] = v;
+    }
+    // Varmistus: jos tallenteessa on sama nappain kahdesti, jalkimmainen voittaisi ja
+    // toinen toiminto jaisi tyhjaksi. Palautetaan silloin oletus sille joka jai ilman.
+    var kaytossa = {};
+    for(var j=0; j<KEY_ACTIONS.length; j++){
+      var id = KEY_ACTIONS[j].id;
+      var k = keyBind[id];
+      if(k && kaytossa[k]) keyBind[id] = KEY_ACTIONS[j].oletus;
+      if(keyBind[id]) kaytossa[keyBind[id]] = 1;
+    }
+    keyRebuildReverse();
+  }
+  keyBindDefaults();
+
+  // Hiiren herkkyys: kerroin kameran kaantonopeudelle. Tallentuu muiden asetusten mukana.
+  var mouseSens = 1;
+
   var SAVE_KEY = 'jonnenAjokoeSave_v1';
   function saveGame(){
     try{
@@ -16748,6 +17015,9 @@
         poisVisited: poiData,
         npcChatCount: npcChatCount,
         cutSeen: cutSeen,
+        keyBind: keyBind,
+        fpvOn: fpvOn,
+        mouseSens: mouseSens,
         dartsThrowCount: dartsThrowCount,
         fishCaught: fishCaught,
         biggestFish: biggestFish,
@@ -16956,6 +17226,9 @@
       }
       if(typeof save.npcChatCount === 'number') npcChatCount = save.npcChatCount;
       if(save.cutSeen && typeof save.cutSeen === 'object') cutSeen = save.cutSeen;
+      keyApplySaved(save.keyBind);
+      if(typeof save.fpvOn === 'boolean'){ fpvOn = save.fpvOn; fpvApplyVisibility(); }
+      if(typeof save.mouseSens === 'number') mouseSens = Math.max(0.2, Math.min(3, save.mouseSens));
       if(typeof save.dartsThrowCount === 'number') dartsThrowCount = save.dartsThrowCount;
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
       if(typeof save.biggestFish === 'number') biggestFish = save.biggestFish;
@@ -17008,7 +17281,12 @@
         if(it.id === 'kalastuslupa') kalastuslupaMesh.visible = it.owned;
         if(it.id === 'onnenkolikko') onnenkolikkoMesh.visible = it.owned;
       });
-    }catch(e){ /* ladatun tallennuksen soveltaminen epäonnistui jossain kohtaa - jatketaan sillä mikä ehti latautua */ }
+    }catch(e){
+      // Jatketaan silla mika ehti latautua, mutta EI aanettomasti: tama catch piilotti
+      // pitkaan virheen joka keskeytti latauksen puolivalissa, jolloin kaikki sen jalkeen
+      // tuleva (mm. nahdyt valikohtaukset) jai lataamatta joka kaynnistyksella.
+      try{ console.warn('Tallennuksen lataus keskeytyi kesken:', e); }catch(e2){}
+    }
   }
   window.addEventListener('beforeunload', saveGame);
 
@@ -17260,8 +17538,8 @@
     if(!camDragging) return;
     var dxm = e.clientX - camDragX, dym = e.clientY - camDragY;
     camDragX = e.clientX; camDragY = e.clientY;
-    camYawOffset -= dxm * 0.005;
-    camPitchOffset = Math.max(-0.55, Math.min(0.95, camPitchOffset + dym * 0.0035));
+    camYawOffset -= dxm * 0.005 * mouseSens;
+    camPitchOffset = Math.max(-0.55, Math.min(0.95, camPitchOffset + dym * 0.0035 * mouseSens));
     if(camYawOffset >  Math.PI) camYawOffset -= Math.PI*2;
     if(camYawOffset < -Math.PI) camYawOffset += Math.PI*2;
     camMouseIdle = 0;
@@ -18340,6 +18618,10 @@
   function animate(){
     requestAnimationFrame(animate);
     var dt = Math.min(clock.getDelta(), 0.05);
+    // Tauolla piirretaan mutta ei paiviteta mitaan: kello, bensa, poliisi ja saa
+    // jaavat paikalleen. clock.getDelta() kutsutaan silti, jottei jatkaessa tule
+    // yhta isoa hyppya kertyneesta ajasta.
+    if(gamePaused){ renderWithPost(); return; }
 
     saveThrottleTimer -= dt;
     if(saveThrottleTimer <= 0){
@@ -18612,12 +18894,17 @@
       updateCamOffsets(dt, Math.abs(speed) > 1.5);
       // Kuski peittää mopon päällä enemmän ruutua kuin tyhjä satula, joten kameraa on
       // nostettu ja vedetty hieman taemmas - muuten hahmon pää istuisi keskellä tietä.
-      var desiredCam = followCamera(moped.position, heading, 5.1, 2.8, 1.15);
-      camPos.lerp(desiredCam, 1-Math.pow(0.001,dt));
-      camera.position.copy(camPos);
-      var lookTarget = moped.position.clone().add(new THREE.Vector3(0,0.8,0));
-      camLook.lerp(lookTarget, 1-Math.pow(0.0005,dt));
-      camera.lookAt(camLook);
+      if(fpvOn){
+        // kuskin silmat: hieman satulan etupuolella, pään korkeudella
+        fpvRidingCamera();
+      } else {
+        var desiredCam = followCamera(moped.position, heading, 5.1, 2.8, 1.15);
+        camPos.lerp(desiredCam, 1-Math.pow(0.001,dt));
+        camera.position.copy(camPos);
+        var lookTarget = moped.position.clone().add(new THREE.Vector3(0,0.8,0));
+        camLook.lerp(lookTarget, 1-Math.pow(0.0005,dt));
+        camera.lookAt(camLook);
+      }
 
       // Ajoääni on yhä sama ladattu mp3-näyte silmukassa, mutta sen soittonopeus, sävy ja
       // voimakkuus seuraavat nyt kierroslukua, vaihdetta ja osien kuntoa (ks. updateEngineAudio).
@@ -18733,12 +19020,16 @@
 
       // kolmas persoona: kamera leijuu pelaajan takana samaan tapaan kuin ajaessakin
       updateCamOffsets(dt, moveDir !== 0);
-      var desiredCam2 = followCamera(player.position, playerHeading, 3.2, 1.8, 1.1);
-      camPos.lerp(desiredCam2, 1-Math.pow(0.002,dt));
-      camera.position.copy(camPos);
-      var lookTarget2 = player.position.clone().add(new THREE.Vector3(0,1.1,0));
-      camLook.lerp(lookTarget2, 1-Math.pow(0.001,dt));
-      camera.lookAt(camLook);
+      if(fpvOn){
+        fpvCamera(player.position, playerHeading, 1.58, 0.06);
+      } else {
+        var desiredCam2 = followCamera(player.position, playerHeading, 3.2, 1.8, 1.1);
+        camPos.lerp(desiredCam2, 1-Math.pow(0.002,dt));
+        camera.position.copy(camPos);
+        var lookTarget2 = player.position.clone().add(new THREE.Vector3(0,1.1,0));
+        camLook.lerp(lookTarget2, 1-Math.pow(0.001,dt));
+        camera.lookAt(camLook);
+      }
 
       if(audioCtx && engineGain){
         engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
@@ -19034,6 +19325,13 @@
     updateBlinkers(moped, dt);   // oman mopon vilkut samalla koodilla kuin muidenkin
     updateHelmet();
     updatePhotoMode(dt);     // valokuvaustilan kameran ohjaus
+    commentClock += dt;
+    updateVillagerComments(dt);   // kyläläiset kommentoivat ohi ajavaa mopoa
+    if(fpvOn){
+      // tila voi muuttua kesken (sisätila, valokuvaustila, tauko) - kypäränäkymä pois silloin
+      if(!fpvAvailable()){ fpvOn = false; }
+      fpvApplyVisibility();
+    }
     updateEngineCarry(dt);   // kannossa oleva moottorin osa seuraa pelaajaa
     updateCampfire(dt);      // miitin nuotio: liekit, savu, valo ja rätinä
     updateFaceTalk(dt);      // puhuvan hahmon suu ja kulmat
@@ -20176,6 +20474,425 @@
     startScreenEl.hidden = false;
     if(hudEl) hudEl.style.visibility = 'hidden';
   }
+  // ==========================================================================
+  // ---- TAUKOVALIKKO, ASETUSVALILEHDET JA NAPPAIMISTO ----
+  //
+  // ESC pelissa avaa saman aloitusruudun jolla peli kaynnistettiin. Se on tahallaan
+  // SAMA ruutu eika erillinen taukopaneeli: hahmon muokkaus, moninpeli ja asetukset
+  // ovat jo siella, eika niita tarvitse rakentaa toiseen kertaan.
+  //
+  // Peli PYSAHTYY tauolla: animaatiosilmukka piirtaa mutta ei paivita mitaan.
+  // Ilman tata kello kavisi, bensa kuluisi ja poliisi ajaisi valikon takana.
+  // ==========================================================================
+  var gamePaused = false;
+  var pauseNoteEl = document.getElementById('pauseNote');
+  var startPlayBtnEl = document.getElementById('startPlayBtn');
+
+  // ==========================================================================
+  // ---- KYPARANAKYMA (ensimmainen persoona) ----
+  // Mopoa on katsottu koko pelin ajan ulkopuolelta. KypaRan takaa sama 60 km/h tuntuu
+  // aivan toiselta: tie tulee vastaan silmien tasolla, tanko ja mittaristo ovat edessa
+  // eika vauhdista nae muuta kuin sen mita kuski itse nakisi.
+  //
+  // Kamera EI kayta followCameraa: se kiertaa kohdetta etaalta ja tormaystarkistaa
+  // etaisyyden, mika on tassa tarpeetonta. Silma asetetaan suoraan kuskin paan kohdalle.
+  // ==========================================================================
+  var fpvOn = false;
+  var fpvHelmetEl = document.getElementById('fpvHelmet');
+  // Kolmannen persoonan 55 asteen kuvakulma on kyparan sisalta liian kapea: mopon tanko
+  // jaa kokonaan kuvan alapuolelle, jolloin nakyma on pelkkaa leijuvaa maisemaa. Mitattuna
+  // tanko on kuskin silmista 0.82 m edessa ja 0.61 m alempana eli 37 astetta alaviistoon,
+  // joten pystysuunnan puolikulman pitaa olla vahintaan sen verran.
+  var FPV_FOV = 76;
+  // Ruudun alalaidassa on ohjerivi, joka peitti tangon kokonaan. Katse kallistuu sen verran
+  // alas, etta tanko ja peilit jaavat ohjerivin ylapuolelle - taivasta jaa yha reilusti.
+  var FPV_PITCH = 0.20;
+  var camFovNormal = camera.fov;
+  function fpvSetFov(paalle){
+    var want = paalle ? FPV_FOV : camFovNormal;
+    if(Math.abs(camera.fov - want) < 0.01) return;
+    camera.fov = want;
+    camera.updateProjectionMatrix();
+  }
+
+  function fpvAvailable(){
+    return !photoMode && !wrenchMode && !inStore && !cutsceneActive && !gamePaused;
+  }
+  function toggleFpv(){
+    if(!fpvAvailable()){
+      showToast(false, 'Kypäränäkymä', 'Ei käytettävissä juuri nyt.', 2200);
+      return;
+    }
+    fpvOn = !fpvOn;
+    fpvApplyVisibility();
+    showToast(false, fpvOn ? '🪖 Kypäränäkymä päällä' : 'Kypäränäkymä pois',
+      fpvOn ? 'Katso ympärille hiirellä. Sama näppäin palauttaa normaalin kameran.'
+            : 'Kamera palasi selän taakse.', 2800);
+  }
+  // Omaa hahmoa ei voi nayttaa kypaRan sisalta: paa olisi kameran edessa.
+  function fpvApplyVisibility(){
+    if(fpvHelmetEl) fpvHelmetEl.hidden = !fpvOn;
+    fpvSetFov(fpvOn);
+    if(!fpvOn && typeof playerVisual !== 'undefined' && playerVisual) playerVisual.visible = true;
+    if(typeof riderEntry !== 'undefined' && riderEntry && riderEntry.group){
+      // ajaessa kuski piiloon, muuten normaali logiikka hoitaa nakyvyyden
+      if(fpvOn && mode === 'riding') riderEntry.group.visible = false;
+    }
+    if(typeof playerVisual !== 'undefined' && playerVisual){
+      playerVisual.visible = !(fpvOn && mode === 'walking');
+    }
+  }
+  // Silma kuskin paan kohdalle. fwd siirtaa silman eteenpain kohteesta, jottei oma
+  // paa tai kypara jaa kuvaan.
+  function fpvCamera(focus, baseHeading, eyeH, fwd){
+    var ang = baseHeading + camYawOffset;
+    var ex = focus.x + Math.sin(baseHeading)*fwd;
+    var ez = focus.z + Math.cos(baseHeading)*fwd;
+    camPos.set(ex, focus.y + eyeH, ez);
+    camera.position.copy(camPos);
+    var d = 8;
+    camLook.set(ex + Math.sin(ang)*d, focus.y + eyeH - (camPitchOffset + FPV_PITCH)*d*0.9, ez + Math.cos(ang)*d);
+    camera.lookAt(camLook);
+  }
+  // Ajaessa silma otetaan kuskihahmon omasta paasta. Mitattu istumakorkeus vaihtelee
+  // mopoittain reilusti (potkulauta 1.26, scoba 1.67), ja paa myos nojaa kaarteissa ja
+  // kaasuttaessa - vakiokorkeus olisi vaarassa paikassa lahes joka mopolla.
+  var fpvEye = new THREE.Vector3();
+  function fpvRidingCamera(){
+    var lim = (typeof riderEntry !== 'undefined' && riderEntry && riderEntry.limbs) ? riderEntry.limbs : null;
+    if(lim && lim.head){
+      moped.updateMatrixWorld(true);   // paan matriisi on muuten edellisen ruudun
+      lim.head.getWorldPosition(fpvEye);
+      fpvEye.y += 0.02;                // silmat ovat paalaen alapuolella
+      // kuski on piilotettu kyparanakymassa, joten silmaa ei tarvitse siirtaa oman paan ohi
+      fpvCamera(fpvEye, heading, 0, 0.02);
+    }else{
+      fpvCamera(moped.position, heading, 1.45, 0.20);
+    }
+  }
+
+  // ==========================================================================
+  // ---- KYLALAISTEN KOMMENTIT ----
+  // Kylalaiset seisoivat paikallaan ja odottivat etta heille puhutaan. Nyt he sanovat
+  // jotain kun ohi ajaa, ja se jotain riippuu SIITA MOPOSTA joka ohi menee: viritetty
+  // mopo kehutaan, lommoinen naureskellaan ja poliisin kiinnostuksesta varoitetaan.
+  //
+  // Repliikki menee faceSay-funktion kautta, joten kylalaisen suu liikkuu samalla.
+  // ==========================================================================
+  var COMMENT_GAP = 14;         // sekuntia kommenttien valilla, kuka tahansa sanoja
+  var COMMENT_NPC_GAP = 70;     // sama kylalainen ei toista itseaan nain nopeasti
+  var commentTimer = 6;
+  var COMMENT_LINES = {
+    viritetty: [
+      'Oho, kuulostaa eri mopolta kuin viime viikolla!',
+      'Siinä on tehoa. Mistä sait sen sylinterin?',
+      'Toi kulkee jo kovempaa kuin mun ensimmäinen auto.'
+    ],
+    lommoinen: [
+      'Mitäs sulle kävi? Mopo on ihan retuperällä.',
+      'Tuo pelti kaipaisi oikaisua.',
+      'Ajoitko ojaan vai painitko hirven kanssa?'
+    ],
+    kiiltava: [
+      'Onpas siisti mopo. Pidät kyllä siitä huolta.',
+      'Kiiltää ihan uutena.',
+      'Noin sitä pitää. Hyvin hoidettu.'
+    ],
+    poliisi: [
+      'Partio kyseli susta eilen. Aja varovasti.',
+      'Älä kaasuta tässä, ne mittaa tuolla mutkan takana.',
+      'Poliisi on liikkeellä tänään. Pidä se rauhallisena.'
+    ],
+    kypara: [
+      'Missä sun kypärä on?',
+      'Laita kypärä päähän, siitä tulee sakkoa.',
+      'Pää on vain yksi, kaveri.'
+    ],
+    tyonto: [
+      'Hajosko se taas?',
+      'Tarviiko apua? Näyttää raskaalta.',
+      'Pitkä matka työntää.'
+    ],
+    perus: [
+      'Moi!',
+      'Kesä on parasta aikaa mopoilla.',
+      'Nähdään miitissä illalla.'
+    ]
+  };
+  // Mika kommenttilaji sopii juuri nyt? Jarjestys on tarkea: kiireellisin ensin.
+  function commentKind(){
+    if(typeof pushingMoped !== 'undefined' && pushingMoped) return 'tyonto';
+    if(typeof mopedDead === 'function' && mode === 'riding' && mopedDead()) return 'tyonto';
+    if(typeof repPoliceLevel === 'function' && repPoliceLevel() >= 2) return 'poliisi';
+    // Mopon oma tila ennen kypärämuistutusta: ilman tätä kypärätön pelaaja kuulisi
+    // pelkkää kypärähuutelua eikä koskaan huomaisi että virityksestäkin sanotaan jotain.
+    if(typeof damageLevel === 'function' && damageLevel() > 0.35) return 'lommoinen';
+    var tierSum = 0;
+    for(var i=0; i<parts.length; i++) tierSum += parts[i].tierIndex;
+    if(tierSum >= 3) return 'viritetty';
+    if(typeof helmetOn !== 'undefined' && !helmetOn && mode === 'riding') return 'kypara';
+    var cond = 0;
+    for(var c=0; c<parts.length; c++) cond += parts[c].condition;
+    cond = parts.length ? cond/parts.length : 0;
+    if(cond > 80 && (typeof damageLevel !== 'function' || damageLevel() < 0.05)) return 'kiiltava';
+    return 'perus';
+  }
+  function updateVillagerComments(dt){
+    if(cutsceneActive || gamePaused || inStore) return;
+    if(typeof dlgOpen !== 'undefined' && dlgOpen) return;
+    commentTimer -= dt;
+    if(commentTimer > 0) return;
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    // paikallaan seisovalle ei huudella: kommentti on ohi menemisen reaktio
+    var liikkuu = (mode === 'riding') ? (Math.abs(speed) > 2.5) : (input.fwd || input.back);
+    if(!liikkuu) return;
+    var npc = null, bestD = 100;
+    for(var i=0; i<npcCharacters.length; i++){
+      var n = npcCharacters[i];
+      if(n.indoor) continue;
+      if(n._commentAt !== undefined && (gameClockSeconds() - n._commentAt) < COMMENT_NPC_GAP) continue;
+      var dx = n.pos.x - ref.x, dz = n.pos.z - ref.z;
+      var d2 = dx*dx + dz*dz;
+      if(d2 < bestD){ bestD = d2; npc = n; }
+    }
+    if(!npc) return;
+    commentTimer = COMMENT_GAP;
+    npc._commentAt = gameClockSeconds();
+    var lajit = COMMENT_LINES[commentKind()] || COMMENT_LINES.perus;
+    var rivi = lajit[Math.floor(Math.random()*lajit.length)];
+    showToast(false, npc.name, rivi, 3400);
+    if(typeof faceSay === 'function' && typeof npcFaceOf === 'function') faceSay(npcFaceOf(npc), rivi);
+  }
+  // Oma kello sekunteina: dayTime on vuorokauden osuus ja kiertaa ympari, joten
+  // sita ei voi vahentaa suoraan ilman etta keskiyo sotkee valit.
+  var commentClock = 0;
+  function gameClockSeconds(){ return commentClock; }
+
+  function openPauseMenu(){
+    if(!gameStarted || gamePaused) return;
+    gamePaused = true;
+    // nappaimet irti, jottei hahmo jaa juoksemaan valikon taakse
+    input.fwd = input.back = input.left = input.right = false;
+    input.wheelie = false;
+    camDragging = false;
+    showStartPane(null);
+    startScreenEl.hidden = false;
+    if(pauseNoteEl) pauseNoteEl.hidden = false;
+    if(startPlayBtnEl) startPlayBtnEl.textContent = 'Jatka';
+    if(hudEl) hudEl.style.visibility = 'hidden';
+    saveGame();
+  }
+  function closePauseMenu(){
+    if(!gamePaused) return;
+    gamePaused = false;
+    startScreenEl.hidden = true;
+    if(pauseNoteEl) pauseNoteEl.hidden = true;
+    if(startPlayBtnEl) startPlayBtnEl.textContent = 'Pelaa';
+    if(hudEl) hudEl.style.visibility = '';
+  }
+  // Pelaa-nappi tekee kaksi eri asiaa: aloittaa pelin tai jatkaa tauolta.
+  function startOrResume(){
+    if(gamePaused){ closePauseMenu(); return; }
+    beginGame();
+  }
+
+  // ---- asetusten valilehdet ----
+  var SET_TABS = ['peli', 'grafiikka', 'ohjaus', 'nappaimet'];
+  var setGroupEls = {
+    peli:      document.getElementById('setGroupPeli'),
+    grafiikka: document.getElementById('setGroupGrafiikka'),
+    ohjaus:    document.getElementById('setGroupOhjaus'),
+    nappaimet: document.getElementById('setGroupNappaimet')
+  };
+  function showSetTab(which){
+    for(var i=0; i<SET_TABS.length; i++){
+      var t = SET_TABS[i];
+      if(setGroupEls[t]) setGroupEls[t].hidden = (t !== which);
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('#setTabs .setTab'), function(b){
+      b.classList.toggle('active', b.getAttribute('data-settab') === which);
+    });
+    if(settingsPaneEl) settingsPaneEl.classList.toggle('leveaPane', which === 'nappaimet');
+    if(which === 'nappaimet') keyRenderBoard();
+  }
+  (function(){
+    var tabs = document.getElementById('setTabs');
+    if(!tabs) return;
+    tabs.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('.setTab') : null;
+      if(!b) return;
+      showSetTab(b.getAttribute('data-settab'));
+    });
+  })();
+
+  // ---- hiiren herkkyys ----
+  var setSensEl = document.getElementById('setSens');
+  var setSensValEl = document.getElementById('setSensVal');
+  function sensRefresh(){
+    if(setSensEl) setSensEl.value = Math.round(mouseSens*100);
+    if(setSensValEl) setSensValEl.textContent = mouseSens.toFixed(2) + '×';
+  }
+  if(setSensEl){
+    setSensEl.addEventListener('input', function(){
+      mouseSens = Math.max(0.2, Math.min(3, (parseInt(setSensEl.value, 10) || 100)/100));
+      sensRefresh();
+    });
+    setSensEl.addEventListener('change', function(){ saveGame(); });
+  }
+  (function(){
+    var b = document.getElementById('setSensReset');
+    if(b) b.addEventListener('click', function(){ mouseSens = 1; sensRefresh(); saveGame(); });
+  })();
+
+  // ---- nappaimisto ----
+  // Rivit vastaavat oikeaa nappaimistoa. Jokaisessa nappaimessa lukee mita se tekee,
+  // ja klikkaus aloittaa sidonnan: seuraava painallus asettaa nappaimen.
+  var KB_ROWS = [
+    ['1','2','3','4','5','6','7','8','9','0'],
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l'],
+    ['z','x','c','v','b','n','m'],
+    ['control','tab',' ']
+  ];
+  var kbWrapEl = document.getElementById('kbWrap');
+  var kbListEl = document.getElementById('kbList');
+  var kbHintEl = document.getElementById('kbHint');
+  var kbWaiting = null;     // minka toiminnon nappainta odotetaan
+
+  function keyRenderBoard(){
+    if(!kbWrapEl) return;
+    kbWrapEl.textContent = '';
+    for(var r=0; r<KB_ROWS.length; r++){
+      var row = document.createElement('div');
+      row.className = 'kbRow';
+      for(var c=0; c<KB_ROWS[r].length; c++){
+        var k = KB_ROWS[r][c];
+        var act = keyAction(k);
+        var def = act ? keyActionDef(act) : null;
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'kbKey' + (def ? ' bound' : '') +
+          (k === ' ' ? ' xwide' : (k === 'control' || k === 'tab' ? ' wide' : ''));
+        if(kbWaiting && def && def.id === kbWaiting) b.className += ' waiting';
+        b.setAttribute('data-key', k);
+        var big = document.createElement('span');
+        big.textContent = keyLabel(k);
+        b.appendChild(big);
+        if(def){
+          var sm = document.createElement('small');
+          sm.textContent = def.lyhyt || def.nimi;
+          b.appendChild(sm);
+        }
+        row.appendChild(b);
+      }
+      kbWrapEl.appendChild(row);
+    }
+    keyRenderList();
+  }
+  // Lista kaikista toiminnoista: nappaimistolla ei nay se mika toiminto on sitomatta
+  // (esim. jos joku on vedetty nappaimelle jota rivistossa ei ole).
+  function keyRenderList(){
+    if(!kbListEl) return;
+    kbListEl.textContent = '';
+    for(var i=0; i<KEY_ACTIONS.length; i++){
+      var a = KEY_ACTIONS[i];
+      var row = document.createElement('div');
+      row.className = 'kbListRow';
+      var nimi = document.createElement('span');
+      nimi.textContent = a.nimi;
+      var nap = document.createElement('b');
+      nap.textContent = keyLabel(keyBind[a.id]);
+      nap.setAttribute('data-action', a.id);
+      nap.style.cursor = 'pointer';
+      row.appendChild(nimi);
+      row.appendChild(nap);
+      kbListEl.appendChild(row);
+    }
+  }
+  function keyStartRebind(actionId){
+    var def = keyActionDef(actionId);
+    if(!def) return;
+    kbWaiting = actionId;
+    if(kbHintEl) kbHintEl.textContent = 'Paina uutta näppäintä toiminnolle "' + def.nimi + '" · Esc peruu';
+    keyRenderBoard();
+  }
+  function keyCancelRebind(){
+    kbWaiting = null;
+    keyRenderBoard();
+    if(kbHintEl) kbHintEl.textContent = 'Vaihto peruttu.';
+  }
+  if(kbWrapEl){
+    kbWrapEl.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('.kbKey') : null;
+      if(!b) return;
+      var k = b.getAttribute('data-key');
+      var act = keyAction(k);
+      if(act) keyStartRebind(act);
+      else if(kbHintEl) kbHintEl.textContent = 'Näppäimellä ' + keyLabel(k) + ' ei ole toimintoa. Valitse sidottava toiminto alemmalta listalta.';
+    });
+  }
+  if(kbListEl){
+    kbListEl.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('b[data-action]') : null;
+      if(!b) return;
+      keyStartRebind(b.getAttribute('data-action'));
+    });
+  }
+  (function(){
+    var b = document.getElementById('kbReset');
+    if(b) b.addEventListener('click', function(){
+      keyBindDefaults();
+      kbWaiting = null;
+      if(kbHintEl) kbHintEl.textContent = 'Oletusnäppäimet palautettu.';
+      keyRenderBoard();
+      updateHintBar();
+      saveGame();
+    });
+  })();
+  // Sidonnan kaappaus: tama kuuntelija on ENNEN pelin omaa keydownia (capture),
+  // jottei painallus samalla tee sita mita se pelissa tekisi.
+  window.addEventListener('keydown', function(e){
+    if(!kbWaiting) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var k = e.key.toLowerCase();
+    if(k === 'escape'){ keyCancelRebind(); return; }
+    var res = keySet(kbWaiting, k);
+    if(!res.ok){
+      if(kbHintEl) kbHintEl.textContent = res.syy;
+      return;
+    }
+    var def = keyActionDef(kbWaiting);
+    var vaihtui = res.vaihtui ? keyActionDef(res.vaihtui) : null;
+    kbWaiting = null;
+    if(kbHintEl){
+      kbHintEl.textContent = def.nimi + ' = ' + keyLabel(k) +
+        (vaihtui ? ' · ' + vaihtui.nimi + ' siirtyi näppäimelle ' + keyLabel(keyBind[vaihtui.id]) : '');
+    }
+    keyRenderBoard();
+    updateHintBar();
+  }, true);
+
+  // ---- ohjerivi ruudun alalaidassa seuraa sidontoja ----
+  // Rivi oli kovakoodattua tekstia, joten vaihdettu nappain olisi jaanyt siihen vaaraksi.
+  var hintBarEl = document.getElementById('hint');
+  function updateHintBar(){
+    if(!hintBarEl) return;
+    function nap(id){ return '<b>' + keyLabel(keyBind[id]) + '</b>'; }
+    hintBarEl.innerHTML =
+      'Kävele: ' + nap('fwd') + nap('left') + nap('back') + nap('right') + ' / nuolet · ' +
+      'Kamera: <b>hiiri pohjassa</b> · Valikko: <b>ESC</b> · ' +
+      'Nouse/poistu mopolta: ' + nap('toiminto') + ' · Käynnistä: ' + nap('kaynnista') + ' · ' +
+      'Jarru: ' + nap('jarru') + ' · Tankkaa: ' + nap('tankkaa') + ' · Keulinta: ' + nap('keula') + ' · ' +
+      'Vaihteet: ' + nap('vaihdeYlos') + ' / ' + nap('vaihdeAlas') + ' · ' +
+      'Kartta: ' + nap('kartta') + ' · Puhelin: ' + nap('puhelin') + ' · ' +
+      'Hätäkorjaus: ' + nap('hatakorjaus') + ' · Huuda kaverille: ' + nap('huuda') + ' · ' +
+      'Kaada öljyä: ' + nap('oljy') + ' · Vilkut: ' + nap('vilkkuV') + ' / ' + nap('vilkkuO') + ' · ' +
+      'Kanisteri: ' + nap('kanisteri') + ' · Näyttely: ' + nap('nayttely') + ' · ' +
+      'Ryhmäajo: ' + nap('ryhmaajo') + ' · Valokuva: ' + nap('valokuva') + ' · Radiokanava: ' + nap('radio') +
+      ' · Kypäränäkymä: ' + nap('kypara');
+  }
+
   function beginGame(){
     if(!dailyEvent) rollDailyEvent(true);   // ensimmäinen päivän tapahtuma heti kesän alkaessa, ilman ilmoitusta
     if(!usedOffer && !usedOwned) rollUsedOffer();
@@ -20195,7 +20912,7 @@
       ]);
     }
   }
-  document.getElementById('startPlayBtn').addEventListener('click', beginGame);
+  document.getElementById('startPlayBtn').addEventListener('click', startOrResume);
 
   // ---- moninpelin käyttöliittymä aloitusruudussa ----
   var mpPaneEl = document.getElementById('multiPane');
@@ -20496,7 +21213,11 @@
     refreshLookUi();
     showStartPane('look');
   });
-  document.getElementById('startSettingsBtn').addEventListener('click', function(){ showStartPane('settings'); });
+  document.getElementById('startSettingsBtn').addEventListener('click', function(){
+    showStartPane('settings');
+    sensRefresh();
+    showSetTab('peli');
+  });
   document.getElementById('startCreditsBtn').addEventListener('click', function(){ showStartPane('credits'); });
   document.getElementById('settingsBackBtn').addEventListener('click', function(){ showStartPane(null); });
   document.getElementById('creditsBackBtn').addEventListener('click', function(){ showStartPane(null); });
@@ -20623,12 +21344,16 @@
   document.getElementById('setResetSave').addEventListener('click', function(){
     try{ localStorage.removeItem(SAVE_KEY); }catch(e){ /* yksityinen selaus tms. - ei haittaa */ }
     resetGame();
+    closePauseMenu();
+    openStartScreen();
     showStartPane(null);
   });
 
   netAutoStart();   // launcherista tullut ryhmän luonti tai liittyminen käyntiin heti
   endWorldRandom(); // maailma on rakennettu - peliaikainen satunnaisuus takaisin aidoksi
   loadGame();
+  updateHintBar();   // ohjerivi kertoo ladatut nappainsidonnat, ei oletuksia
+  sensRefresh();     // herkkyyden liukusäädin ja lukema ladattuun arvoon
   // ilman tallennusta hylly täytetään alkuperäisillä osilla; tallennuksesta ladattu hylly jää voimaan
   if(!garageShelf.length && !mopedAssembled()) fillShelfWithOriginals();
   updateMopedAssembly();
@@ -21205,7 +21930,7 @@
   // Pieni ylinopeus ei johda takaa-ajoon vaan sakkolappuun, joka tulee postissa seuraavana
   // aamuna. Kilvetöntä mopoa ei tunnisteta, joten sakkoa ei voi lähettää - mutta kilvettömyys
   // on jo ennestään oma riskinsä (partio kiinnostuu siitä muutenkin).
-  var pendingFines = [];
+  // pendingFines alustetaan tallennuslohkon yhteydessa ylempana.
   function speedingFineAmount(over){
     return Math.round(20 + over*2.2 + Math.min(policeCatchCount, 4)*6);
   }
@@ -21339,11 +22064,10 @@
   // ==========================================================================
 
   var DAMAGE_MIN_SPEED   = 3.2;    // m/s - tätä hitaampi kosketus ei jätä jälkeä
-  var DAMAGE_MAX_IMPACTS = 26;     // vanhimmat unohdetaan, jottei mallista tule puuroa
+  // DAMAGE_MAX_IMPACTS (vanhimmat kolhut unohdetaan) alustetaan ylempana, koska lataus kayttaa sita
   var DAMAGE_LIGHT_BREAK = 0.42;   // tästä vauriosta ajovalo hajoaa
-  var damageByMoped = {};          // mopoId -> lista kolhuja
-  var damageLevelBy = {};          // mopoId -> 0..1 kokonaisvaurio
-  var damagePullBy  = {};          // mopoId -> ohjauksen veto (-1..1)
+  // damageByMoped, damageLevelBy ja damagePullBy alustetaan tallennuslohkon yhteydessa
+  // ylempana - ks. selitys siella. Taalla ne vain nollaisivat ladatun vaurion.
   var damageRattle  = 0;           // kolinaäänen ajastin
 
   function damageList(id){
@@ -21963,7 +22687,8 @@
   var cutTextEl   = document.getElementById('cutText');
   var cutNextEl   = document.getElementById('cutNext');
   var cutLines = [], cutStep = 0, cutDone = null;
-  var cutSeen = {};    // jokainen kohtaus näytetään vain kerran, tallentuu peliin
+  // cutSeen alustetaan tallennuslohkon yhteydessa ylempana: jokainen kohtaus naytetaan
+  // vain kerran, ja tieto tallentuu peliin.
 
   function playCutscene(id, title, lines, onDone){
     if(id && cutSeen[id]){ if(onDone) onDone(); return; }
@@ -22143,7 +22868,7 @@
       ]
     }
   };
-  var questStage = {};   // npc-nimi -> seuraavan vaiheen indeksi
+  // questStage alustetaan tallennuslohkon yhteydessa ylempana.
   function questFor(npc){ return npc ? QUESTS[npc.name] : null; }
   function questStep(npc){
     var q = questFor(npc);
