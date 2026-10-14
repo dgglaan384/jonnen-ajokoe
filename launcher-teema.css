@@ -1,0 +1,68 @@
+/* ============================================================================
+   Jonnen ajokoe - launcherin teema-CSS
+   ----------------------------------------------------------------------------
+   Tama tiedosto haetaan GitHubista joka kaynnistyksella ja liitetaan launcherin
+   oman tyylitiedoston JALKEEN. Siksi taalla voi ylikirjoittaa minka tahansa
+   saannon ilman !important-merkintoja.
+
+   Varit ja fontit kannattaa vaihtaa launcher-teema.json -tiedoston "vars"-osassa.
+   Tanne kuuluu se mika ei ole pelkka arvo: uudet varjot, animaatiot, elementtien
+   piilotus ja asettelun hienosaato.
+
+   MITA TAALLA EI VOI TEHDA:
+   - JavaScriptia ei voi ajaa. Launcherin sisaltokaytanto (CSP) estaa sen, ja se
+     on tarkoituksellista: GitHubista ladattu skripti olisi etasuoritus jokaisen
+     pelaajan koneella.
+   - Kuvia ei voi hakea url()-rivilla muualta. Taustakuvalle on oma kentta
+     "taustaUrl" JSONissa; launcher lataa sen itse ja antaa sen muuttujana
+     --teema-tausta, jota .hero kayttaa valmiiksi.
+   - Fontin saa Google Fontsista @import-rivilla (vain fonts.googleapis.com):
+     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+   ========================================================================== */
+
+/* --- pieni hehku terminaalitekstiin --- */
+.brandTitle{
+  text-shadow:3px 3px 0 var(--accent-dim), 0 0 18px rgba(255,90,31,0.25);
+}
+
+/* --- versiokortin valinta hohtaa hieman --- */
+.vcard.sel{
+  box-shadow:
+    inset 2px 2px 0 rgba(0,0,0,0.6),
+    inset -2px -2px 0 rgba(255,255,255,0.2),
+    0 0 0 1px var(--accent),
+    0 0 16px -2px var(--accent);
+}
+
+/* --- PELAA-nappi saa hyvin hitaan sykkeen --- */
+@keyframes jonnePulse{
+  0%,100%{ box-shadow:0 6px 0 var(--accent-dim), inset 2px 2px 0 rgba(255,255,255,0.32), inset -2px -2px 0 rgba(0,0,0,0.42); }
+  50%    { box-shadow:0 6px 0 var(--accent-dim), inset 2px 2px 0 rgba(255,255,255,0.32), inset -2px -2px 0 rgba(0,0,0,0.42), 0 0 22px -4px var(--accent); }
+}
+.playBtn:not(:disabled):not(.ghost):not(.small){
+  animation:jonnePulse 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion:reduce){
+  .playBtn:not(:disabled):not(.ghost):not(.small){ animation:none; }
+}
+
+/* ============================================================================
+   ESIMERKKEJA - poista kommenttimerkit kokeillaksesi
+   ==========================================================================
+
+   Piilota piirretty aurinkolaskumaisema (jos kaytat omaa taustakuvaa):
+   .heroArt{ display:none; }
+   .hero{ min-height:220px; }
+
+   Varita maisema toiseen vuodenaikaan:
+   .heroArt{ filter:hue-rotate(190deg) saturate(1.2); }
+
+   Pyorista kaikki kulmat takaisin nykyaikaan:
+   :root{ --radius:10px; }
+
+   Ota kuvaputkiefekti kokonaan pois:
+   .scanlines{ display:none; }
+
+   Tee napeista litteat ilman viisteita:
+   :root{ --bevel:0px; }
+   ========================================================================== */
