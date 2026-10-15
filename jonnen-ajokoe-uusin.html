@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:121-->
-<!--JONNE-NAME:Jonnen ajokoe 121-->
+<!--JONNE-VERSION:122-->
+<!--JONNE-NAME:Jonnen ajokoe 122-->
 <!--JONNE-DATE:2026-10-15-->
-<!--JONNE-NOTES:Pelin versio ja julkaisupäivä näkyvät aloitusruudulla|Muutoslista aloitusruudulle: mitä uutta tässä versiossa|Uusi versio saa UUSI-lapun ja ilmoituksen kun peli käynnistyy-->
+<!--JONNE-NOTES:Kypäränäkymässä A ja D ovat sivuaskeleita - suunnan antaa hiiri|Moottorin kasaukselle oma ohjetaulu: montako osaa, mikä seuraavaksi ja mitkä napit|Kädessä olevan osan paikka näkyy moottorissa läpinäkyvänä haamuna|Osia voi raahata hiirellä työpöydällä, ja pöydältä pudonnut palaa paikalleen|Työpöydässä kumimatto, merkityt paikat, kunnon moottoripukki ja työvalo|Kävelyanimaatio uusiksi oikean askelsyklin vaiheista-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -366,6 +366,35 @@
            text-shadow:0 2px 10px rgba(0,0,0,0.9);margin:0 0 16px;}
   .cutNext{font:700 12px/1 'Karla',sans-serif;letter-spacing:.06em;color:var(--cream);
            background:var(--accent);border:0;border-radius:9px;padding:10px 20px;cursor:pointer;}
+  /* ---- moottorin kasauksen ohjepaneeli ----
+     Kasaus oli ennen pelkkien ponnahdusilmoitusten varassa: uusi pelaaja ei tiennyt
+     montako osaa on, missa jarjestyksessa ne menevat eika mita nappia painetaan.
+     Nyt tyopoydan vieressa on jatkuva ohjetaulu. */
+  .enginePanel{
+    position:absolute;right:16px;top:47%;transform:translateY(-50%);
+    width:min(286px, 42vw);max-height:calc(100% - 190px);overflow-y:auto;
+    background:rgba(28,34,26,0.93);
+    border:1px solid var(--panel-line);border-radius:14px;padding:13px 15px 13px;
+    pointer-events:none;color:var(--cream);box-shadow:0 14px 40px rgba(0,0,0,0.45);
+  }
+  .enginePanel[hidden]{display:none;}
+  #app.engbench .hud > .moneyChip, #app.engbench .hud > .vitals{display:none;}
+  .engTitle{font:700 11px/1 'Karla',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+  .engBarWrap{height:7px;border-radius:999px;background:rgba(251,246,233,0.14);margin:9px 0 11px;overflow:hidden;}
+  .engBar{height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width .25s;}
+  .engNext{font:700 14px/1.3 'Karla',sans-serif;margin:0 0 3px;}
+  .engHint{font:500 12px/1.4 'Karla',sans-serif;opacity:.78;margin:0 0 8px;}
+  .engKeys{font:600 11.5px/1.45 'Karla',sans-serif;opacity:.9;margin:0 0 9px;
+           border-top:1px solid rgba(251,246,233,0.12);border-bottom:1px solid rgba(251,246,233,0.12);padding:7px 0;}
+  .engKeys b{color:var(--accent);}
+  .engList{list-style:none;margin:0;padding:0;}
+  .engList li{font:600 12px/1.3 'Karla',sans-serif;padding:2px 0;display:flex;gap:7px;align-items:baseline;}
+  .engList li .mk{width:13px;flex:0 0 13px;text-align:center;}
+  .engList li.ok{opacity:.55;}
+  .engList li.ok .mk{color:#8fd79a;}
+  .engList li.nyt{color:var(--accent);}
+  .engList li.odottaa{opacity:.52;font-weight:500;}
+  .engList li small{font:500 11px/1.3 'Karla',sans-serif;opacity:.75;}
   /* ---- teoriakoe ja katsastus ---- */
   .koeScrim{position:absolute;inset:0;background:rgba(10,13,10,0.74);z-index:60;pointer-events:auto;}
   .koeScrim[hidden]{display:none;}
@@ -983,6 +1012,14 @@
       <div class="dlgName" id="dlgName">Nimi</div>
       <p class="dlgLine" id="dlgLine">Repliikki</p>
       <div class="dlgChoices" id="dlgChoices"></div>
+    </div>
+    <div class="enginePanel" id="enginePanel" hidden>
+      <div class="engTitle" id="engTitle">Moottorin kasaus</div>
+      <div class="engBarWrap"><div class="engBar" id="engBar"></div></div>
+      <p class="engNext" id="engNext">Seuraavaksi</p>
+      <p class="engHint" id="engHint"></p>
+      <div class="engKeys" id="engKeys"></div>
+      <ul class="engList" id="engList"></ul>
     </div>
     <div class="mountHint" id="mountHint" hidden>Paina <b>E</b> noustaksesi mopoon</div>
     <div class="brokenBar" id="brokenBar" hidden></div>
@@ -2993,10 +3030,10 @@
     return g;
   }
   var garageHelmet = makeHelmetProp();
-  garageHelmet.position.set(1.75, 1.03, -autotalliD/2 + 0.55);   // työpöydän päällä, oikeassa reunassa
+  garageHelmet.position.set(0.95, 1.91, -autotalliD/2 + 0.42);   // työpöydän yläpuolisella hyllyllä
   garageHelmet.rotation.y = -0.5;
   autotalli.add(garageHelmet);
-  var garageHelmetPos = worldOffset(autotalli, 1.75, -autotalliD/2 + 0.55);
+  var garageHelmetPos = worldOffset(autotalli, 0.95, -autotalliD/2 + 0.42);
   var GARAGE_HELMET_R = 1.9;
   function garageHelmetAvailable(){
     return !ownsHelmet() && !inStore;
@@ -8144,6 +8181,61 @@
     }
     return best;
   }
+  // Kavelyn polvikulma vaiheen funktiona. Kaksi pehmeaa piikkia: iso heilahduksessa
+  // (vaihe 0, jalka tulee eteen) ja pieni kantaiskun jalkeen (vaihe ~2,0), jossa polvi
+  // joustaa painon alla. Piikki on paraabeli ympyrAEtaisyyden yli, jolloin se on jatkuva
+  // myos vaiheen kierrahtaessa ympari.
+  function kavelyPiikki(ph, keski, leveys){
+    var d = Math.atan2(Math.sin(ph - keski), Math.cos(ph - keski));
+    var t = d/leveys;
+    return (t > -1 && t < 1) ? (1 - t*t) : 0;
+  }
+  function kavelyPolvi(ph){
+    return kavelyPiikki(ph, 0.0, 1.75)*1.05 + kavelyPiikki(ph, 2.05, 0.95)*0.22;
+  }
+  // Raajat ja vartalon paino askelsyklin vaiheen mukaan.
+  function applyWalkLimbs(wPh, wA, backw){
+    if(playerLimbs){
+      var phL = wPh*backw, phR = phL + Math.PI;
+      // reisi: perussiniaalto, kantaisku vaiheessa pi/2
+      if(playerLimbs.legL) playerLimbs.legL.rotation.x = -Math.sin(phL)*0.50*wA;
+      if(playerLimbs.legR) playerLimbs.legR.rotation.x = -Math.sin(phR)*0.50*wA;
+      // polvi: iso koukku heilahduksessa ja pieni kuormituksen jousto kantaiskun jalkeen
+      if(playerLimbs.shinL) playerLimbs.shinL.rotation.x = kavelyPolvi(phL)*wA;
+      if(playerLimbs.shinR) playerLimbs.shinR.rotation.x = kavelyPolvi(phR)*wA;
+      // kädet heiluvat vastakkain jalkojen kanssa
+      var kasiL = Math.sin(phR), kasiR = Math.sin(phL);
+      if(playerLimbs.armL) playerLimbs.armL.rotation.x = kasiL*0.46*wA;
+      if(playerLimbs.armR) playerLimbs.armR.rotation.x = kasiR*0.46*wA;
+      // kyynärpää koukistuu kun käsi tulee eteen - suorat kädet näyttävät marssilta
+      if(playerLimbs.foreL) playerLimbs.foreL.rotation.x = (0.14 + Math.max(0, kasiL)*0.46)*wA;
+      if(playerLimbs.foreR) playerLimbs.foreR.rotation.x = (0.14 + Math.max(0, kasiR)*0.46)*wA;
+    }
+    if(!playerVisual) return;
+    // vartalo nousee keskituessa ja laskee kaksoistuessa: kaksi jaksoa askelparia kohden
+    playerVisual.position.y = (Math.cos(wPh*2)*0.026 - 0.012) * wA;
+    // paino siirtyy tukijalan puolelle kerran askelparissa
+    playerVisual.position.x = -Math.cos(wPh)*0.022*wA;
+    playerVisual.rotation.z = Math.cos(wPh)*0.038*wA;     // lantion lasku heilahtavalle puolelle
+    playerVisual.rotation.x = (0.055 + Math.cos(wPh*2)*0.010)*wA;
+    playerVisual.rotation.y = 0;
+  }
+  // Lantion ja hartioiden vastakierto LISATAAN lepoasennon paalle, koska updateIdlePose
+  // asettaa spine- ja hips-arvot suoraan - jos nama tehtaisiin ennen sita, ne pyyhkiytyisivat.
+  function applyWalkTwist(wPh, wA){
+    if(!playerLimbs || wA <= 0.001) return;
+    var kierto = Math.sin(wPh)*wA;
+    if(playerLimbs.hips){
+      playerLimbs.hips.rotation.y += kierto*0.085;
+      playerLimbs.hips.rotation.z += -Math.cos(wPh)*0.030*wA;
+    }
+    if(playerLimbs.spine){
+      playerLimbs.spine.rotation.y += -kierto*0.075;   // hartiat vastakkain lantion kanssa
+      playerLimbs.spine.rotation.x += 0.045*wA;        // pieni eteenkallistus kavellessa
+    }
+    // pää pitää katseen suorassa vaikka hartiat kiertyvät
+    if(playerLimbs.head) playerLimbs.head.rotation.y += kierto*0.055;
+  }
   function updateIdlePose(dt, idleAmt, limbs){
     idleT += dt;
     if(!limbs) return;
@@ -9274,9 +9366,11 @@
   // Lepopaikat tyopoydalla: kaksi riviaa poydan VASEMMALLA puoliskolla. Oikea puoli
   // jatetaan vapaaksi moottoripukille, ja keskusta sille kohdalle jossa E avaa hyllyn -
   // muuten osan nostaminen soisi hyllypaneelin avaamisen.
+  // Paikat mahtuvat kokonaan poydan pinnalle: reunimmainen oli ennen 2,60:ssa, eli
+  // osan sade ylitti poydan reunan (-2,70) ja matto nayttti roikkuvan ilmassa.
   var ENGINE_SLOTS = [
-    [-2.60, -3.00], [-2.10, -3.00], [-1.60, -3.00], [-1.10, -3.00],
-    [-2.60, -3.45], [-2.10, -3.45], [-1.60, -3.45], [-1.10, -3.45]
+    [-2.45, -3.02], [-1.95, -3.02], [-1.45, -3.02], [-0.95, -3.02],
+    [-2.45, -3.44], [-1.95, -3.44], [-1.45, -3.44], [-0.95, -3.44]
   ];
   // Osakohtainen lepokorkeus ja -asento poydalla. Yhteinen korkeus ei kelpaa: manta
   // seisoisi pystyssa ja sen kiertokanki menisi poydan lapi.
@@ -9292,7 +9386,10 @@
   };
   var ENGINE_STAND = [1.90, -3.25];     // moottoripukin paikka poydalla
   var ENGINE_BENCH_Y = 0.92;            // tyopoydan pinta
-  var ENGINE_PICK_R = 1.5;              // kuinka lahelta osan voi nostaa
+  // Poyta on 5,4 metria leveaa ja osia voi nyt raahata sen eri puolille, joten
+  // nostoetaisyys on reilumpi: 1,5 metrilla poydan toisessa paassa oleva osa jai
+  // tavoittamatta siita mihin pelaaja luontevasti asettuu.
+  var ENGINE_PICK_R = 2.1;              // kuinka lahelta osan voi nostaa
   var ENGINE_INSTALL_R = 1.55;          // kuinka lahelta moottoriin asennetaan
 
   var engineInstalled = {};             // id -> true
@@ -9414,20 +9511,81 @@
   // (rotation.y = PI/2) hoituu itsestaan eika paikkoja tarvitse laskea kasin maailmaan.
   function buildEngineBench(){
     if(!autotalli) return;
+
+    // ---- osien oma alue: kumimatto ja merkityt paikat ----
+    // Ilman mattoa osat nayttivat siita etta ne ovat vain unohtuneet poydalle. Matto ja
+    // maalatut ympyrat kertovat etta tama on se paikka jossa osia sailytetaan - ja mihin
+    // poydalta pudonnut osa palaa.
+    var mattoMat = engineMat(0x23262a, 0.95, 0.05);
+    var matto = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.012, 0.74), mattoMat);
+    matto.position.set(-1.70, ENGINE_BENCH_Y + 0.006, -3.23);
+    matto.receiveShadow = true;
+    autotalli.add(matto);
+    var merkkiMat = engineMat(0x6d737a, 0.9, 0.05);
+    for(var si=0; si<ENGINE_SLOTS.length; si++){
+      var rengas = new THREE.Mesh(new THREE.TorusGeometry(0.155, 0.009, 5, 20), merkkiMat);
+      rengas.rotation.x = -Math.PI/2;
+      rengas.position.set(ENGINE_SLOTS[si][0], ENGINE_BENCH_Y + 0.014, ENGINE_SLOTS[si][1]);
+      autotalli.add(rengas);
+    }
+
     engineRoot = new THREE.Group();
     engineRoot.position.set(ENGINE_STAND[0], ENGINE_BENCH_Y, ENGINE_STAND[1]);
     autotalli.add(engineRoot);
-    // pukki: kaksi palkkia ja aluslevy
-    var pukkiMat = engineMat(0x3a3f45, 0.8, 0.2);
-    var levy = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.035, 0.34), pukkiMat);
-    levy.position.y = 0.018;
+    // ---- moottoripukki ----
+    // Kaksi palkkia ja levy nayttivat kahdelta palkilta ja levylta. Oikeassa pukissa on
+    // jalusta, kehto johon moottori lasketaan ja kyltti - samat osat, mutta niista nakee
+    // etta tahan sen kuuluu tulla.
+    var pukkiMat  = engineMat(0x3a3f45, 0.8, 0.2);
+    var pultinMat = engineMat(0xb9bcc0, 0.4, 0.6);
+    var levy = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.030, 0.40), pukkiMat);
+    levy.position.y = 0.015;
+    levy.castShadow = true; levy.receiveShadow = true;
     engineRoot.add(levy);
-    // palkit kampikammion ULKOPUOLELLE: 0,17:ssa ne peittivat vauhtipyoran ja kytkimen
-    [-0.27, 0.27].forEach(function(px){
-      var palkki = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.30), pukkiMat);
-      palkki.position.set(px, 0.075, 0);
-      engineRoot.add(palkki);
+    // nurkkapultit: pieni yksityiskohta joka tekee levysta kiinnitetyn jalustan
+    [[-0.30,-0.15],[0.30,-0.15],[-0.30,0.15],[0.30,0.15]].forEach(function(bp){
+      var pultti = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.016, 6), pultinMat);
+      pultti.position.set(bp[0], 0.036, bp[1]);
+      engineRoot.add(pultti);
     });
+    // kehto: kaksi sisaanpain kallistuvaa vartta kampikammion ULKOPUOLELLA
+    [-1, 1].forEach(function(sgn){
+      var varsi = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.13, 0.30), pukkiMat);
+      varsi.position.set(sgn*0.265, 0.09, 0);
+      varsi.rotation.z = sgn*0.17;
+      varsi.castShadow = true;
+      engineRoot.add(varsi);
+      var ylaosa = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.025, 0.30), pukkiMat);
+      ylaosa.position.set(sgn*0.238, 0.152, 0);
+      ylaosa.rotation.z = sgn*0.55;
+      engineRoot.add(ylaosa);
+    });
+    // kyltti pukin etureunaan
+    var kyltti = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.045, 0.012), engineMat(0xe2572b, 0.6, 0.1));
+    kyltti.position.set(0, 0.055, 0.205);
+    engineRoot.add(kyltti);
+
+    // ---- tyovalo ----
+    // Tallin yleisvalo jattaa poydan pinnan hamaraksi, ja pienet osat katoavat varjoon.
+    // Kohdevalo poydan ylle tekee kasauksesta luettavan - ja nayttaa tyopajalta.
+    var valoVarsi = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.52, 6), pukkiMat);
+    valoVarsi.position.set(1.55, ENGINE_BENCH_Y + 0.96, -3.52);
+    valoVarsi.rotation.z = -0.35;
+    autotalli.add(valoVarsi);
+    var kupu = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.20, 12, 1, true),
+      new THREE.MeshStandardMaterial({color:0xcfd3d6, roughness:0.5, metalness:0.4, side:THREE.DoubleSide}));
+    kupu.position.set(1.72, ENGINE_BENCH_Y + 0.70, -3.49);
+    kupu.rotation.x = Math.PI;
+    kupu.rotation.z = 0.30;
+    autotalli.add(kupu);
+    var polttimo = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6),
+      new THREE.MeshStandardMaterial({color:0xfff3d0, emissive:0xffd890, emissiveIntensity:1.4, roughness:0.4}));
+    polttimo.position.set(1.74, ENGINE_BENCH_Y + 0.64, -3.46);
+    autotalli.add(polttimo);
+    var tyoValo = new THREE.PointLight(0xffe3b0, 0.75, 3.4, 2);
+    tyoValo.position.set(1.80, ENGINE_BENCH_Y + 0.60, -3.38);
+    autotalli.add(tyoValo);
+
     for(var i=0; i<ENGINE_PARTS.length; i++){
       var ep = ENGINE_PARTS[i];
       var m = makeEnginePart(ep.id);
@@ -9482,6 +9640,7 @@
     if(!engineRoot) return null;
     var best = null, bestScore = 1e9;
     var fx = Math.sin(playerHeading), fz = Math.cos(playerHeading);
+    var seuraava = engineNext();
     for(var i=0; i<ENGINE_PARTS.length; i++){
       var ep = ENGINE_PARTS[i];
       if(engineInstalled[ep.id] || engineCarry === ep.id) continue;
@@ -9494,6 +9653,10 @@
       var dot = (d < 0.0001) ? 1 : (dx*fx + dz*fz)/d;   // 1 = suoraan edessa, -1 = takana
       if(dot < -0.1) continue;
       var score = d * (1.9 - dot);
+      // Seuraavaksi asennettava osa painaa vaa'assa enemman: uusi pelaaja seisoo poydan
+      // edessa, painaa E:ta ja saa kateen juuri sen osan jota ohjetaulu kehottaa ottamaan.
+      // Toista osaa kohti kaantymalla saa yha sen - painotus ei estaa mitaan.
+      if(ep === seuraava) score *= 0.62;
       if(score < bestScore){ bestScore = score; best = ep; }
     }
     return best;
@@ -9515,15 +9678,29 @@
   // omaan koordinaatistoon, jolloin tallin kierto ei vaanna osaa vaaraan kohtaan.
   var engineCarryV = new THREE.Vector3();
   // Kohteena oleva osa kasvaa hieman: ilman tata pelaaja ei nae kumpaan osaan E tarttuu.
+  // Kohteena oleva osa HEHKUU. Pelkka kasvattaminen oli helppo lukea vaarin "osa on
+  // isompi kuin muut", ja raahatessa koko muuttui kesken vedon. Hehku kertoo saman
+  // asian koskematta osan kokoon.
+  function engineSetGlow(m, paalla){
+    if(!m || m.userData.hehku === paalla) return;
+    m.userData.hehku = paalla;
+    m.traverse(function(o){
+      if(!o.isMesh || !o.material || !o.material.emissive) return;
+      o.material.emissive.setHex(paalla ? 0x5a3a16 : 0x000000);
+    });
+  }
   function updateEngineHighlight(){
     if(!engineRoot) return;
     var kohde = engineCarry ? null : engineNearestLoose();
+    var raahattu = engineDragId;
     for(var i=0; i<ENGINE_PARTS.length; i++){
       var ep = ENGINE_PARTS[i];
       if(engineInstalled[ep.id]) continue;
       var m = engineMeshes[ep.id];
       if(!m) continue;
-      var want = (kohde && kohde.id === ep.id) ? 1.16 : 1;
+      var osoitettu = (kohde && kohde.id === ep.id) || (raahattu === ep.id);
+      engineSetGlow(m, osoitettu);
+      var want = (osoitettu && !raahattu) ? 1.08 : 1;
       if(Math.abs(m.scale.x - want) > 0.001) m.scale.setScalar(want);
     }
   }
@@ -9616,6 +9793,246 @@
     }
     saveGame();
   }
+  // ==========================================================================
+  // ---- TYOPOYTA: OSIEN SIIRTELY, OHJETAULU JA ASENNUKSEN HAAMUKUVA ----
+  // Kasaus oli vaikea kahdesta syysta. Ensinnakin ohjeet olivat pelkkia ohimenevia
+  // ilmoituksia: jos ne ehti lukea vaarin, mitaan ei enaa kertonut mita pitaisi tehda.
+  // Toiseksi osat olivat naulattuina ruudukkoon, joten tyopoyta ei tuntunut tyopoydalta.
+  //
+  // Nyt poydan vieressa on jatkuva ohjetaulu (montako osaa, mika seuraavaksi, mitka
+  // napit), kannossa olevan osan paikka nakyy moottorissa lapinakyvana haamuna, ja
+  // osia voi raahata hiirella minne tahansa poydalle. Poydalta pudonnut osa palaa
+  // omalle paikalleen - muuten ne katoaisivat lattialle eika niita loytaisi.
+  // ==========================================================================
+  // tyopoydan pinta autotallin omissa koordinaateissa (benchTop: leveys w-1.2, syvyys 0.72)
+  var BENCH_X1 = -(autotalliW/2 - 0.75), BENCH_X2 = (autotalliW/2 - 0.75);
+  var BENCH_Z1 = -autotalliD/2 + 0.22, BENCH_Z2 = -autotalliD/2 + 0.88;
+  function benchContains(x, z){
+    return x > BENCH_X1 && x < BENCH_X2 && z > BENCH_Z1 && z < BENCH_Z2;
+  }
+  // Moottoripukin ymparille jatetaan tyhja vyohyke: jos osan raahaa pukin paalle, se
+  // nayttaisi asennetulta vaikkei olisi.
+  function benchFreeSpot(x, z){
+    var dx = x - ENGINE_STAND[0], dz = z - ENGINE_STAND[1];
+    return Math.sqrt(dx*dx + dz*dz) > 0.55;
+  }
+
+  // ---- ohjetaulu ----
+  var engPanelEl = document.getElementById('enginePanel');
+  var engTitleEl = document.getElementById('engTitle');
+  var engBarEl   = document.getElementById('engBar');
+  var engNextEl  = document.getElementById('engNext');
+  var engHintEl  = document.getElementById('engHint');
+  var engKeysEl  = document.getElementById('engKeys');
+  var engListEl  = document.getElementById('engList');
+  var engPanelSig = '';     // viimeksi piirretty tila: turha uudelleenpiirto pois
+  var ENGINE_PANEL_R = 4.2; // kuinka lahelta poytaa taulu nakyy
+
+  function engineNearBench(){
+    if(!engineRoot || inStore || !autotalli) return false;
+    var w = engineWorldPos(engineRoot);
+    var dx = w.x - player.position.x, dz = w.z - player.position.z;
+    return Math.sqrt(dx*dx + dz*dz) <= ENGINE_PANEL_R;
+  }
+  function engineKeyText(){
+    var nappi = keyLabel(keyBind.toiminto || 'e');
+    if(engineCarry){
+      return 'Vie osa moottoripukille ja paina <b>' + nappi + '</b> = asenna.<br>' +
+             'Muualla <b>' + nappi + '</b> laskee osan takaisin pöydälle.';
+    }
+    return '<b>' + nappi + '</b> = nosta osa pöydältä.<br>' +
+           'Osa nousee siitä mitä katsot - käänny osaa kohti.<br>' +
+           'Hiirellä voi <b>raahata</b> osia pöydällä.';
+  }
+  function engineRenderPanel(){
+    if(!engPanelEl) return;
+    var nakyy = engineNearBench() && !engineDone() && !garageOpen && !wrenchMode && !photoMode;
+    if(!nakyy){
+      if(!engPanelEl.hidden){
+        engPanelEl.hidden = true;
+        engPanelSig = '';
+        if(app) app.classList.remove('engbench');
+      }
+      return;
+    }
+    engPanelEl.hidden = false;
+    if(app) app.classList.add('engbench');
+    var seur = engineNext();
+    var sig = engineInstalledCount() + '|' + (engineCarry || '-') + '|' + (seur ? seur.id : '-');
+    if(sig === engPanelSig) return;
+    engPanelSig = sig;
+    var n = engineInstalledCount(), yht = ENGINE_PARTS.length;
+    engTitleEl.textContent = 'Moottorin kasaus ' + n + '/' + yht;
+    engBarEl.style.width = Math.round(n/yht*100) + '%';
+    if(engineCarry){
+      var cep = engineDef(engineCarry);
+      engNextEl.textContent = 'Kädessä: ' + cep.nimi;
+      engHintEl.textContent = cep.vihje;
+    } else if(seur){
+      engNextEl.textContent = 'Seuraavaksi: ' + seur.nimi;
+      engHintEl.textContent = seur.vihje;
+    } else {
+      engNextEl.textContent = 'Kaikki osat paikallaan';
+      engHintEl.textContent = '';
+    }
+    engKeysEl.innerHTML = engineKeyText();
+    engListEl.innerHTML = '';
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      var li = document.createElement('li');
+      var valmis = !!engineInstalled[ep.id];
+      var vapaa = !ep.vaatii || engineInstalled[ep.vaatii];
+      var mk = document.createElement('span');
+      mk.className = 'mk';
+      if(valmis){ li.className = 'ok'; mk.textContent = '✔'; }
+      else if(seur && seur.id === ep.id){ li.className = 'nyt'; mk.textContent = '▶'; }
+      else if(!vapaa){ li.className = 'odottaa'; mk.textContent = '○'; }
+      else { mk.textContent = '○'; }
+      li.appendChild(mk);
+      var teksti = document.createElement('span');
+      teksti.textContent = ep.nimi;
+      if(!valmis && !vapaa){
+        var vaatiiDef = engineDef(ep.vaatii);
+        var pieni = document.createElement('small');
+        pieni.textContent = ' — vaatii ' + (vaatiiDef ? vaatiiDef.nimi.toLowerCase() : 'edellisen');
+        teksti.appendChild(pieni);
+      }
+      if(ep.bolts > 0 && !valmis){
+        var pultit = document.createElement('small');
+        pultit.textContent = ' · ' + ep.bolts + ' pulttia';
+        teksti.appendChild(pultit);
+      }
+      li.appendChild(teksti);
+      engListEl.appendChild(li);
+    }
+  }
+
+  // ---- haamukuva asennuspaikasta ----
+  // Kannossa olevasta osasta tehdaan lapinakyva kopio sen omalle paikalleen moottoriin.
+  // Teksti "menee kampikammion paalle" ei kerro mitaan ennen kuin sen NAKEE.
+  var engineGhosts = {};
+  function engineGhostFor(id){
+    if(engineGhosts[id]) return engineGhosts[id];
+    var pohja = engineMeshes[id];
+    if(!pohja || !engineRoot) return null;
+    var g = pohja.clone(true);
+    g.traverse(function(o){
+      if(!o.isMesh) return;
+      o.material = o.material.clone();
+      o.material.transparent = true;
+      o.material.opacity = 0.34;
+      o.material.depthWrite = false;
+      o.material.emissive = new THREE.Color(0xe2572b);
+      o.material.emissiveIntensity = 0.55;
+      o.castShadow = false;
+      o.receiveShadow = false;
+    });
+    var spot = ENGINE_SPOTS[id];
+    g.position.set(spot[0], spot[1], spot[2]);
+    g.rotation.set(0, 0, 0);
+    g.scale.setScalar(1);
+    g.visible = false;
+    engineRoot.add(g);
+    engineGhosts[id] = g;
+    return g;
+  }
+  var engineGhostT = 0;
+  function engineUpdateGhost(dt){
+    engineGhostT += dt;
+    var nakyva = null;
+    if(engineCarry){
+      var ep = engineDef(engineCarry);
+      if(ep && (!ep.vaatii || engineInstalled[ep.vaatii])) nakyva = engineCarry;
+    }
+    for(var id in engineGhosts){
+      if(!Object.prototype.hasOwnProperty.call(engineGhosts, id)) continue;
+      engineGhosts[id].visible = (id === nakyva);
+    }
+    if(nakyva){
+      var g = engineGhostFor(nakyva);
+      if(g){
+        var puls = 0.26 + Math.abs(Math.sin(engineGhostT*2.6))*0.22;
+        g.traverse(function(o){ if(o.isMesh) o.material.opacity = puls; });
+      }
+    }
+  }
+
+  // ---- osien raahaus hiirella ----
+  var engineDragId = null;        // raahattava osa
+  var engineDragRay = new THREE.Raycaster();
+  var engineDragNdc = new THREE.Vector2();
+  var engineDragPlane = new THREE.Plane();
+  var engineDragHit = new THREE.Vector3();
+  var engineDragY = 0;
+  function engineLooseMeshes(){
+    var out = [];
+    for(var i=0; i<ENGINE_PARTS.length; i++){
+      var ep = ENGINE_PARTS[i];
+      if(engineInstalled[ep.id] || engineCarry === ep.id) continue;
+      var m = engineMeshes[ep.id];
+      if(m && m.parent === autotalli) out.push(m);
+    }
+    return out;
+  }
+  function engineMeshIdOf(obj){
+    while(obj){
+      for(var id in engineMeshes){
+        if(Object.prototype.hasOwnProperty.call(engineMeshes, id) && engineMeshes[id] === obj) return id;
+      }
+      obj = obj.parent;
+    }
+    return null;
+  }
+  function engineNdcFrom(e){
+    var r = renderer.domElement.getBoundingClientRect();
+    engineDragNdc.x = ((e.clientX - r.left)/r.width)*2 - 1;
+    engineDragNdc.y = -((e.clientY - r.top)/r.height)*2 + 1;
+  }
+  // Palauttaa true jos hiiren alla oli irtonainen osa - silloin veto siirtaa OSAA eika kameraa.
+  function engineTryStartDrag(e){
+    if(!engineRoot || inStore || garageOpen || wrenchMode || photoMode) return false;
+    if(typeof fpvPointerLock !== 'undefined' && fpvPointerLock) return false;
+    if(!engineNearBench() || engineCarry) return false;
+    var lista = engineLooseMeshes();
+    if(!lista.length) return false;
+    engineNdcFrom(e);
+    engineDragRay.setFromCamera(engineDragNdc, camera);
+    var hits = engineDragRay.intersectObjects(lista, true);
+    if(!hits.length || hits[0].distance > 6) return false;
+    var id = engineMeshIdOf(hits[0].object);
+    if(!id) return false;
+    engineDragId = id;
+    engineDragY = hits[0].point.y;
+    return true;
+  }
+  function engineDragMove(e){
+    if(!engineDragId) return;
+    var m = engineMeshes[engineDragId];
+    if(!m){ engineDragId = null; return; }
+    engineNdcFrom(e);
+    engineDragRay.setFromCamera(engineDragNdc, camera);
+    engineDragPlane.set(new THREE.Vector3(0,1,0), -engineDragY);
+    if(!engineDragRay.ray.intersectPlane(engineDragPlane, engineDragHit)) return;
+    var lokaali = autotalli.worldToLocal(engineDragHit.clone());
+    m.position.x = lokaali.x;
+    m.position.z = lokaali.z;
+  }
+  function engineDragEnd(){
+    if(!engineDragId) return;
+    var id = engineDragId;
+    engineDragId = null;
+    var m = engineMeshes[id];
+    if(!m) return;
+    var ep = engineDef(id);
+    var idx = ENGINE_PARTS.indexOf(ep);
+    if(!benchContains(m.position.x, m.position.z) || !benchFreeSpot(m.position.x, m.position.z)){
+      // poydalta pudonnut osa palaa omalle paikalleen - lattialta sita ei loytaisi
+      engineRestPose(m, id, idx);
+      showToast(false, ep.nimi + ' takaisin paikalleen',
+        'Osa putosi pöydältä, joten se palasi omalle paikalleen työpöydällä.', 3000);
+    }
+  }
+
   // Yksi kutsu kayttoliittymalle: mita E tekee juuri nyt autotallissa?
   function engineAction(){
     if(!engineRoot || inStore) return null;
@@ -10825,7 +11242,8 @@
     // Kypärä autotallin työpöydältä menee mopoon nousemisen edelle samasta syystä kuin
     // ajokoe ja ajotunti: mopo on tallissa väistämättä pöydän vieressä, joten muuten E
     // nostaisi aina kyytiin eikä kypärää saisi koskaan.
-    if(mode !== 'riding' && garageHelmetAvailable()){
+    if(mode !== 'riding' && garageHelmetAvailable() &&
+       !(typeof engineAction === 'function' && engineAction())){
       var dxkh = garageHelmetPos.x - player.position.x, dzkh = garageHelmetPos.z - player.position.z;
       if(Math.sqrt(dxkh*dxkh + dzkh*dzkh) <= GARAGE_HELMET_R){ takeGarageHelmet(); return; }
     }
@@ -17774,6 +18192,9 @@
   function onCamDragStart(e){
     if(e.button !== 0) return;
     if(wrenchMode) return;   // ruuvitilassa hiirellä käännetään katsetta ja väännetään pultteja
+    // Työpöydän osan raahaus menee kameran kääntämisen edelle: jos hiiren alla on
+    // irtonainen moottorin osa, veto siirtää SITÄ eikä katsetta.
+    if(typeof engineTryStartDrag === 'function' && engineTryStartDrag(e)){ e.preventDefault(); return; }
     if(typeof fpvOn !== 'undefined' && fpvOn) fpvRequestLock();
     camDragging = true;
     camDragX = e.clientX; camDragY = e.clientY;
@@ -17808,7 +18229,10 @@
     camDragX = e.clientX; camDragY = e.clientY;
     camApplyLook(dxm, dym);
   }
-  function onCamDragEnd(){ camDragging = false; }
+  function onCamDragEnd(){
+    camDragging = false;
+    if(typeof engineDragEnd === 'function') engineDragEnd();
+  }
 
   // ---- hiirilukko kypäränäkymässä ----
   // Ensimmäisessä persoonassa napin pohjassa pitäminen on kömpelöä: katse pitää saada
@@ -17846,6 +18270,7 @@
     fpvPointerLock = (document.pointerLockElement === renderer.domElement);
   });
   function onMouseMoveAll(e){
+    if(typeof engineDragId !== 'undefined' && engineDragId){ engineDragMove(e); return; }
     if(fpvPointerLock){
       if(wrenchMode) return;
       camApplyLook(e.movementX || 0, e.movementY || 0);
@@ -19330,15 +19755,27 @@
     } else {
       // ---- kävely ----
       if(exhaustFlame.material.opacity > 0) exhaustFlame.material.opacity = Math.max(0, exhaustFlame.material.opacity - dt*5);
+      // Kypäränäkymässä A ja D ovat SIVUASKELEITA eivätkä kääntymistä: ensimmäisessä
+      // persoonassa suunnan antaa hiiri, ja näppäimillä kääntyminen tuntuu siltä kuin
+      // kameraa väännettäisiin. Kolmannessa persoonassa A ja D kääntävät kuten ennen.
       var turnInput2 = (input.left?1:0) - (input.right?1:0);
-      playerHeading += turnInput2 * 2.6 * dt;
+      var sivuInput = 0;
+      if(fpvOn) sivuInput = turnInput2;
+      else playerHeading += turnInput2 * 2.6 * dt;
       var moveDir = (input.fwd?1:0) - (input.back?1:0);
       // mopoa työntäessä kulku on reilusti hitaampaa - se on osa rangaistusta
       var pushMult = pushingMoped ? 0.52 : 1;
-      walkSpeedNow = moveDir * playerSpeed * pushMult;   // moninpeliä varten: kaverin hahmo kävelee samaa tahtia
-      if(moveDir !== 0){
-        player.position.x += Math.sin(playerHeading)*playerSpeed*pushMult*moveDir*dt;
-        player.position.z += Math.cos(playerHeading)*playerSpeed*pushMult*moveDir*dt;
+      // Vino liike ei saa olla nopeampaa kuin suora: eteen+sivuun yhdessä normalisoidaan.
+      var liikeLen = Math.sqrt(moveDir*moveDir + sivuInput*sivuInput);
+      var liikeNopeus = (liikeLen > 0.0001) ? playerSpeed*pushMult : 0;
+      walkSpeedNow = liikeLen * playerSpeed * pushMult * (moveDir < 0 ? -1 : 1);
+      if(liikeLen > 0.0001){
+        // eteen = (sin h, cos h), vasemmalle = (-cos h, sin h)
+        var fxw = Math.sin(playerHeading), fzw = Math.cos(playerHeading);
+        var mxw = (fxw*moveDir - fzw*sivuInput)/liikeLen;
+        var mzw = (fzw*moveDir + fxw*sivuInput)/liikeLen;
+        player.position.x += mxw*liikeNopeus*dt;
+        player.position.z += mzw*liikeNopeus*dt;
       }
       player.rotation.y = playerHeading;
       resolveCollisions(player.position, 0.28);
@@ -19354,47 +19791,31 @@
       updatePushedMoped();   // työnnettävä mopo seuraa pelaajaa
 
       // ---- kävelyanimaatio ----
-      // Hahmomalli on yksi jäykkä mesh ilman luurankoa, joten raajoja ei voi taivuttaa. Sen sijaan
-      // koko vartalolle tehdään uskottava askelrytmi useammasta yhtäaikaisesta liikkeestä:
-      //   - pystysuunnan lasku/nousu KAHDESTI askelparia kohden (painopiste alas kun jalka osuu maahan)
-      //   - painon siirto sivulta toiselle KERRAN askelparissa (sivusiirtymä + kallistus)
-      //   - hartioiden vastakierto, joka saa kävelyn näyttämään rennolta
-      //   - eteenkallistus vauhdin mukaan ja pieni nyökkäys joka askeleella
-      // Aiemmin pomppu ja keinunta olivat samassa tahdissa, mikä näytti tasajalkaa hyppimiseltä.
+      // Askelsykli on rakennettu oikean kävelyn vaiheista eikä yhdestä siniaallosta.
+      // Yksi sykli (0...2pi) on YKSI askelpari, ja vasen jalka kulkee vaiheessa wPh,
+      // oikea puoli syklia jaljessa. Vaiheet vasemmalle jalalle:
+      //   wPh = pi/2  reisi aarimmaisena edessa -> kantapaa osuu maahan
+      //   wPh = pi    jalka suoraan vartalon alla -> keskituki, vartalo korkeimmillaan
+      //   wPh = 3pi/2 reisi aarimmaisena takana -> varvastyonto
+      //   wPh = 0/2pi jalka heilahtaa eteen -> polvi koukussa eniten
+      // Tasta seuraa kolme asiaa joita vanhassa yhden siniaallon versiossa ei ollut:
+      // polvi koukistuu heilahduksessa eika kantaiskussa, vartalo nousee ja laskee KAHDESTI
+      // askelparia kohden, ja lantio ja hartiat kiertyvat vastakkain.
       var prevWalkPhase = playerWalkTime;
-      playerWalkTime += dt*7.2*Math.abs(moveDir);
-      var walkAmountTarget = moveDir !== 0 ? 1 : 0;
+      var askelVauhti = Math.min(1, liikeLen);
+      playerWalkTime += dt*7.2*askelVauhti;
+      var walkAmountTarget = (askelVauhti > 0.01) ? 1 : 0;
       playerWalkAmount += (walkAmountTarget-playerWalkAmount) * (1-Math.pow(0.001,dt));
       var wA = playerWalkAmount, wPh = playerWalkTime;
-      // Raajat heiluvat vastakkain (vasen käsi eteen samaan aikaan kuin oikea jalka), ja koko
-      // vartalon oma keinunta on pudotettu pienemmäksi nyt kun liike tulee käsistä ja jaloista.
-      var swing = Math.sin(wPh) * wA;
-      if(playerLimbs){
-        var backw = (moveDir < 0) ? -1 : 1; // takaperin kävellessä sykli pyörii toisin päin
-        if(playerLimbs.armL) playerLimbs.armL.rotation.x =  swing*0.62*backw;
-        if(playerLimbs.armR) playerLimbs.armR.rotation.x = -swing*0.62*backw;
-        if(playerLimbs.legL) playerLimbs.legL.rotation.x = -swing*0.52*backw;
-        if(playerLimbs.legR) playerLimbs.legR.rotation.x =  swing*0.52*backw;
-        // Polvi taittuu kun jalka tulee eteen ja suoristuu kun se työntää taakse - tämä on se
-        // mikä erottaa kävelyn saksimisesta. Sääri ei voi taipua eteenpäin, siksi max(0, ...).
-        if(playerLimbs.shinL) playerLimbs.shinL.rotation.x = Math.max(0, swing*backw)*0.85;
-        if(playerLimbs.shinR) playerLimbs.shinR.rotation.x = Math.max(0, -swing*backw)*0.85;
-        // Kyynarpaa: kadet eivat roiku suorina kapuloina vaan ovat hieman koukussa, ja koukku
-        // syvenee kun kasi heilahtaa eteen - tama on se mika erottaa kavelyn marssimisesta.
-        if(playerLimbs.foreL) playerLimbs.foreL.rotation.x = (0.16 + Math.max(0, swing*backw)*0.40)*wA;
-        if(playerLimbs.foreR) playerLimbs.foreR.rotation.x = (0.16 + Math.max(0, -swing*backw)*0.40)*wA;
-      }
-      playerVisual.position.y = (Math.abs(Math.cos(wPh))*0.045 - 0.021) * wA;
-      playerVisual.position.x = Math.sin(wPh)*0.018*wA;
-      playerVisual.rotation.z = -Math.sin(wPh)*0.045*wA;
-      playerVisual.rotation.y = Math.sin(wPh)*0.055*wA;
-      playerVisual.rotation.x = (0.05 + Math.cos(wPh*2)*0.014)*wA;
+      applyWalkLimbs(wPh, wA, (moveDir < 0) ? -1 : 1);
       // Lepoanimaatio: voimistuu sitä mukaa kun kävely hiipuu, jolloin hahmo ei jähmety
       // patsaaksi sillä sekunnilla kun näppäin päästetään irti.
       updateIdlePose(dt, 1 - wA, playerLimbs);
+      applyWalkTwist(wPh, wA);
       updateBlink(dt, playerLimbs);
-      // askelääni aina kun kävelyvaihe ylittää puolikkaan syklin eli jalka osuu maahan
-      if(wA > 0.35 && Math.floor(wPh/Math.PI) !== Math.floor(prevWalkPhase/Math.PI)) playFootstep();
+      // Askelaani kantaiskussa: vaiheet pi/2 ja 3pi/2. Siirretaan vaihetta neljanneksella,
+      // jolloin kokonaisluvun ylitys osuu juuri kantaiskuun.
+      if(wA > 0.35 && Math.floor((wPh - Math.PI/2)/Math.PI) !== Math.floor((prevWalkPhase - Math.PI/2)/Math.PI)) playFootstep();
 
       // kolmas persoona: kamera leijuu pelaajan takana samaan tapaan kuin ajaessakin
       updateCamOffsets(dt, moveDir !== 0);
@@ -19522,7 +19943,8 @@
       // kypärä työpöydällä: oma vihje, ja se menee mopon edelle koska mopo on tallissa
       // väistämättä vieressä juuri silloin kun kypärää ollaan hakemassa
       var nearGarageHelmet = false;
-      if(garageHelmetAvailable() && mode !== 'riding'){
+      if(garageHelmetAvailable() && mode !== 'riding' &&
+         !(typeof engineAction === 'function' && engineAction())){
         var dghx = garageHelmetPos.x - player.position.x, dghz = garageHelmetPos.z - player.position.z;
         nearGarageHelmet = Math.sqrt(dghx*dghx+dghz*dghz) <= GARAGE_HELMET_R;
       }
@@ -19744,6 +20166,8 @@
     // paneeli sulkeutuu ja pelaaja napsauttaa kuvaa.
     if(fpvPointerLock && !fpvLockWanted()) fpvReleaseLock();
     updateEngineCarry(dt);   // kannossa oleva moottorin osa seuraa pelaajaa
+    engineUpdateGhost(dt);   // haamukuva: mihin kädessä oleva osa menee
+    engineRenderPanel();     // työpöydän ohjetaulu
     updateCampfire(dt);      // miitin nuotio: liekit, savu, valo ja rätinä
     updateFaceTalk(dt);      // puhuvan hahmon suu ja kulmat
     updateNpcBlink(dt);      // kyläläiset räpyttelevät
