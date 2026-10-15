@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:118-->
-<!--JONNE-NAME:Jonnen ajokoe 118-->
-<!--JONNE-DATE:2026-10-14-->
-<!--JONNE-NOTES:Teoriakoe liikennemerkeistä: 18 kankaalle piirrettyä merkkiä, 24 kysymystä, 10 per koe|Katsastus tallissa: kahdeksan tarkastuskohtaa, voimassa kesän loppuun|Ajokokeeseen pääsee vasta teoriakokeen ja katsastuksen jälkeen-->
+<!--JONNE-VERSION:120-->
+<!--JONNE-NAME:Jonnen ajokoe 120-->
+<!--JONNE-DATE:2026-10-15-->
+<!--JONNE-NOTES:Kypärä valmiina autotallin työpöydällä - sitä ei tarvitse enää ostaa kaupasta|Kypäränäkymä (V) uusiksi: hiirilukko, askelheilahdus, kallistus kaarteessa ja vauhdin mukaan aukeava kuvakulma|Hiiri kääntää kävellessä hahmoa eikä pelkkää kameraa|Kamera ei enää mene seinien läpi: tarkistus tehdään kameran todelliselle paikalle ja autotallissa oma laatikkorajaus-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -913,7 +913,7 @@
       <div class="pfBar" id="photoBar">VALOKUVAUSTILA · A/D kierrä · W/S zoomaa · R/F korkeus · VÄLILYÖNTI kuvaa · P sulje</div>
     </div>
     <div class="toast" id="toast"><div class="big" id="toastBig"></div><p id="toastText"></p></div>
-    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Kamera: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea · Kanisteri: <b>K</b> · Näyttely: <b>J</b> · Ryhmäajo: <b>B</b> · Valokuva: <b>P</b> · Radiokanava: <b>N</b> · Kypäränäkymä: <b>V</b></div>
+    <div class="hint" id="hint">Kävele: <b>WASD</b> / nuolet · Katse: <b>hiiri pohjassa</b> · Nouse/poistu mopolta: <b>E</b> · Käynnistä: <b>F</b> · Jarru: <b>space</b> (vauhdissa = stoppie) · Tankkaa (maksaa): <b>R</b> · Keulinta: <b>Ctrl</b> · Vaihteet: <b>X</b> ylös / <b>Z</b> alas · Kartta: <b>M</b> · Puhelin: <b>TAB</b> · Hätäkorjaus: <b>G</b> · Huuda kaverille: <b>H</b> · Kaada öljyä: <b>O</b> · Vilkut: <b>Q</b> vasen / <b>C</b> oikea · Kanisteri: <b>K</b> · Näyttely: <b>J</b> · Ryhmäajo: <b>B</b> · Valokuva: <b>P</b> · Radiokanava: <b>N</b> · Kypäränäkymä: <b>V</b></div>
     <div class="miniMapWrap" id="miniMapWrap">
       <canvas id="miniMap" width="196" height="196"></canvas>
       <div class="miniMapFoot">Koko kartta: <b>M</b></div>
@@ -2945,6 +2945,48 @@
   autotalli.rotation.y = Math.PI/2; // aukko itään, pääraittia kohti
   scene.add(autotalli);
   registerColliders(autotalli, autotalliColl);
+  // ---- kypärä odottaa työpöydällä ----
+  // Kypärää piti ennen käydä ostamassa kyläkaupasta 45 eurolla ennen kuin ajokokeeseen,
+  // ajotunnille tai ylipäätään tielle pääsi ilman sakkoa. Nyt sellainen on valmiina siinä
+  // tallissa josta koko peli alkaa - se on ensimmäinen asia jonka Jonne ottaa hyllyltä.
+  function makeHelmetProp(){
+    var g = new THREE.Group();
+    var kuori = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 10, 0, Math.PI*2, 0, Math.PI*0.62),
+      new THREE.MeshStandardMaterial({color:0xd8402c, roughness:0.35, metalness:0.1}));
+    kuori.scale.set(1.0, 1.12, 1.05);
+    kuori.castShadow = true;
+    var visiiri = new THREE.Mesh(new THREE.SphereGeometry(0.148, 12, 8, Math.PI*0.72, Math.PI*0.56, Math.PI*0.22, Math.PI*0.30),
+      new THREE.MeshStandardMaterial({color:0x1b2a33, roughness:0.15, metalness:0.3, side:THREE.DoubleSide}));
+    visiiri.scale.set(1.06, 1.12, 1.12);
+    var raita = new THREE.Mesh(new THREE.TorusGeometry(0.158, 0.014, 6, 18).rotateX(Math.PI/2),
+      new THREE.MeshStandardMaterial({color:0xf2efe6, roughness:0.5}));
+    raita.position.y = 0.02;
+    g.add(kuori, visiiri, raita);
+    return g;
+  }
+  var garageHelmet = makeHelmetProp();
+  garageHelmet.position.set(1.75, 1.03, -autotalliD/2 + 0.55);   // työpöydän päällä, oikeassa reunassa
+  garageHelmet.rotation.y = -0.5;
+  autotalli.add(garageHelmet);
+  var garageHelmetPos = worldOffset(autotalli, 1.75, -autotalliD/2 + 0.55);
+  var GARAGE_HELMET_R = 1.9;
+  function garageHelmetAvailable(){
+    return !ownsHelmet() && !inStore;
+  }
+  function updateGarageHelmetProp(){
+    if(garageHelmet) garageHelmet.visible = !ownsHelmet();
+  }
+  function takeGarageHelmet(){
+    var it = storeItemById('kypara');
+    if(!it || it.owned) return;
+    it.owned = true;
+    helmetOn = true;
+    updateGarageHelmetProp();
+    if(typeof updateHelmet === 'function') updateHelmet();
+    showToast(false, '🪖 Kypärä päähän',
+      'Vanha avokypärä löytyi tallin työpöydältä. Ilman sitä partio sakottaa eikä ajokokeeseen päästetä.', 5200);
+    saveGame();
+  }
   // sisävalo, jottei tallin perä ole pimeä päiväsaikaankaan
   var autotalliLight = new THREE.PointLight(0xfff2d0, 0.35, 11);
   autotalliLight.position.set(autotalliPos.x, 2.6, autotalliPos.z);
@@ -8255,6 +8297,8 @@
     ensureHelmet();
     helmetOn = ownsHelmet();
     if(helmetMesh) helmetMesh.visible = helmetOn;
+    // tallin työpöydän kypärä katoaa kun se on otettu - myös tallennuksesta ladattaessa
+    if(typeof updateGarageHelmetProp === 'function') updateGarageHelmetProp();
   }
   // ---- vilkut ----
   function setSignal(side){
@@ -8290,6 +8334,10 @@
         turnCooldown = 5;
         if(examRun && lastTurnSignalled === -1){
           examAddFault(5, 'Vilkku! Käännöksestä pitää näyttää merkki.');
+        }
+        if(typeof lessonRun !== 'undefined' && lessonRun){
+          if(lastTurnSignalled === -1) lessonMistake('vilkku', 'Vilkku! Käännöksestä näytetään merkki ennen kääntymistä.');
+          else lessonPraise('Hyvä, vilkku tuli ajoissa.');
         }
       }
     } else turnHold *= Math.max(0, 1 - dt*3);
@@ -10746,6 +10794,13 @@
     // päivän tapahtuma tarkistetaan ensin: se on aina paikkaan sidottu eikä ole minkään
     // muun toiminnon tiellä, koska kohteet ovat kartan POI-pisteitä eivätkä rakennuksia
     if(tryDailyEvent()) return;
+    // Kypärä autotallin työpöydältä menee mopoon nousemisen edelle samasta syystä kuin
+    // ajokoe ja ajotunti: mopo on tallissa väistämättä pöydän vieressä, joten muuten E
+    // nostaisi aina kyytiin eikä kypärää saisi koskaan.
+    if(mode !== 'riding' && garageHelmetAvailable()){
+      var dxkh = garageHelmetPos.x - player.position.x, dzkh = garageHelmetPos.z - player.position.z;
+      if(Math.sqrt(dxkh*dxkh + dzkh*dzkh) <= GARAGE_HELMET_R){ takeGarageHelmet(); return; }
+    }
     // Ajokokeen vastaanottaja menee mopoon nousemisen edelle: konttorin pihaan parkkeerattu
     // mopo on väistämättä lähellä, ja E:n pitää silloin tarkoittaa koetta eikä kyytiin nousua.
     if(mode !== 'riding' && !examRun && examAvailable()){
@@ -10754,6 +10809,15 @@
         if(!exn.exam) continue;
         var exdx = exn.pos.x - player.position.x, exdz = exn.pos.z - player.position.z;
         if(Math.sqrt(exdx*exdx + exdz*exdz) <= exn.radius){ startExam(); return; }
+      }
+    }
+    // Sama mopon selasta: opettaja on huoltoaseman pihassa jonne mopo parkkeerataan.
+    if(mode !== 'riding' && lessonAvailable()){
+      for(var opi=0; opi<npcCharacters.length; opi++){
+        var opn = npcCharacters[opi];
+        if(!opn.lesson) continue;
+        var opdx = opn.pos.x - player.position.x, opdz = opn.pos.z - player.position.z;
+        if(Math.sqrt(opdx*opdx + opdz*opdz) <= opn.radius){ startLesson(); return; }
       }
     }
     if(mode === 'pillion'){ leavePillion(false); return; }
@@ -10903,6 +10967,7 @@
       var dxn = npcC.pos.x - player.position.x, dzn = npcC.pos.z - player.position.z;
       if(Math.sqrt(dxn*dxn+dzn*dzn) <= npcC.radius){
         if(npcC.exam){ startExam(); return; }
+        if(npcC.lesson && lessonAvailable()){ startLesson(); return; }
         chatWithNpc(npcC);
         return;
       }
@@ -12158,6 +12223,7 @@
     for(var pi2=0; pi2<pois.length; pi2++) if(pois[pi2].visited) seen++;
     add(seen >= Math.ceil(pois.length*0.6), 8, 'Kylä kierretty (' + seen + '/' + pois.length + ' paikkaa)');
     add(refuelCount > 0, 6, 'Tankkaaminen opittu');
+    add(lessonsDone >= 1, 8, 'Ajotunti otettu opettajan kanssa');
     // Poliisimerkinnät vievät pisteitä: ylinopeudet eivät katoa mihinkään.
     var sakkoSakko = Math.min(18, finesCount*6);
     if(sakkoSakko > 0){ items.push({ok:false, pts:-sakkoSakko, text:'Ylinopeussakkoja ' + finesCount + ' kpl'}); score -= sakkoSakko; }
@@ -13222,6 +13288,9 @@
   uimaranta.updateMatrixWorld(true);
   var kalamiesPos = uimaranta.localToWorld(new THREE.Vector3(-4.6, 0, 2.6));
   kalamiesPos.y = 0;
+  // Ajo-opettaja seisoo huoltoaseman pihassa. Paikka maaritellaan tassa eika V119:n
+  // moduulissa, koska NPC-lista tarvitsee sen jo nyt - moduuli ajetaan vasta paljon myohemmin.
+  var LESSON_SPOT = meetSpot.clone().add(new THREE.Vector3(-5, 0, 4));
   var npcCharacters = [
     {
       name: 'Äiti',
@@ -13296,6 +13365,18 @@
       mesh: makeNpcFigure('normi', [0x1c1c22, 0x23232c, 0x4a5a74, 0xd6ab85, 0x4a4238], 1.79),
       lineIndex: 0,
       lines: ['Ajokoe otetaan vastaan tässä. Ensin teoriakoe, sitten katsastettu mopo, sitten ajonäyttö. Maksu ' + 60 + ' euroa.']
+    },
+    {
+      // Ajo-opettaja: E aloittaa ajotunnin. Han on huoltoasemalla, eli hanet loytaa
+      // kauan ennen kuin ajokoe on ajankohtainen.
+      name: 'Ajo-opettaja Raimo',
+      lesson: true,
+      pos: LESSON_SPOT,
+      radius: 3.6,
+      baseRotY: 0.6,
+      mesh: makeNpcFigure('normi', [0x2a3340, 0x33405a, 0x6d5a3e, 0xd9b089, 0x5a5048], 1.74),
+      lineIndex: 0,
+      lines: ['Ajotunti maksaa 20 euroa. Minä neuvon matkalla, sinä ajat.']
     },
     {
       name: 'Kalamies',
@@ -13497,6 +13578,9 @@
   // vastaanottaja ei päästä edes lähtöön, ja lopullisessa arvosanassa se painaa neljänneksen.
   // ==========================================================================
   var EXAM_FEE = 60;
+  // Kaksi ajotuntia poikii opettajan suosituksen, ja suosituksella koe on halvempi.
+  var EXAM_FEE_CHEAP = 45;
+  function examFee(){ return (lessonsDone >= 2) ? EXAM_FEE_CHEAP : EXAM_FEE; }
   var examSpot = kylaPos.clone().add(new THREE.Vector3(8, 0, 6));   // ajokoekonttori naapurikylässä
   var EXAM_ROUTE = [
     {pos: kauppaIsoPos,  pysahdy:false, ohje:'Aja kyläkaupan ohi. Pidä rajoitukset.'},
@@ -13534,6 +13618,11 @@
   }
   function startExam(){
     if(examDone){ showToast(false, 'Ajokoe on jo tehty', 'Tämän kesän koe on takana.', 3000); return; }
+    // Ajotunti kesken: opettaja istuu jo tarakalla eika kaksi ohjaajaa mahdu samaan kyytiin.
+    if(typeof lessonRun !== 'undefined' && lessonRun){
+      showToast(true, 'Ajotunti on kesken', 'Aja tunti loppuun ensin - opettaja istuu vielä tarakalla.', 4200);
+      return;
+    }
     // Teoriakoe ensin: merkit pitää osata ennen kuin ajonäyttöön päästetään.
     if(!theoryPassed){
       showToast(true, 'Teoriakoe puuttuu',
@@ -13548,7 +13637,7 @@
       return;
     }
     if(!mopedAssembled()){ showToast(true, 'Mopo on osina', 'Ajokokeeseen tullaan ajamalla, ei kävellen.', 3600); return; }
-    if(money < EXAM_FEE){ showToast(true, 'Ajokoemaksu ' + EXAM_FEE + ' €', 'Kassassa on ' + Math.round(money) + ' €. Käy tienaamassa ensin.', 4200); return; }
+    if(money < examFee()){ showToast(true, 'Ajokoemaksu ' + examFee() + ' €', 'Kassassa on ' + Math.round(money) + ' €. Käy tienaamassa ensin.', 4200); return; }
     // kypärä on ehdoton: ilman sitä vastaanottaja ei päästä lähtöön ollenkaan
     if(!ownsHelmet()){
       showToast(true, 'Kypärä puuttuu', 'Ajokokeeseen ei lähdetä ilman kypärää. Niitä myydään kyläkaupassa 45 eurolla.', 5600);
@@ -13569,7 +13658,7 @@
         (puute ? ' Seuraavaksi: ' + puute.toLowerCase() + '.' : ''), 6500);
       return;
     }
-    money -= EXAM_FEE;
+    money -= examFee();
     updateMoneyDisplay();
     // pelaaja mopon selkään ja koe käyntiin
     if(mode !== 'riding'){
@@ -13593,6 +13682,7 @@
       function(){ examNote(EXAM_ROUTE[0].ohje, 6); });
   }
   function showExaminer(on){
+    if(typeof npcMeshVisible === 'function') npcMeshVisible('exam', !on);
     if(on && !examinerEntry){
       examinerEntry = makeRiderFigure();
       // oma geometria, jotta värit eivät muuta pelaajan hahmoa
@@ -16309,6 +16399,16 @@
         ' · <b>' + Math.floor(jl/60) + ':' + ('0'+(jl%60)).slice(-2) + '</b><br>' + ohje;
       return;
     }
+    if(lessonRun){
+      // ajotunti: ohje, huomautusten määrä ja jäljellä oleva aika
+      missionTrackerEl.classList.add('show');
+      var ljl = Math.max(0, Math.ceil(LESSON_TIME_LIMIT - lessonRun.t));
+      var lohje = (lessonRun.noteT > 0 && lessonRun.note) ? lessonRun.note : (lessonCurrent() ? lessonCurrent().ohje : '');
+      missionTrackerEl.innerHTML = '🎓 AJOTUNTI ' + (lessonRun.idx+1) + '/' + LESSON_ROUTE.length +
+        ' · huomautuksia <b>' + lessonFaultCount(lessonRun.virheet) + '</b>' +
+        ' · <b>' + Math.floor(ljl/60) + ':' + ('0'+(ljl%60)).slice(-2) + '</b><br>' + lohje;
+      return;
+    }
     if(activeMission) return; // updateMission on jo päivittänyt tämän kehyksen tracker-tekstin
     if(activeJob){
       missionTrackerEl.classList.add('show');
@@ -16949,6 +17049,8 @@
   var theoryBest = 0;           // paras tulos oikeita vastauksia
   var theoryTries = 0;          // montako kertaa koetta on yritetty
   var inspectionSummer = 0;     // minka kesan katsastus on voimassa (0 = ei katsastettu)
+  var lessonsDone = 0;          // suoritettuja ajotunteja
+  var lessonBest = -1;          // paras ajotunti: vahiten huomautuksia (-1 = ei ajettu)
 
   // ==========================================================================
   // ---- NAPPAINKARTTA ----
@@ -17120,6 +17222,8 @@
         theoryBest: theoryBest,
         theoryTries: theoryTries,
         inspectionSummer: inspectionSummer,
+        lessonsDone: lessonsDone,
+        lessonBest: lessonBest,
         mouseSens: mouseSens,
         dartsThrowCount: dartsThrowCount,
         fishCaught: fishCaught,
@@ -17335,6 +17439,8 @@
       if(typeof save.theoryBest === 'number') theoryBest = save.theoryBest;
       if(typeof save.theoryTries === 'number') theoryTries = save.theoryTries;
       if(typeof save.inspectionSummer === 'number') inspectionSummer = save.inspectionSummer;
+      if(typeof save.lessonsDone === 'number') lessonsDone = save.lessonsDone;
+      if(typeof save.lessonBest === 'number') lessonBest = save.lessonBest;
       if(typeof save.mouseSens === 'number') mouseSens = Math.max(0.2, Math.min(3, save.mouseSens));
       if(typeof save.dartsThrowCount === 'number') dartsThrowCount = save.dartsThrowCount;
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
@@ -17631,13 +17737,37 @@
   // palautuu itsestään taakse kun hiirtä ei ole hetkeen liikutettu ja pelaaja on liikkeessä,
   // jottei kamera jää osoittamaan väärään suuntaan kesken ajon.
   var camYawOffset = 0, camPitchOffset = 0;
+  var camLookOnly = false;        // true = hiiri kiertaa vain kameraa, ei kaanna hahmoa
   var camDragging = false, camDragX = 0, camDragY = 0;
   var camMouseIdle = 99;
   function onCamDragStart(e){
     if(e.button !== 0) return;
     if(wrenchMode) return;   // ruuvitilassa hiirellä käännetään katsetta ja väännetään pultteja
+    if(typeof fpvOn !== 'undefined' && fpvOn) fpvRequestLock();
     camDragging = true;
     camDragX = e.clientX; camDragY = e.clientY;
+    camMouseIdle = 0;
+  }
+  // Katseen siirto yhdessä paikassa: sama koodi raahaukselle ja hiirilukolle.
+  function camApplyLook(dxm, dym){
+    // Kävellessä hiiri kääntää HAHMOA, ei pelkkää kameraa. Kypäränäkymässä katse ja
+    // kulkusuunta eivät voi osoittaa eri suuntiin, ja kolmannessakin persoonassa on
+    // luontevampaa että hahmo kääntyy kameran mukana kuin että kamera kiertää patsasta.
+    // Ajaessa tätä ei tehdä: mopo ohjataan näppäimillä ja hiirellä katsellaan ympärille.
+    var kaantaaHahmoa = (mode === 'walking' && !wrenchMode && !photoMode && !camLookOnly);
+    if(kaantaaHahmoa){
+      playerHeading -= dxm * 0.005 * mouseSens;
+      player.rotation.y = playerHeading;
+      camYawOffset = 0;
+    } else {
+      camYawOffset -= dxm * 0.005 * mouseSens;
+      if(camYawOffset >  Math.PI) camYawOffset -= Math.PI*2;
+      if(camYawOffset < -Math.PI) camYawOffset += Math.PI*2;
+    }
+    // Kypäränäkymässä katsetta pitää voida nostaa ja laskea reilusti enemmän kuin
+    // kolmannen persoonan kameran, joka vain kiertää kohdettaan.
+    var ylaRaja = fpvOn ? 1.20 : 0.95, alaRaja = fpvOn ? -1.20 : -0.55;
+    camPitchOffset = Math.max(alaRaja, Math.min(ylaRaja, camPitchOffset + dym * 0.0035 * mouseSens));
     camMouseIdle = 0;
   }
   function onCamDragMove(e){
@@ -17645,15 +17775,55 @@
     if(!camDragging) return;
     var dxm = e.clientX - camDragX, dym = e.clientY - camDragY;
     camDragX = e.clientX; camDragY = e.clientY;
-    camYawOffset -= dxm * 0.005 * mouseSens;
-    camPitchOffset = Math.max(-0.55, Math.min(0.95, camPitchOffset + dym * 0.0035 * mouseSens));
-    if(camYawOffset >  Math.PI) camYawOffset -= Math.PI*2;
-    if(camYawOffset < -Math.PI) camYawOffset += Math.PI*2;
-    camMouseIdle = 0;
+    camApplyLook(dxm, dym);
   }
   function onCamDragEnd(){ camDragging = false; }
+
+  // ---- hiirilukko kypäränäkymässä ----
+  // Ensimmäisessä persoonassa napin pohjassa pitäminen on kömpelöä: katse pitää saada
+  // liikkua vapaasti niin kuin missä tahansa FPS-pelissä. Kypäränäkymässä kanvaasin
+  // napsautus siis lukitsee hiiren, ja sen jälkeen pelkkä liike kääntää katsetta.
+  // Esc vapauttaa lukon (selaimen oma toiminto), jolloin valikot toimivat taas normaalisti.
+  var fpvPointerLock = false;
+  function fpvLockWanted(){
+    if(!fpvOn || gamePaused || inStore || photoMode || wrenchMode) return false;
+    if(typeof koeOpen !== 'undefined' && koeOpen) return false;
+    if(typeof cutsceneActive !== 'undefined' && cutsceneActive) return false;
+    if(typeof dlgOpen !== 'undefined' && dlgOpen) return false;
+    if(typeof garageOpen !== 'undefined' && garageOpen) return false;
+    if(typeof bigMapOpen !== 'undefined' && bigMapOpen) return false;
+    if(typeof repairOpen !== 'undefined' && repairOpen) return false;
+    if(typeof mopedShopOpen !== 'undefined' && mopedShopOpen) return false;
+    if(typeof storeOpen !== 'undefined' && storeOpen) return false;
+    if(typeof dartsOpen !== 'undefined' && dartsOpen) return false;
+    if(typeof arcadeOpen !== 'undefined' && arcadeOpen) return false;
+    if(typeof missionPanel !== 'undefined' && missionPanel && !missionPanel.hidden) return false;
+    if(typeof tunePanel !== 'undefined' && tunePanel && !tunePanel.hidden) return false;
+    if(typeof mini !== 'undefined' && mini && mini.active) return false;
+    if(typeof bolt !== 'undefined' && bolt && bolt.active) return false;
+    return true;
+  }
+  function fpvRequestLock(){
+    if(!fpvLockWanted()) return;
+    if(document.pointerLockElement === renderer.domElement) return;
+    try{ if(renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock(); }catch(e){}
+  }
+  function fpvReleaseLock(){
+    try{ if(document.pointerLockElement === renderer.domElement) document.exitPointerLock(); }catch(e){}
+  }
+  document.addEventListener('pointerlockchange', function(){
+    fpvPointerLock = (document.pointerLockElement === renderer.domElement);
+  });
+  function onMouseMoveAll(e){
+    if(fpvPointerLock){
+      if(wrenchMode) return;
+      camApplyLook(e.movementX || 0, e.movementY || 0);
+      return;
+    }
+    onCamDragMove(e);
+  }
   renderer.domElement.addEventListener('mousedown', onCamDragStart);
-  window.addEventListener('mousemove', onCamDragMove);
+  window.addEventListener('mousemove', onMouseMoveAll);
   window.addEventListener('mouseup', onCamDragEnd);
   renderer.domElement.addEventListener('mouseleave', onCamDragEnd);
   // kosketusnäytöllä sama ele yhdellä sormella
@@ -17673,7 +17843,7 @@
     if(!camDragging && camMouseIdle > 1.6 && moving){
       var back = Math.min(1, dt*1.2);
       camYawOffset   -= camYawOffset*back;
-      camPitchOffset -= camPitchOffset*back;
+      if(!fpvOn) camPitchOffset -= camPitchOffset*back;
     }
   }
 
@@ -17714,6 +17884,74 @@
     v.z = b.oz + lz;
     if(v.y > 2.6) v.y = 2.6;
   }
+  // Kamera asetetaan pehmeällä lerpillä kohti TAVOITEpaikkaa, joten nopeassa liikkeessä se
+  // ehtii jäädä seinän väärälle puolelle vaikka tavoite itsessään olisi vapaa - juuri niin
+  // käy kun mopolla ajaa autotalliin. Lisäksi followCamera jättää huomiotta esteet joiden
+  // sisällä kohde jo on (seinäympyrät ulottuvat huoneen puolelle), jolloin kamera pääsi
+  // menemään seinän läpi aina kun pelaaja seisoi lähellä seinää.
+  //
+  // Tämä tarkistus tehdään sille paikalle jossa kamera OIKEASTI on, ja vetää sen lähemmäs
+  // kohdetta jos väliin jää este. Säde on hieman pienempi kuin törmäysympyrällä, jottei
+  // kamera hypi tiukoissa paikoissa.
+  // Autotallin oma rajaus. Seinien törmäysympyrät (r = 1,3...1,4) ulottuvat reilusti huoneen
+  // puolelle, joten pelkällä ympyrätarkistuksella kamera olisi tallissa aina kiinni kuskin
+  // niskassa. Tallin sisällä kamera rajataan sen sijaan suoraan seinälaatikkoon: aukon puoli
+  // jätetään auki, koska sieltä ajetaan sisään ja ulos.
+  var camTmpA = new THREE.Vector3(), camTmpB = new THREE.Vector3();
+  function clampCameraToGarage(focus, v){
+    if(typeof autotalli === 'undefined' || !autotalli) return false;
+    var li = autotalli.worldToLocal(camTmpA.copy(focus));
+    var hw = autotalliW/2 - 0.35, hd = autotalliD/2 - 0.35;
+    if(Math.abs(li.x) > hw || li.z < -hd || li.z > hd) return false;   // kohde ei ole tallissa
+    var lv = autotalli.worldToLocal(camTmpB.copy(v));
+    if(lv.x >  hw) lv.x =  hw;
+    if(lv.x < -hw) lv.x = -hw;
+    if(lv.z < -hd) lv.z = -hd;                       // takaseinä
+    if(lv.y > autotalliH - 0.4) lv.y = autotalliH - 0.4;
+    autotalli.localToWorld(lv);
+    v.copy(lv);
+    return true;
+  }
+  function camAvoidWalls(focus){
+    // tallin sisällä laatikkorajaus ajaa ympyrätarkistuksen ohi
+    if(clampCameraToGarage(focus, camPos)){
+      camera.position.copy(camPos);
+      return;
+    }
+    var dx = camPos.x - focus.x, dz = camPos.z - focus.z;
+    var d = Math.sqrt(dx*dx + dz*dz);
+    if(d < 0.35) return;
+    var ux = dx/d, uz = dz/d;
+    var best = d;
+    for(var i=0; i<colliders.length; i++){
+      var c = colliders[i];
+      var gx = c.x - focus.x, gz = c.z - focus.z;
+      // nopea rajaus: kaukana oleviin esteisiin ei tarvitse laskea mitään
+      if(gx > d + 4 || gx < -d - 4 || gz > d + 4 || gz < -d - 4) continue;
+      var rr = c.r*0.8 + 0.28;
+      var proj = gx*ux + gz*uz;
+      if(proj <= 0) continue;                     // este kameran takana
+      var perp2 = gx*gx + gz*gz - proj*proj;
+      if(perp2 >= rr*rr) continue;                // säde ohittaa esteen
+      var t = proj - Math.sqrt(rr*rr - perp2);
+      if(t < best) best = t;
+    }
+    if(best >= d - 0.01) return;
+    // Vähimmäisetäisyys absoluuttisena eikä osuutena: osuus jätti kameran 1,4 metriin
+    // silloin kun este oli kohteen päällä, jolloin se jäi yhä seinän sisään.
+    var k = Math.max(0.85, best)/d;
+    if(k > 1) k = 1;
+    camPos.x = focus.x + dx*k;
+    camPos.z = focus.z + dz*k;
+    camPos.y = focus.y + (camPos.y - focus.y)*Math.max(k, 0.45);
+    if(!inStore){
+      var ground2 = terrainHeight(camPos.x, camPos.z) + 0.5;
+      if(camPos.y < ground2) camPos.y = ground2;
+    }
+    clampCameraToRoom(camPos);
+    camera.position.copy(camPos);
+  }
+
   // yhteinen kameran sijoitus: kiertokulma = kulkusuunta + hiiren siirtymä, etäisyys esteiden mukaan
   function followCamera(focus, baseHeading, dist, height, lookHeight){
     var ang = baseHeading + camYawOffset;
@@ -19008,6 +19246,7 @@
         var desiredCam = followCamera(moped.position, heading, 5.1, 2.8, 1.15);
         camPos.lerp(desiredCam, 1-Math.pow(0.001,dt));
         camera.position.copy(camPos);
+        camAvoidWalls(moped.position);
         var lookTarget = moped.position.clone().add(new THREE.Vector3(0,0.8,0));
         camLook.lerp(lookTarget, 1-Math.pow(0.0005,dt));
         camera.lookAt(camLook);
@@ -19045,6 +19284,7 @@
         var desiredCamP = followCamera(player.position, playerHeading, 5.1, 2.8, 1.15);
         camPos.lerp(desiredCamP, 1-Math.pow(0.001,dt));
         camera.position.copy(camPos);
+        camAvoidWalls(player.position);
         var lookTargetP = player.position.clone().add(new THREE.Vector3(0,1.0,0));
         camLook.lerp(lookTargetP, 1-Math.pow(0.0005,dt));
         camera.lookAt(camLook);
@@ -19128,11 +19368,12 @@
       // kolmas persoona: kamera leijuu pelaajan takana samaan tapaan kuin ajaessakin
       updateCamOffsets(dt, moveDir !== 0);
       if(fpvOn){
-        fpvCamera(player.position, playerHeading, 1.58, 0.06);
+        fpvWalkCamera();
       } else {
         var desiredCam2 = followCamera(player.position, playerHeading, 3.2, 1.8, 1.1);
         camPos.lerp(desiredCam2, 1-Math.pow(0.002,dt));
         camera.position.copy(camPos);
+        camAvoidWalls(player.position);
         var lookTarget2 = player.position.clone().add(new THREE.Vector3(0,1.1,0));
         camLook.lerp(lookTarget2, 1-Math.pow(0.001,dt));
         camera.lookAt(camLook);
@@ -19225,10 +19466,34 @@
         }
       }
 
+      // Ajokokeen vastaanottaja ja ajo-opettaja menevat mopoon nousemisen EDELLE myos
+      // vihjerivilla, koska handleInteract kasittelee ne samassa jarjestyksessa. Ilman tata
+      // konttorin pihaan parkkeerattu mopo peitti vihjeen "aloita ajokoe" kokonaan.
+      var nearSpecial = null;
+      if(!inStore && mode !== 'riding'){
+        for(var nspi=0; nspi<npcCharacters.length; nspi++){
+          var nsp = npcCharacters[nspi];
+          if(nsp.indoor) continue;
+          if(!nsp.exam && !nsp.lesson) continue;
+          if(nsp.exam && !examAvailable()) continue;
+          if(nsp.lesson && !lessonAvailable()) continue;
+          var nspx = nsp.pos.x - player.position.x, nspz = nsp.pos.z - player.position.z;
+          if(Math.sqrt(nspx*nspx+nspz*nspz) <= nsp.radius){ nearSpecial = nsp; break; }
+        }
+      }
+
       var nearDarts = false;
       if(!nearMoped && !nearTalli && !nearMopedShop && !nearKauppaIsoDoor && !nearNpc && !nearFishing){
         var dxdh = dartsPos.x - player.position.x, dzdh = dartsPos.z - player.position.z;
         nearDarts = Math.sqrt(dxdh*dxdh+dzdh*dzdh) <= dartsRadius;
+      }
+
+      // kypärä työpöydällä: oma vihje, ja se menee mopon edelle koska mopo on tallissa
+      // väistämättä vieressä juuri silloin kun kypärää ollaan hakemassa
+      var nearGarageHelmet = false;
+      if(garageHelmetAvailable() && mode !== 'riding'){
+        var dghx = garageHelmetPos.x - player.position.x, dghz = garageHelmetPos.z - player.position.z;
+        nearGarageHelmet = Math.sqrt(dghx*dghx+dghz*dghz) <= GARAGE_HELMET_R;
       }
 
       var nearGarageBench = false;
@@ -19278,6 +19543,12 @@
         mountHintEl.innerHTML = garageShelf.length
           ? 'Paina <b>E</b>: asenna osat hyllyltä (' + garageShelf.length + ')'
           : 'Paina <b>E</b> avataksesi autotallin hyllyn';
+      } else if(nearGarageHelmet){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = 'Paina <b>E</b>: ota kypärä työpöydältä';
+      } else if(nearSpecial){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = specialHint(nearSpecial);
       } else if(nearMoped || pushingMoped){
         mountHintEl.hidden = false;
         if(pushingMoped) mountHintEl.innerHTML = 'Työnnät mopoa - paina <b>E</b> päästääksesi irti';
@@ -19347,13 +19618,8 @@
           : ('Paina <b>H</b>: huuda kaverille (' + fnear.name + ')');
       } else if(nearNpc){
         mountHintEl.hidden = false;
-        mountHintEl.innerHTML = nearNpc.exam
-          ? (examDone ? 'Ajokoe on jo tehty tänä kesänä'
-              : (!theoryPassed
-                  ? 'Paina <b>E</b>: teoriakoe liikennemerkeistä (' + THEORY_FEE + ' €)'
-                  : (!inspectionValid()
-                      ? 'Katsastus puuttuu — käy tallissa katsastuttamassa mopo'
-                      : 'Paina <b>E</b>: aloita ajokoe (' + EXAM_FEE + ' €) · valmius ' + examReview().score + '/100')))
+        mountHintEl.innerHTML = (nearNpc.exam || (nearNpc.lesson && lessonAvailable()))
+          ? specialHint(nearNpc)
           : ('Paina <b>E</b>: jutustele (' + nearNpc.name + ')');
       } else if(nearGrilli){
         mountHintEl.hidden = false;
@@ -19443,6 +19709,9 @@
       if(!fpvAvailable()){ fpvOn = false; }
       fpvApplyVisibility();
     }
+    // Hiiri vapaaksi heti kun jokin paneeli tarvitsee sitä, ja takaisin lukkoon kun
+    // paneeli sulkeutuu ja pelaaja napsauttaa kuvaa.
+    if(fpvPointerLock && !fpvLockWanted()) fpvReleaseLock();
     updateEngineCarry(dt);   // kannossa oleva moottorin osa seuraa pelaajaa
     updateCampfire(dt);      // miitin nuotio: liekit, savu, valo ja rätinä
     updateFaceTalk(dt);      // puhuvan hahmon suu ja kulmat
@@ -19452,6 +19721,7 @@
     updateFriends(dt);       // kaverit ajelevat kylällä, seuraavat tai kisaavat
     updateDragRace(dt);      // kiihdytyskisan lähtölaskenta ja maali
     updateExam(dt);          // ajokoe käynnissä: virhepisteet, ohjeet ja tarkistuspisteet
+    updateLesson(dt);        // ajotunti käynnissä: opettajan neuvot ja huomautukset
     updateNpcRoutines(dt);   // kyläläiset kävelevät päiväjärjestyksensä mukaan
     updateNpcFacing(dt, mode === 'riding' ? moped.position : player.position);
     updateFishing(dt);
@@ -20630,13 +20900,23 @@
     return !photoMode && !wrenchMode && !inStore && !cutsceneActive && !gamePaused &&
            !(typeof koeOpen !== 'undefined' && koeOpen);
   }
+  function fpvWhyNot(){
+    if(photoMode) return 'Valokuvaustila on päällä.';
+    if(wrenchMode) return 'Ruuvitila on päällä.';
+    if(inStore) return 'Sisätiloissa kamera ei vaihdu.';
+    if(cutsceneActive) return 'Kesken välikohtauksen ei vaihdeta kameraa.';
+    if(gamePaused) return 'Peli on tauolla.';
+    if(typeof koeOpen !== 'undefined' && koeOpen) return 'Koepaneeli on auki.';
+    return 'Ei käytettävissä juuri nyt.';
+  }
   function toggleFpv(){
     if(!fpvAvailable()){
-      showToast(false, 'Kypäränäkymä', 'Ei käytettävissä juuri nyt.', 2200);
+      showToast(false, 'Kypäränäkymä', fpvWhyNot(), 2600);
       return;
     }
     fpvOn = !fpvOn;
     fpvApplyVisibility();
+    if(fpvOn) fpvRequestLock(); else fpvReleaseLock();
     showToast(false, fpvOn ? '🪖 Kypäränäkymä päällä' : 'Kypäränäkymä pois',
       fpvOn ? 'Katso ympärille hiirellä. Sama näppäin palauttaa normaalin kameran.'
             : 'Kamera palasi selän taakse.', 2800);
@@ -20645,6 +20925,7 @@
   function fpvApplyVisibility(){
     if(fpvHelmetEl) fpvHelmetEl.hidden = !fpvOn;
     fpvSetFov(fpvOn);
+    if(!fpvOn && typeof fpvReleaseLock === 'function') fpvReleaseLock();
     if(!fpvOn && typeof playerVisual !== 'undefined' && playerVisual) playerVisual.visible = true;
     if(typeof riderEntry !== 'undefined' && riderEntry && riderEntry.group){
       // ajaessa kuski piiloon, muuten normaali logiikka hoitaa nakyvyyden
@@ -20653,34 +20934,69 @@
     if(typeof playerVisual !== 'undefined' && playerVisual){
       playerVisual.visible = !(fpvOn && mode === 'walking');
     }
+    // Ajaessa oma kävelyhahmo on aina piilossa (kuski piirretään mopon päälle omana
+    // hahmonaan). Normaalisti se hoituu mopoon noustessa, mutta jos tila vaihtuu jotain
+    // muuta reittiä, kypäränäkymässä kävelijän pää jäisi suoraan kameran eteen.
+    if(fpvOn && mode === 'riding' && typeof player !== 'undefined' && player) player.visible = false;
   }
-  // Silma kuskin paan kohdalle. fwd siirtaa silman eteenpain kohteesta, jottei oma
-  // paa tai kypara jaa kuvaan.
-  function fpvCamera(focus, baseHeading, eyeH, fwd){
-    var ang = baseHeading + camYawOffset;
-    var ex = focus.x + Math.sin(baseHeading)*fwd;
-    var ez = focus.z + Math.cos(baseHeading)*fwd;
-    camPos.set(ex, focus.y + eyeH, ez);
+  // Yhteinen katseen asetus: silma paikalleen, katse kulmaan, ja pieni kallistus kun
+  // askel osuu maahan. camera.lookAt nollaa kierron, joten kallistus lisataan sen jalkeen.
+  var fpvEye = new THREE.Vector3();
+  function fpvLook(eye, yaw, pitchSlope, roll){
+    camPos.copy(eye);
     camera.position.copy(camPos);
     var d = 8;
-    camLook.set(ex + Math.sin(ang)*d, focus.y + eyeH - (camPitchOffset + FPV_PITCH)*d*0.9, ez + Math.cos(ang)*d);
+    camLook.set(eye.x + Math.sin(yaw)*d, eye.y - pitchSlope*d*0.9, eye.z + Math.cos(yaw)*d);
     camera.lookAt(camLook);
+    if(roll) camera.rotateZ(roll);
+  }
+  // Vauhdin tuntu: kuvakulma aukeaa hieman nopeuden mukaan. Kolmannessa persoonassa vauhdin
+  // nakee mopon ja maiseman suhteesta, mutta kyparan takaa ainoa vihje on se miten reunat
+  // kiitavat ohi - kapea kuvakulma sai 45 km/h tuntumaan kavelyvauhdilta.
+  function fpvSpeedFov(){
+    var kmh = Math.abs(speed)*3.6;
+    var want = FPV_FOV + Math.min(9, kmh*0.13);
+    if(Math.abs(camera.fov - want) > 0.25){ camera.fov = want; camera.updateProjectionMatrix(); }
   }
   // Ajaessa silma otetaan kuskihahmon omasta paasta. Mitattu istumakorkeus vaihtelee
   // mopoittain reilusti (potkulauta 1.26, scoba 1.67), ja paa myos nojaa kaarteissa ja
   // kaasuttaessa - vakiokorkeus olisi vaarassa paikassa lahes joka mopolla.
-  var fpvEye = new THREE.Vector3();
   function fpvRidingCamera(){
     var lim = (typeof riderEntry !== 'undefined' && riderEntry && riderEntry.limbs) ? riderEntry.limbs : null;
     if(lim && lim.head){
       moped.updateMatrixWorld(true);   // paan matriisi on muuten edellisen ruudun
       lim.head.getWorldPosition(fpvEye);
       fpvEye.y += 0.02;                // silmat ovat paalaen alapuolella
-      // kuski on piilotettu kyparanakymassa, joten silmaa ei tarvitse siirtaa oman paan ohi
-      fpvCamera(fpvEye, heading, 0, 0.02);
     }else{
-      fpvCamera(moped.position, heading, 1.45, 0.20);
+      fpvEye.set(moped.position.x, moped.position.y + 1.45, moped.position.z);
     }
+    fpvEye.x += Math.sin(heading)*0.02;
+    fpvEye.z += Math.cos(heading)*0.02;
+    // mopon oma kallistus kaarteessa nakyy myos katseessa - pelkka vaakasuora kuva
+    // tuntui silta kuin kuski olisi irti mopostaan
+    // mopon oma kallistuskulma on suoraan rungon rotation.z - siita saadaan kuskin
+    // nakoaistin kallistus ilman erillista muuttujaa
+    var kallistus = -moped.rotation.z*0.45;
+    fpvLook(fpvEye, heading + camYawOffset, camPitchOffset + FPV_PITCH, kallistus);
+    fpvSpeedFov();
+  }
+  // Kavellessa silma on pelaajan paan korkeudella ja seuraa askelrytmia. Ilman heilahdusta
+  // kavely tuntuu liukumiselta: kuva on taysin paikallaan vaikka jalat liikkuvat.
+  var FPV_WALK_EYE = 1.60;
+  function fpvWalkCamera(){
+    var maara = (typeof playerWalkAmount === 'number') ? playerWalkAmount : 0;
+    var vaihe = (typeof playerWalkTime === 'number') ? playerWalkTime : 0;
+    var bob  = Math.abs(Math.cos(vaihe))*0.040*maara - 0.019*maara;  // kaksi laskua askelparia kohden
+    var sway = Math.sin(vaihe)*0.028*maara;                           // painon siirto sivulta toiselle
+    var yaw = playerHeading + camYawOffset;
+    var py = (typeof inStore !== 'undefined' && inStore) ? 0 : player.position.y;
+    fpvEye.set(player.position.x, py + FPV_WALK_EYE + bob, player.position.z);
+    // silma hieman eteen ja sivulle: pelkka keskiakseli nayttaa silta kuin katsoisi
+    // rintakehan sisalta
+    fpvEye.x += Math.sin(yaw)*0.10 + Math.cos(yaw)*sway;
+    fpvEye.z += Math.cos(yaw)*0.10 - Math.sin(yaw)*sway;
+    fpvLook(fpvEye, yaw, camPitchOffset, Math.sin(vaihe)*0.013*maara);
+    fpvSetFov(true);   // kavellessa ei vauhtilisaa
   }
 
   // ==========================================================================
@@ -21114,6 +21430,7 @@
   ];
 
   function koeShowPanel(){
+    if(typeof fpvReleaseLock === 'function') fpvReleaseLock();   // hiiri takaisin, koe klikataan
     koePanelEl.hidden = false;
     if(koeScrimEl) koeScrimEl.hidden = false;
     if(app) app.classList.add('koeing');
@@ -21349,7 +21666,235 @@
     saveGame();
   }
 
+  // ==========================================================================
+  // ---- AJO-OPETTAJA ----
+  // Ajokoe kertoo virheet vasta lopussa, kun niille ei enaa voi mitaan. Opettaja tekee
+  // painvastoin: han varoittaa ENNEN virhetta ("tuossa edessa pysahdytaan, hidasta jo"),
+  // korjaa heti kun jotain menee pieleen ja kehuu kun menee hyvin. Tunti ei voi mennä
+  // lapi tai hylatyksi - sen arvo on siina mita siita oppii.
+  //
+  // Opettaja istuu huoltoasemalla kahvilla, eli hanet loytaa paljon ennen kuin ajokoe on
+  // ajankohtainen. Tunti maksaa 20 euroa ja kahden tunnin jalkeen han suosittelee oppilasta,
+  // jolloin ajokoemaksu putoaa.
+  // ==========================================================================
+  var LESSON_FEE = 20;
+  var LESSON_TIME_LIMIT = 420;
+  var LESSON_CP_RADIUS = 15;
+  var LESSON_ROUTE = [
+    {pos: kauppaPos,      pysahdy:false, ohje:'Aja tallin pihaan. Rauhallisesti ja rajoituksia noudattaen.'},
+    {pos: mopedShopPos,   pysahdy:true,  ohje:'Mopokaupan liittymä: pysähdy kokonaan ennen kääntymistä.'},
+    {pos: LESSON_SPOT,    pysahdy:true,  ohje:'Palaa huoltoasemalle ja pysäytä mopo kokonaan.', maali:true}
+  ];
+  // Opettajalla on oma ulkoasu ja asento, jottei tarakalla istu toinen pelaajan kopio.
+  var TEACHER_POSE = {y:0.86, z:-0.98, leg:-0.96, arm:-0.14, knee:1.18, lean:0.10, splay:0.28, armSplay:0.10, elbow:0.60, stand:false};
+  var TEACHER_LOOK = {height:0.56, build:0.70, skin:1, shirt:4, pants:2, hair:3};
+  var teacherEntry = null;
+  var lessonRun = null;
+  // Huomautusten lajit: avain -> {nimi, vinkki}
+  var LESSON_KINDS = {
+    nopeus:   {nimi:'Ylinopeus',            vinkki:'Katso rajoitusmerkit ja pidä silmällä mittaria. Mopolla kulkee 45, ei enempää.'},
+    tie:      {nimi:'Tieltä oikominen',     vinkki:'Pysy tiellä myös silloin kun pelto näyttää lyhyemmältä. Ajokokeessa oikominen on iso virhe.'},
+    keula:    {nimi:'Keulinta',             vinkki:'Keulinta on hauskaa muttei tunnilla eikä kokeessa. Pidä etupyörä maassa.'},
+    luisu:    {nimi:'Luisuminen',           vinkki:'Märällä kelillä hiljennetään ENNEN mutkaa, ei mutkassa.'},
+    vilkku:   {nimi:'Vilkku unohtui',       vinkki:'Suuntamerkki näytetään ajoissa, ennen kuin ohjaus kääntyy. Q vasemmalle, C oikealle.'},
+    pysahdys: {nimi:'Pysähdys jäi tekemättä', vinkki:'Pakollinen pysähtyminen tarkoittaa täyttä pysähdystä, vaikka tie olisi tyhjä.'}
+  };
+  function lessonAvailable(){ return !lessonRun && !examRun && !examDone; }
+  // Ajokokeen ja ajotunnin vihjeteksti yhdessa paikassa: sama teksti tarvitaan seka
+  // mopon vieressa etta ilman mopoa.
+  function specialHint(npc){
+    if(npc.lesson) return 'Paina <b>E</b>: ajotunti opettajan kanssa (' + LESSON_FEE + ' €)';
+    if(examDone) return 'Ajokoe on jo tehty tänä kesänä';
+    if(!theoryPassed) return 'Paina <b>E</b>: teoriakoe liikennemerkeistä (' + THEORY_FEE + ' €)';
+    if(!inspectionValid()) return 'Katsastus puuttuu — käy tallissa katsastuttamassa mopo';
+    return 'Paina <b>E</b>: aloita ajokoe (' + examFee() + ' €) · valmius ' + examReview().score + '/100';
+  }
+  function lessonNote(txt, sek){
+    if(!lessonRun) return;
+    lessonRun.note = txt;
+    lessonRun.noteT = sek || 4;
+  }
+  // Sama huomautus ei toistu heti uudestaan: yhdesta pitkasta ylinopeudesta tulisi muuten
+  // kymmenen huutoa sekunnissa.
+  function lessonMistake(avain, txt){
+    if(!lessonRun) return;
+    var nyt = lessonRun.t;
+    if(lessonRun.cool[avain] !== undefined && (nyt - lessonRun.cool[avain]) < 5) return;
+    lessonRun.cool[avain] = nyt;
+    lessonRun.virheet[avain] = (lessonRun.virheet[avain] || 0) + 1;
+    lessonRun.hyvaT = 0;
+    lessonNote('⚠ ' + txt, 3.6);
+  }
+  function lessonPraise(txt){
+    if(!lessonRun || lessonRun.noteT > 0) return;
+    lessonNote('👍 ' + txt, 3);
+  }
+  function npcMeshVisible(lippu, nakyy){
+    for(var i=0; i<npcCharacters.length; i++){
+      if(npcCharacters[i][lippu] && npcCharacters[i].mesh) npcCharacters[i].mesh.visible = nakyy;
+    }
+  }
+  function showTeacher(on){
+    npcMeshVisible('lesson', !on);   // sama hahmo ei voi seisoa pihassa ja istua tarakalla
+    if(on && !teacherEntry){
+      teacherEntry = makeRiderFigure();
+      if(typeof cloneFigureGeometry === 'function') cloneFigureGeometry(teacherEntry.group);
+      if(typeof applyLookColors === 'function') applyLookColors(teacherEntry.group, TEACHER_LOOK);
+      applyRiderPose(teacherEntry, TEACHER_POSE);
+      var tsc = (typeof lookScaleOf === 'function') ? lookScaleOf(TEACHER_LOOK) : {y:1, xz:1};
+      teacherEntry.group.scale.set(tsc.xz, tsc.y, tsc.xz);
+      moped.add(teacherEntry.group);
+    }
+    if(teacherEntry) teacherEntry.group.visible = !!on;
+  }
+  function startLesson(){
+    if(lessonRun){ showToast(false, 'Ajotunti on jo käynnissä', 'Aja reitti loppuun ensin.', 3000); return; }
+    if(examRun) return;
+    if(!mopedAssembled()){ showToast(true, 'Mopo on osina', 'Ajotunnille tullaan ajamalla, ei kävellen.', 3600); return; }
+    if(money < LESSON_FEE){
+      showToast(true, 'Ajotunti ' + LESSON_FEE + ' €', 'Kassassa on ' + Math.round(money) + ' €.', 4000);
+      return;
+    }
+    if(!ownsHelmet()){
+      showToast(true, 'Kypärä puuttuu', 'Opettaja ei nouse kyytiin ilman kypärää. Niitä myydään kyläkaupassa.', 5200);
+      return;
+    }
+    var dmx = moped.position.x - player.position.x, dmz = moped.position.z - player.position.z;
+    if(Math.sqrt(dmx*dmx + dmz*dmz) > 30){
+      showToast(true, 'Mopo ei ole täällä', 'Hae mopo huoltoaseman pihaan ja tule uudestaan.', 4600);
+      return;
+    }
+    money -= LESSON_FEE;
+    updateMoneyDisplay();
+    if(mode !== 'riding'){
+      mode = 'riding';
+      player.visible = false;
+      ensureAudio();
+      startEngineLoop();
+      engineRunning = false;
+      kickAttempts = 0;
+    }
+    lessonRun = {idx:0, t:0, offT:0, note:null, noteT:0, stopOk:false, wasNear:false,
+                 varoitettu:false, hyvaT:0, cool:{}, virheet:{}};
+    showTeacher(true);
+    showToast(false, '🎓 Ajotunti alkaa',
+      'Opettaja nousee tarakalle. Hän neuvoo matkan varrella - kuuntele ja korjaa heti.', 5200);
+    lessonNote(LESSON_ROUTE[0].ohje, 6);
+  }
+  function lessonCurrent(){ return lessonRun ? LESSON_ROUTE[lessonRun.idx] : null; }
+  function updateLesson(dt){
+    if(!lessonRun) return;
+    if(cutsceneActive || gamePaused) return;
+    lessonRun.t += dt;
+    if(lessonRun.noteT > 0) lessonRun.noteT -= dt;
+    lessonRun.hyvaT += dt;
+    if(lessonRun.t > LESSON_TIME_LIMIT){ finishLesson(false, 'Aika loppui kesken.'); return; }
+    if(mode !== 'riding'){ finishLesson(false, 'Nousit mopon selästä kesken tunnin.'); return; }
+
+    var kmh = Math.abs(speed)*3.6;
+    var raja = speedLimitAt(moped.position.x, moped.position.z);
+    if(raja > 0 && kmh > raja + 4) lessonMistake('nopeus', 'Hiljennä. Rajoitus on tässä ' + raja + '.');
+    if(raja === 0){
+      lessonRun.offT += dt;
+      if(lessonRun.offT > 2.2) lessonMistake('tie', 'Takaisin tielle. Pelto ei ole oikotie.');
+    } else lessonRun.offT = Math.max(0, lessonRun.offT - dt*2);
+    if(wheelieAngle > 0.05) lessonMistake('keula', 'Etupyörä alas. Näytä se joskus muulloin.');
+    if(slipAngle > 0.16 && Math.abs(speed) > 5)
+      lessonMistake('luisu', 'Nyt luistaa. Hiljennä, keli on ' + keliNimi() + '.');
+
+    var cp = lessonCurrent();
+    if(!cp) return;
+    var dx = cp.pos.x - moped.position.x, dz = cp.pos.z - moped.position.z;
+    var d = Math.sqrt(dx*dx + dz*dz);
+    // TÄMÄ on opettajan ero kokeeseen: varoitus tulee ENNEN pysähtymiskohtaa, ei jälkeen.
+    if(cp.pysahdy && !lessonRun.varoitettu && d < 38 && d > LESSON_CP_RADIUS){
+      lessonRun.varoitettu = true;
+      lessonNote('Tuossa edessä pysähdytään kokonaan. Aloita jarrutus jo nyt.', 5);
+    }
+    if(d <= LESSON_CP_RADIUS*1.4) lessonRun.wasNear = true;
+    if(d <= LESSON_CP_RADIUS){
+      if(cp.pysahdy){
+        if(kmh < 4) lessonRun.stopOk = true;
+        if(d > LESSON_CP_RADIUS*0.75) return;
+        if(!lessonRun.stopOk) return;
+      }
+      lessonAdvance();
+      return;
+    }
+    if(cp.pysahdy && d > LESSON_CP_RADIUS*2.2 && lessonRun.wasNear && !lessonRun.stopNoted){
+      lessonRun.stopNoted = true;
+      lessonMistake('pysahdys', 'Siinä piti pysähtyä. Käänny takaisin ja tee se uudestaan.');
+      lessonRun.wasNear = false;
+    }
+    // kehu rauhallisesta ajosta: vain kun on oikeasti ajettu hetki ilman huomautusta
+    if(lessonRun.hyvaT > 26 && kmh > 12){
+      lessonRun.hyvaT = 0;
+      lessonPraise(['Hyvä. Juuri noin.', 'Tasaista menoa. Pidä tämä.',
+                    'Noin sitä ajetaan. Katse kauas.'][Math.floor(Math.random()*3)]);
+    }
+  }
+  function lessonAdvance(){
+    lessonRun.stopOk = false;
+    lessonRun.wasNear = false;
+    lessonRun.varoitettu = false;
+    lessonRun.stopNoted = false;
+    var cp = LESSON_ROUTE[lessonRun.idx];
+    if(cp.maali){ finishLesson(true, null); return; }
+    lessonRun.idx++;
+    lessonNote(LESSON_ROUTE[lessonRun.idx].ohje, 6);
+    if(typeof playExamBeep === 'function') playExamBeep();
+  }
+  function lessonFaultCount(v){
+    var n = 0;
+    for(var k in v){ if(Object.prototype.hasOwnProperty.call(v, k)) n += v[k]; }
+    return n;
+  }
+  function finishLesson(valmis, syy){
+    if(!lessonRun) return;
+    var v = lessonRun.virheet;
+    var yht = lessonFaultCount(v);
+    lessonRun = null;
+    showTeacher(false);
+    var rivit = [];
+    if(!valmis){
+      rivit.push('Tunti keskeytyi. ' + (syy || ''));
+    } else {
+      lessonsDone++;
+      if(lessonBest < 0 || yht < lessonBest) lessonBest = yht;
+      rivit.push('Opettaja hyppää tarakalta ja availee kypärän remmiä.');
+    }
+    if(yht === 0 && valmis){
+      rivit.push('"Ei yhtään huomautettavaa. Jos ajat kokeessa noin, se menee läpi."');
+    } else {
+      // pahin laji ensin: se mihin kannattaa keskittya
+      var jarj = [];
+      for(var k in v) if(Object.prototype.hasOwnProperty.call(v, k)) jarj.push({k:k, n:v[k]});
+      jarj.sort(function(a, b){ return b.n - a.n; });
+      var lista = [];
+      for(var i=0; i<jarj.length; i++) lista.push(LESSON_KINDS[jarj[i].k].nimi + ' ' + jarj[i].n + ' krt');
+      rivit.push('Huomautuksia yhteensä ' + yht + ': ' + lista.join(', ') + '.');
+      if(jarj.length) rivit.push('"' + LESSON_KINDS[jarj[0].k].vinkki + '"');
+    }
+    if(valmis){
+      if(lessonsDone === 2)
+        rivit.push('"Kirjoitan sinusta suosituksen. Ajokoemaksu on sinulle jatkossa ' + EXAM_FEE_CHEAP + ' euroa."');
+      else if(lessonsDone === 1)
+        rivit.push('Ajotunteja otettu ' + lessonsDone + '. Kaksi tuntia riittää suositukseen.');
+      else
+        rivit.push('Ajotunteja otettu ' + lessonsDone + '. Paras tunti: ' + lessonBest + ' huomautusta.');
+    }
+    saveGame();
+    if(typeof playCutscene === 'function'){
+      // id on null: ajotunti voidaan ajaa monta kertaa, eika sita saa merkita jo nahdyksi
+      // valikohtaukseksi (cutSeen kasvaisi tallennuksessa joka tunnilla).
+      playCutscene(null, valmis ? 'Ajotunti ohi' : 'Ajotunti keskeytyi', rivit);
+    } else {
+      showToast(!valmis, valmis ? '🎓 Ajotunti ohi' : 'Ajotunti keskeytyi', rivit.join(' '), 8000);
+    }
+  }
+
   function openPauseMenu(){
+    if(typeof fpvReleaseLock === 'function') fpvReleaseLock();   // hiiri takaisin valikkoa varten
     if(!gameStarted || gamePaused) return;
     gamePaused = true;
     // nappaimet irti, jottei hahmo jaa juoksemaan valikon taakse
@@ -21562,7 +22107,7 @@
     function nap(id){ return '<b>' + keyLabel(keyBind[id]) + '</b>'; }
     hintBarEl.innerHTML =
       'Kävele: ' + nap('fwd') + nap('left') + nap('back') + nap('right') + ' / nuolet · ' +
-      'Kamera: <b>hiiri pohjassa</b> · Valikko: <b>ESC</b> · ' +
+      'Katse: <b>hiiri pohjassa</b> (kävellessä kääntää hahmoa) · Valikko: <b>ESC</b> · ' +
       'Nouse/poistu mopolta: ' + nap('toiminto') + ' · Käynnistä: ' + nap('kaynnista') + ' · ' +
       'Jarru: ' + nap('jarru') + ' · Tankkaa: ' + nap('tankkaa') + ' · Keulinta: ' + nap('keula') + ' · ' +
       'Vaihteet: ' + nap('vaihdeYlos') + ' / ' + nap('vaihdeAlas') + ' · ' +
@@ -23289,7 +23834,10 @@
     if(!objCardEl) return;
     // Keikan tai tehtävän aikana yläpalkki näyttää sen tiedot samassa kohdassa, joten
     // kortti väistää siksi aikaa.
-    if(!gameStarted || objHidden || cutsceneActive || !currentStage() || activeMission || activeJob){
+    // Ajokoe ja ajotunti kayttavat samaa ylapalkkia: tarinakortti jai niiden paalle ja
+    // kaksi tekstia meni paallekkain samaan kohtaan ruutua.
+    if(!gameStarted || objHidden || cutsceneActive || !currentStage() || activeMission || activeJob ||
+       examRun || (typeof lessonRun !== 'undefined' && lessonRun)){
       objCardEl.hidden = true;
       return;
     }
