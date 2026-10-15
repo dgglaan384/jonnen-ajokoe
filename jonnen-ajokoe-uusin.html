@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:122-->
-<!--JONNE-NAME:Jonnen ajokoe 122-->
+<!--JONNE-VERSION:123-->
+<!--JONNE-NAME:Jonnen ajokoe 123-->
 <!--JONNE-DATE:2026-10-15-->
-<!--JONNE-NOTES:Kypäränäkymässä A ja D ovat sivuaskeleita - suunnan antaa hiiri|Moottorin kasaukselle oma ohjetaulu: montako osaa, mikä seuraavaksi ja mitkä napit|Kädessä olevan osan paikka näkyy moottorissa läpinäkyvänä haamuna|Osia voi raahata hiirellä työpöydällä, ja pöydältä pudonnut palaa paikalleen|Työpöydässä kumimatto, merkityt paikat, kunnon moottoripukki ja työvalo|Kävelyanimaatio uusiksi oikean askelsyklin vaiheista-->
+<!--JONNE-NOTES:Ruuvitilassa oma vartalo ei enää jää kameran eteen|Ruuvitilassa hiiri kääntää katsetta ilman napin pohjassa pitämistä|Kävelyn sivuttaisheilahdus pienemmäksi - ei enää luisua vasemmalta oikealle|Autotalliin työkaluvaunu, kompressori, rengaspino, tunkki, roskis, kanisteri, harja, julisteet, kattovalo ja öljytahrat-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -2988,6 +2988,127 @@
     var barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.86, 12), new THREE.MeshStandardMaterial({color:0x2f6b5c, roughness:0.85}));
     barrel.position.set(-w/2 + 0.75, 0.43, -d/2 + 1.9); barrel.castShadow = true;
     g.add(barrel);
+
+    // ---- autotallin kalusto ----
+    // Tallissa oli tyopoyta, hylly ja tyhjaa lattiaa. Oikeassa autotallissa on kaikkea
+    // muutakin: tyokaluvaunu, kompressori, rengaspino, tunkki, roskis, kanisteri, harja,
+    // julisteet ja oljytahrat lattiassa. Kaikki on sijoitettu seinien viereen (|x| > 2,4),
+    // jossa seinien tormaysympyrat jo estavat kulun - mikaan uusi esine ei siis kaventa
+    // sita tilaa jossa mopolla ajetaan tai kavellaan.
+    function talliProppi(geo, mat, x, y, z, ry){
+      var m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z);
+      if(ry) m.rotation.y = ry;
+      m.castShadow = true;
+      g.add(m);
+      return m;
+    }
+    var metalli  = new THREE.MeshStandardMaterial({color:0x9aa0a6, roughness:0.5, metalness:0.45});
+    var tummaMet = new THREE.MeshStandardMaterial({color:0x4a5058, roughness:0.6, metalness:0.4});
+    var punainen = new THREE.MeshStandardMaterial({color:0xb8431f, roughness:0.55, metalness:0.2});
+    var kumi     = new THREE.MeshStandardMaterial({color:0x1f1f22, roughness:0.95});
+    var muovi    = new THREE.MeshStandardMaterial({color:0x2f6b5c, roughness:0.8});
+    var puu      = new THREE.MeshStandardMaterial({color:0x8a6a44, roughness:0.9});
+
+    // työkaluvaunu vasemmalle seinustalle
+    talliProppi(new THREE.BoxGeometry(0.52, 0.95, 0.86), punainen, -w/2 + 0.32, 0.475, -1.0);
+    for(var lk=0; lk<4; lk++){
+      talliProppi(new THREE.BoxGeometry(0.03, 0.17, 0.74), tummaMet, -w/2 + 0.59, 0.24 + lk*0.21, -1.0);
+      talliProppi(new THREE.BoxGeometry(0.035, 0.035, 0.26), metalli, -w/2 + 0.61, 0.24 + lk*0.21, -1.0);
+    }
+    talliProppi(new THREE.BoxGeometry(0.56, 0.05, 0.90), tummaMet, -w/2 + 0.32, 0.975, -1.0);
+    // vaunun päällä avainsarja
+    for(var ak=0; ak<3; ak++){
+      talliProppi(new THREE.BoxGeometry(0.045, 0.02, 0.22), metalli, -w/2 + 0.22 + ak*0.11, 1.01, -1.1 + ak*0.06);
+    }
+
+    // kompressori oikealle seinustalle: säiliö kyljellään, moottori päällä
+    var sailio = talliProppi(new THREE.CylinderGeometry(0.17, 0.17, 0.82, 12), muovi, w/2 - 0.36, 0.30, -2.1);
+    sailio.rotation.z = Math.PI/2;
+    sailio.rotation.y = Math.PI/2;
+    talliProppi(new THREE.BoxGeometry(0.26, 0.20, 0.30), tummaMet, w/2 - 0.36, 0.56, -2.1);
+    talliProppi(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 10), metalli, w/2 - 0.36, 0.70, -2.0);
+    [-0.30, 0.30].forEach(function(pz){
+      var pyora = talliProppi(new THREE.TorusGeometry(0.09, 0.035, 6, 12), kumi, w/2 - 0.36, 0.09, -2.1 + pz);
+      pyora.rotation.y = Math.PI/2;
+    });
+    // ilmaletku kiepillä seinällä
+    var letku = talliProppi(new THREE.TorusGeometry(0.22, 0.035, 6, 18), muovi, w/2 - 0.12, 1.55, -0.6);
+    letku.rotation.y = Math.PI/2;
+
+    // rengaspino vasemmalle
+    for(var rp=0; rp<3; rp++){
+      var rengas2 = talliProppi(new THREE.TorusGeometry(0.33, 0.12, 7, 16), kumi, -w/2 + 0.52, 0.12 + rp*0.21, 1.35);
+      rengas2.rotation.x = Math.PI/2;
+      rengas2.rotation.z = rp*0.4;
+    }
+
+    // tunkki lattialla
+    talliProppi(new THREE.BoxGeometry(0.30, 0.16, 0.62), tummaMet, -w/2 + 0.48, 0.08, 0.35);
+    var kahva = talliProppi(new THREE.CylinderGeometry(0.022, 0.022, 0.78, 6), metalli, -w/2 + 0.52, 0.30, 0.78);
+    kahva.rotation.x = 0.55;
+
+    // roskis ja kanisteri oikealle
+    talliProppi(new THREE.CylinderGeometry(0.25, 0.21, 0.66, 10), tummaMet, w/2 - 0.42, 0.33, 1.9);
+    talliProppi(new THREE.BoxGeometry(0.20, 0.34, 0.15), punainen, w/2 - 0.35, 0.17, 0.35);
+    talliProppi(new THREE.CylinderGeometry(0.035, 0.035, 0.10, 6), tummaMet, w/2 - 0.35, 0.38, 0.35);
+
+    // harja nojaamassa seinään
+    var harja = talliProppi(new THREE.CylinderGeometry(0.018, 0.018, 1.25, 6), puu, -w/2 + 0.22, 0.62, -0.1);
+    harja.rotation.z = -0.13;
+    talliProppi(new THREE.BoxGeometry(0.07, 0.09, 0.34), tummaMet, -w/2 + 0.30, 0.06, -0.1);
+
+    // jakkara työpöydän päähän
+    talliProppi(new THREE.CylinderGeometry(0.19, 0.19, 0.055, 12), punainen, w/2 - 0.75, 0.56, -2.95);
+    for(var jk=0; jk<3; jk++){
+      var kulma = jk*Math.PI*2/3;
+      var jalka = talliProppi(new THREE.CylinderGeometry(0.022, 0.022, 0.55, 6), metalli,
+        w/2 - 0.75 + Math.cos(kulma)*0.12, 0.28, -2.95 + Math.sin(kulma)*0.12);
+      jalka.rotation.x = Math.sin(kulma)*0.16;
+      jalka.rotation.z = -Math.cos(kulma)*0.16;
+    }
+
+    // seinähylly oikealle: kolme laatikkoa
+    talliProppi(new THREE.BoxGeometry(0.30, 0.05, 1.20), puu, w/2 - 0.22, 1.15, 0.9);
+    [[-0.38, 0x7a6a4a], [0.0, 0x8f7a52], [0.40, 0x6d5f45]].forEach(function(lz){
+      talliProppi(new THREE.BoxGeometry(0.24, 0.20, 0.30),
+        new THREE.MeshStandardMaterial({color:lz[1], roughness:0.9}), w/2 - 0.22, 1.28, 0.9 + lz[0]);
+    });
+
+    // radio hyllyllä työpöydän yläpuolella
+    talliProppi(new THREE.BoxGeometry(0.34, 0.17, 0.14), tummaMet, 2.05, 1.855, -d/2 + 0.42);
+    [-0.09, 0.09].forEach(function(sx){
+      var kaiutin = talliProppi(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 10), metalli, 2.05 + sx, 1.855, -d/2 + 0.35);
+      kaiutin.rotation.x = Math.PI/2;
+    });
+
+    // julisteet seinille
+    var juliste = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.68),
+      new THREE.MeshStandardMaterial({map: makeSignTexture('MOPOMIITTI -96', '#2f3b2b', '#e2572b'), roughness:0.95}));
+    juliste.position.set(-w/2 + 0.06, 1.85, -0.3);
+    juliste.rotation.y = Math.PI/2;
+    g.add(juliste);
+    var kalenteri = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.72),
+      new THREE.MeshStandardMaterial({map: makeSignTexture('KESÄKUU', '#f2ece0', '#2f3b2b'), roughness:0.95}));
+    kalenteri.position.set(w/2 - 0.06, 1.80, 1.9);
+    kalenteri.rotation.y = -Math.PI/2;
+    g.add(kalenteri);
+
+    // loisteputki kattoon
+    talliProppi(new THREE.BoxGeometry(1.5, 0.07, 0.12),
+      new THREE.MeshStandardMaterial({color:0xfdf6e0, emissive:0xfff0c8, emissiveIntensity:0.9, roughness:0.4}),
+      0, h - 0.18, -1.0);
+    talliProppi(new THREE.BoxGeometry(1.6, 0.06, 0.18), metalli, 0, h - 0.12, -1.0);
+
+    // öljytahrat lattiassa: tummia laikkuja, ei kiiltoa
+    var tahraMat = new THREE.MeshStandardMaterial({color:0x2a2622, roughness:1.0, transparent:true, opacity:0.55});
+    [[-0.5, -0.4, 0.42], [0.8, 0.9, 0.30], [-1.3, 1.5, 0.22], [1.5, -1.6, 0.26]].forEach(function(t){
+      var tahra = new THREE.Mesh(new THREE.CircleGeometry(t[2], 12), tahraMat);
+      tahra.rotation.x = -Math.PI/2;
+      tahra.position.set(t[0], 0.025, t[1]);
+      tahra.scale.z = 0.7;
+      g.add(tahra);
+    });
 
     if(collOut){
       // umpiseinät: muutama ympyrä per seinä. Aukon eteen EI tule mitään, jotta mopolla pääsee sisään.
@@ -8214,9 +8335,11 @@
     if(!playerVisual) return;
     // vartalo nousee keskituessa ja laskee kaksoistuessa: kaksi jaksoa askelparia kohden
     playerVisual.position.y = (Math.cos(wPh*2)*0.026 - 0.012) * wA;
-    // paino siirtyy tukijalan puolelle kerran askelparissa
-    playerVisual.position.x = -Math.cos(wPh)*0.022*wA;
-    playerVisual.rotation.z = Math.cos(wPh)*0.038*wA;     // lantion lasku heilahtavalle puolelle
+    // Paino siirtyy tukijalan puolelle kerran askelparissa. Liike oli 2,2 cm ja nakyi
+    // sivuttaisena luisuna - oikeassa kavelyssa lantio siirtyy, mutta jalat pitavat
+    // vartalon paikallaan. Siirtymasta jaa vain vihje, ja loput tulee kallistuksesta.
+    playerVisual.position.x = -Math.cos(wPh)*0.008*wA;
+    playerVisual.rotation.z = Math.cos(wPh)*0.026*wA;     // lantion lasku heilahtavalle puolelle
     playerVisual.rotation.x = (0.055 + Math.cos(wPh*2)*0.010)*wA;
     playerVisual.rotation.y = 0;
   }
@@ -18909,6 +19032,7 @@
 
     wrenchMode = true;
     wrenchTarget = null; wrenchTurning = null; wrenchLooking = false;
+    wrenchLockOK = (document.pointerLockElement === renderer.domElement);
     if(playerVisual) playerVisual.visible = false;
     if(playerShadowBlob) playerShadowBlob.visible = false;
     boltGroup.visible = true;
@@ -18923,9 +19047,12 @@
         renderer.domElement.requestPointerLock();
       }
     }catch(err){ /* ei haittaa */ }
-    wrenchSay(wrenchPending
+    // Jos hiirilukko ei jostain syystä auennut, katse kääntyy vain nappi pohjassa.
+    // Kerrotaan se heti, ettei pelaaja jää ihmettelemään miksi hiiri ei liikuta kameraa.
+    var lukkoVihje = wrenchLockOK ? '' : ' Napsauta ruutua kerran, niin hiiri kääntää katsetta ilman nappia.';
+    wrenchSay((wrenchPending
       ? 'Aseta osa paikalleen: katso vihreää haamua ja paina E.'
-      : 'Katso pulttia ja kiristä: hiiren rulla tai nuoli ylös / R. Löysää nuoli alas / F.');
+      : 'Katso pulttia ja kiristä: hiiren rulla tai nuoli ylös / R. Löysää nuoli alas / F.') + lukkoVihje);
   }
   function exitWrenchMode(){
     if(!wrenchMode) return;
@@ -18985,6 +19112,7 @@
   });
   window.addEventListener('mousemove', function(e){
     if(!wrenchMode) return;
+    wrenchLockOK = (document.pointerLockElement === renderer.domElement);
     var dx = wrenchLockOK ? (e.movementX || 0) : 0;
     var dy = wrenchLockOK ? (e.movementY || 0) : 0;
     if(!wrenchLockOK){
@@ -20164,7 +20292,9 @@
     }
     // Hiiri vapaaksi heti kun jokin paneeli tarvitsee sitä, ja takaisin lukkoon kun
     // paneeli sulkeutuu ja pelaaja napsauttaa kuvaa.
-    if(fpvPointerLock && !fpvLockWanted()) fpvReleaseLock();
+    // Ruuvitila kayttaa SAMAA hiirilukkoa: jos se vapautettaisiin tassa, pulttien
+    // kiristyksessa katsetta jouduttaisiin kaantamaan nappi pohjassa.
+    if(fpvPointerLock && !fpvLockWanted() && !wrenchMode) fpvReleaseLock();
     updateEngineCarry(dt);   // kannossa oleva moottorin osa seuraa pelaajaa
     engineUpdateGhost(dt);   // haamukuva: mihin kädessä oleva osa menee
     engineRenderPanel();     // työpöydän ohjetaulu
@@ -21373,14 +21503,19 @@
     fpvApplyVisibility();
     if(fpvOn) fpvRequestLock(); else fpvReleaseLock();
     showToast(false, fpvOn ? '🪖 Kypäränäkymä päällä' : 'Kypäränäkymä pois',
-      fpvOn ? 'Katso ympärille hiirellä. Sama näppäin palauttaa normaalin kameran.'
-            : 'Kamera palasi selän taakse.', 2800);
+      fpvOn ? ('Hiiri kääntää katsetta vapaasti' + (fpvPointerLock ? '' : ' - napsauta ruutua kerran') +
+               '. A ja D astuvat sivulle. Sama näppäin palauttaa normaalin kameran.')
+            : 'Kamera palasi selän taakse.', 3400);
   }
   // Omaa hahmoa ei voi nayttaa kypaRan sisalta: paa olisi kameran edessa.
   function fpvApplyVisibility(){
     if(fpvHelmetEl) fpvHelmetEl.hidden = !fpvOn;
     fpvSetFov(fpvOn);
     if(!fpvOn && typeof fpvReleaseLock === 'function') fpvReleaseLock();
+    // Ruuvitila piilottaa hahmon itse ja asettaa kameran silmien kohdalle. Jos tama
+    // funktio palauttaisi hahmon nakyviin, pelaaja katsoisi oman rintakehansa sisalta -
+    // juuri niin kavi kun kyparanakyma oli paalla ruuvitilaan mentaessa.
+    if(typeof wrenchMode !== 'undefined' && wrenchMode) return;
     if(!fpvOn && typeof playerVisual !== 'undefined' && playerVisual) playerVisual.visible = true;
     if(typeof riderEntry !== 'undefined' && riderEntry && riderEntry.group){
       // ajaessa kuski piiloon, muuten normaali logiikka hoitaa nakyvyyden
@@ -21441,8 +21576,11 @@
   function fpvWalkCamera(){
     var maara = (typeof playerWalkAmount === 'number') ? playerWalkAmount : 0;
     var vaihe = (typeof playerWalkTime === 'number') ? playerWalkTime : 0;
-    var bob  = Math.abs(Math.cos(vaihe))*0.040*maara - 0.019*maara;  // kaksi laskua askelparia kohden
-    var sway = Math.sin(vaihe)*0.028*maara;                           // painon siirto sivulta toiselle
+    var bob  = Math.abs(Math.cos(vaihe))*0.030*maara - 0.014*maara;  // kaksi laskua askelparia kohden
+    // Sivuttainen heilahdus oli 2,8 cm ja ensimmaisessa persoonassa se tuntui
+    // merisairaudelta: kuva heilui vasemmalta oikealle joka askeleella. Jaljella on
+    // vain sen verran etta liike tuntuu elavalta.
+    var sway = Math.sin(vaihe)*0.009*maara;
     var yaw = playerHeading + camYawOffset;
     var py = (typeof inStore !== 'undefined' && inStore) ? 0 : player.position.y;
     fpvEye.set(player.position.x, py + FPV_WALK_EYE + bob, player.position.z);
@@ -21450,7 +21588,7 @@
     // rintakehan sisalta
     fpvEye.x += Math.sin(yaw)*0.10 + Math.cos(yaw)*sway;
     fpvEye.z += Math.cos(yaw)*0.10 - Math.sin(yaw)*sway;
-    fpvLook(fpvEye, yaw, camPitchOffset, Math.sin(vaihe)*0.013*maara);
+    fpvLook(fpvEye, yaw, camPitchOffset, Math.sin(vaihe)*0.005*maara);
     fpvSetFov(true);   // kavellessa ei vauhtilisaa
   }
 
