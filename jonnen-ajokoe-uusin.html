@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:120-->
-<!--JONNE-NAME:Jonnen ajokoe 120-->
+<!--JONNE-VERSION:121-->
+<!--JONNE-NAME:Jonnen ajokoe 121-->
 <!--JONNE-DATE:2026-10-15-->
-<!--JONNE-NOTES:Kypärä valmiina autotallin työpöydällä - sitä ei tarvitse enää ostaa kaupasta|Kypäränäkymä (V) uusiksi: hiirilukko, askelheilahdus, kallistus kaarteessa ja vauhdin mukaan aukeava kuvakulma|Hiiri kääntää kävellessä hahmoa eikä pelkkää kameraa|Kamera ei enää mene seinien läpi: tarkistus tehdään kameran todelliselle paikalle ja autotallissa oma laatikkorajaus-->
+<!--JONNE-NOTES:Pelin versio ja julkaisupäivä näkyvät aloitusruudulla|Muutoslista aloitusruudulle: mitä uutta tässä versiossa|Uusi versio saa UUSI-lapun ja ilmoituksen kun peli käynnistyy-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -630,6 +630,29 @@
   .startScreen .startEyebrow{font:700 13px/1.4 'Karla',sans-serif;letter-spacing:.22em;
     text-transform:uppercase;opacity:.8;margin-bottom:-12px;}
   .startScreen .startTagline{font:600 14px/1.5 'Karla',sans-serif;opacity:.8;max-width:420px;margin:0;}
+  /* versiomerkki ja muutoslista aloitusruudulla: pelaajan pitää nähdä mikä versio on
+     käynnissä ja mitä juuri asennetussa päivityksessä muuttui */
+  .startVersion{
+    font:700 11px/1 'Karla',sans-serif;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--cream);opacity:.72;border:1px solid var(--panel-line);border-radius:999px;
+    padding:6px 13px;margin-top:-6px;
+  }
+  .startNotes{
+    width:min(460px, 88vw);text-align:left;border:1px solid var(--panel-line);border-radius:13px;
+    background:rgba(10,14,10,0.42);padding:13px 16px 14px;
+  }
+  .startNotes[hidden]{display:none;}
+  .startNotes h4{
+    font:700 11px/1 'Karla',sans-serif;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 9px;
+  }
+  .startNotes ul{margin:0;padding:0 0 0 18px;max-height:132px;overflow-y:auto;}
+  .startNotes li{font:500 12.5px/1.45 'Karla',sans-serif;opacity:.88;margin:0 0 5px;}
+  .startNotes .uusiLappu{
+    display:inline-block;font:700 10px/1 'Karla',sans-serif;letter-spacing:.1em;
+    text-transform:uppercase;background:var(--accent);color:var(--cream);
+    border-radius:999px;padding:4px 9px;margin-left:8px;vertical-align:1px;
+  }
   .startMenu{display:flex;flex-direction:column;gap:10px;width:min(300px,80vw);margin-top:6px;}
   .startMenu button{
     background:rgba(251,246,233,0.1);border:1px solid var(--panel-line);border-radius:10px;
@@ -1043,6 +1066,11 @@
     <div class="startEyebrow">My Summer Jonne</div>
     <h1 class="startTitle">Jonnen ajokoe</h1>
     <p class="startTagline">Kesäloma, mopo ja koko kylä tutkittavana. Rassaa, tienaa ja aja ajokokeeseen asti.</p>
+    <div class="startVersion" id="startVersion">Versio –</div>
+    <div class="startNotes" id="startNotes" hidden>
+      <h4 id="startNotesHead">Mitä uutta</h4>
+      <ul id="startNotesList"></ul>
+    </div>
     <div class="startMenu" id="startMenu">
       <button class="primary" id="startPlayBtn" type="button">Pelaa</button>
       <button id="startLookBtn" type="button">Oma hahmo</button>
@@ -17051,6 +17079,7 @@
   var inspectionSummer = 0;     // minka kesan katsastus on voimassa (0 = ei katsastettu)
   var lessonsDone = 0;          // suoritettuja ajotunteja
   var lessonBest = -1;          // paras ajotunti: vahiten huomautuksia (-1 = ei ajettu)
+  var lastSeenVersion = '';     // mika peliversio oli viimeksi kaynnissa (muutoslistan UUSI-lappu)
 
   // ==========================================================================
   // ---- NAPPAINKARTTA ----
@@ -17224,6 +17253,7 @@
         inspectionSummer: inspectionSummer,
         lessonsDone: lessonsDone,
         lessonBest: lessonBest,
+        lastSeenVersion: lastSeenVersion,
         mouseSens: mouseSens,
         dartsThrowCount: dartsThrowCount,
         fishCaught: fishCaught,
@@ -17441,6 +17471,7 @@
       if(typeof save.inspectionSummer === 'number') inspectionSummer = save.inspectionSummer;
       if(typeof save.lessonsDone === 'number') lessonsDone = save.lessonsDone;
       if(typeof save.lessonBest === 'number') lessonBest = save.lessonBest;
+      if(typeof save.lastSeenVersion === 'string') lastSeenVersion = save.lastSeenVersion;
       if(typeof save.mouseSens === 'number') mouseSens = Math.max(0.2, Math.min(3, save.mouseSens));
       if(typeof save.dartsThrowCount === 'number') dartsThrowCount = save.dartsThrowCount;
       if(typeof save.fishCaught === 'number') fishCaught = save.fishCaught;
@@ -21893,8 +21924,95 @@
     }
   }
 
+  // ==========================================================================
+  // ---- PELIN VERSIO JA MUUTOSLISTA ----
+  // Launcher kirjoittaa pelitiedoston alkuun tunnistekommentit (JONNE-VERSION, -NAME,
+  // -DATE, -NOTES), ja launcherin oma lista nayttaa ne. Itse pelissa ei lukenut missaan
+  // mika versio on kaynnissa eika mita paivityksessa muuttui - varsinkin kun pelin avaa
+  // suoraan tiedostosta, launcherin lista jaa kokonaan nakematta.
+  //
+  // Nyt peli lukee samat kommentit omasta dokumentistaan ja nayttaa ne aloitusruudulla.
+  // Kun versio vaihtuu edellisesta kaynnistyksesta, muutoslista avautuu itsestaan ja saa
+  // UUSI-lapun.
+  // ==========================================================================
+  var VERSION_TAGS = (function(){
+    var out = {version:'', name:'', date:'', notes:[]};
+    function lue(node){
+      if(!node || !node.childNodes) return;
+      for(var i=0; i<node.childNodes.length; i++){
+        var n = node.childNodes[i];
+        if(n.nodeType !== 8) continue;    // 8 = kommenttisolmu
+        var m = String(n.nodeValue || '').match(/^\s*JONNE-(VERSION|NAME|DATE|NOTES)\s*:([\s\S]*)$/);
+        if(!m) continue;
+        var arvo = m[2].trim();
+        if(m[1] === 'VERSION') out.version = arvo;
+        else if(m[1] === 'NAME') out.name = arvo;
+        else if(m[1] === 'DATE') out.date = arvo;
+        else {
+          out.notes = arvo.split('|').map(function(t){ return t.trim(); })
+                          .filter(function(t){ return t.length > 0; });
+        }
+      }
+    }
+    // kommentit ovat <head>:n sisalla heti charset-rivin jalkeen, mutta jasennin voi
+    // siirtaa ne myos dokumentin tasolle - katsotaan molemmat
+    try{ lue(document); lue(document.documentElement); lue(document.head); }catch(e){}
+    return out;
+  })();
+  // Paivamaara ihmisluettavaksi: 2026-10-15 -> 15.10.2026
+  function versionDateText(iso){
+    var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return iso || '';
+    return (+m[3]) + '.' + (+m[2]) + '.' + m[1];
+  }
+  function versionLabel(){
+    if(!VERSION_TAGS.version) return 'Kehitysversio';
+    var rivi = 'Versio ' + VERSION_TAGS.version;
+    if(VERSION_TAGS.date) rivi += ' · ' + versionDateText(VERSION_TAGS.date);
+    return rivi;
+  }
+  var startVersionEl   = document.getElementById('startVersion');
+  var startNotesEl     = document.getElementById('startNotes');
+  var startNotesHeadEl = document.getElementById('startNotesHead');
+  var startNotesListEl = document.getElementById('startNotesList');
+  function renderVersionInfo(){
+    if(startVersionEl) startVersionEl.textContent = versionLabel();
+    if(!startNotesEl || !startNotesListEl) return;
+    if(!VERSION_TAGS.notes.length){
+      startNotesEl.hidden = true;
+      return;
+    }
+    startNotesEl.hidden = false;
+    startNotesListEl.innerHTML = '';
+    for(var i=0; i<VERSION_TAGS.notes.length; i++){
+      var li = document.createElement('li');
+      li.textContent = VERSION_TAGS.notes[i];
+      startNotesListEl.appendChild(li);
+    }
+    var uusi = (VERSION_TAGS.version && lastSeenVersion !== VERSION_TAGS.version);
+    if(startNotesHeadEl){
+      startNotesHeadEl.innerHTML = 'Mitä uutta versiossa ' + (VERSION_TAGS.version || '–') +
+        (uusi ? '<span class="uusiLappu">Uusi</span>' : '');
+    }
+  }
+  // Ensimmainen kaynnistys uudella versiolla: ilmoitus myos pelin puolelle, jottei
+  // muutoslista jaa huomaamatta jos pelaaja hyppaa suoraan Pelaa-napista eteenpain.
+  function versionAnnounce(){
+    if(!VERSION_TAGS.version) return;
+    if(lastSeenVersion === VERSION_TAGS.version) return;
+    var eka = !lastSeenVersion;
+    lastSeenVersion = VERSION_TAGS.version;
+    saveGame();
+    if(eka) return;      // ensimmainen kerta koko tallennuksessa: ei kehuta "paivityksesta"
+    var teksti = VERSION_TAGS.notes.length
+      ? VERSION_TAGS.notes.slice(0, 2).join(' · ')
+      : 'Katso muutoslista aloitusruudulta.';
+    showToast(false, '✨ Päivitetty versioon ' + VERSION_TAGS.version, teksti, 7000);
+  }
+
   function openPauseMenu(){
     if(typeof fpvReleaseLock === 'function') fpvReleaseLock();   // hiiri takaisin valikkoa varten
+    if(typeof renderVersionInfo === 'function') renderVersionInfo();
     if(!gameStarted || gamePaused) return;
     gamePaused = true;
     // nappaimet irti, jottei hahmo jaa juoksemaan valikon taakse
@@ -22124,6 +22242,7 @@
     if(!usedOffer && !usedOwned) rollUsedOffer();
     gameStarted = true;
     startScreenEl.hidden = true;
+    versionAnnounce();   // "päivitetty versioon X" kerran uutta versiota kohden
     if(hudEl) hudEl.style.visibility = '';
     snapCameraToPlayer(); // ensimmäinen kuva suoraan pelaajan taakse, ei lentoa aloitusruudun kamerasta
     ensureAudio(); // Pelaa-napin painallus on käyttäjän ele, joten ääni saa käynnistyä tässä
@@ -22578,6 +22697,7 @@
   netAutoStart();   // launcherista tullut ryhmän luonti tai liittyminen käyntiin heti
   endWorldRandom(); // maailma on rakennettu - peliaikainen satunnaisuus takaisin aidoksi
   loadGame();
+  renderVersionInfo();   // versiomerkki ja muutoslista aloitusruudulle
   updateHintBar();   // ohjerivi kertoo ladatut nappainsidonnat, ei oletuksia
   sensRefresh();     // herkkyyden liukusäädin ja lukema ladattuun arvoon
   // ilman tallennusta hylly täytetään alkuperäisillä osilla; tallennuksesta ladattu hylly jää voimaan
