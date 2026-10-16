@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:123-->
-<!--JONNE-NAME:Jonnen ajokoe 123-->
-<!--JONNE-DATE:2026-10-15-->
-<!--JONNE-NOTES:Ruuvitilassa oma vartalo ei enää jää kameran eteen|Ruuvitilassa hiiri kääntää katsetta ilman napin pohjassa pitämistä|Kävelyn sivuttaisheilahdus pienemmäksi - ei enää luisua vasemmalta oikealle|Autotalliin työkaluvaunu, kompressori, rengaspino, tunkki, roskis, kanisteri, harja, julisteet, kattovalo ja öljytahrat-->
+<!--JONNE-VERSION:124-->
+<!--JONNE-NAME:Jonnen ajokoe 124-->
+<!--JONNE-DATE:2026-10-16-->
+<!--JONNE-NOTES:KORJAUS: tallennuksen lataus katkesi joka käynnistyksellä - maali, tarrat, kolhut ja ostetut varusteet eivät palautuneet|Ladatun tallennuksen ulkoasu palautetaan vasta kun koko maailma on rakennettu|Peilikoodi sietää nyt tilanteen jossa peilejä ei ole vielä rakennettu-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -17621,6 +17621,7 @@
   var lessonsDone = 0;          // suoritettuja ajotunteja
   var lessonBest = -1;          // paras ajotunti: vahiten huomautuksia (-1 = ei ajettu)
   var lastSeenVersion = '';     // mika peliversio oli viimeksi kaynnissa (muutoslistan UUSI-lappu)
+  var loadedSave = null;        // ladattu tallennus odottamassa ulkoasun palautusta (ks. applyLoadedVisuals)
 
   // ==========================================================================
   // ---- NAPPAINKARTTA ----
@@ -18026,6 +18027,29 @@
       if(typeof save.hunger === 'number') hunger = Math.max(0, Math.min(100, save.hunger));
       if(typeof save.arcadePlayCount === 'number') arcadePlayCount = save.arcadePlayCount;
 
+      // ladatuista raaka-arvoista riippuvat NAKYVAT asiat tehdaan vasta kun koko tiedosto
+      // on ajettu (ks. applyLoadedVisuals). Syy: loadGame() ajetaan keskella tiedostoa, ja
+      // esimerkiksi peilit ja vauriomalli maaritellaan vasta sen jalkeen - niihin koskeva
+      // kutsu heitti poikkeuksen, jonka catch nielaisi, jolloin KAIKKI taman jalkeinen
+      // lataus jai tekematta: maalin vari, tarrat, kolhut ja ostetut varusteet.
+      updateMoneyDisplay();
+      loadedSave = save;
+    }catch(e){
+      // Jatketaan silla mika ehti latautua, mutta EI aanettomasti: tama catch piilotti
+      // pitkaan virheen joka keskeytti latauksen puolivalissa, jolloin kaikki sen jalkeen
+      // tuleva (mm. nahdyt valikohtaukset) jai lataamatta joka kaynnistyksella.
+      try{ console.warn('Tallennuksen lataus keskeytyi kesken:', e); }catch(e2){}
+    }
+  }
+
+  // Ladatun tallennuksen visuaalinen osa. Tama ajetaan vasta tiedoston lopussa, kun maailma,
+  // peilit, vauriomalli ja varusteiden meshit ovat olemassa. Nain lataus ei voi enaa katketa
+  // siihen etta jokin maailman osa ei ole viela rakennettu.
+  function applyLoadedVisuals(){
+    var save = loadedSave;
+    if(!save) return;
+    loadedSave = null;
+    try{
       // ladatuista raaka-arvoista riippuvat näkyvät asiat päivitetään samaan tapaan kuin resetGame()issa,
       // mutta nollaamisen sijaan ladattuihin arvoihin
       updateMoneyDisplay();
@@ -18067,12 +18091,10 @@
         if(it.id === 'onnenkolikko') onnenkolikkoMesh.visible = it.owned;
       });
     }catch(e){
-      // Jatketaan silla mika ehti latautua, mutta EI aanettomasti: tama catch piilotti
-      // pitkaan virheen joka keskeytti latauksen puolivalissa, jolloin kaikki sen jalkeen
-      // tuleva (mm. nahdyt valikohtaukset) jai lataamatta joka kaynnistyksella.
-      try{ console.warn('Tallennuksen lataus keskeytyi kesken:', e); }catch(e2){}
+      try{ console.warn('Ladatun tallennuksen ulkoasun palautus epaonnistui:', e); }catch(e2){}
     }
   }
+
   window.addEventListener('beforeunload', saveGame);
 
   // ---- kaatumisen jälkeinen herääminen kotona ----
@@ -24274,12 +24296,15 @@
     return [0.21, 1.02, 0.56];   // proseduraalisen mopon tanko
   }
   function placeMirrors(){
+    // Peilit rakennetaan vasta myohemmin tiedostossa, joten tata voidaan kutsua ennen sita.
+    if(!mirrorArms || !mirrorArms.length) return;
     var sp = mirrorSpotFor(equippedMopedId);
     for(var i=0; i<mirrorArms.length; i++){
       mirrorArms[i].arm.position.set(mirrorArms[i].sgn*sp[0], sp[1], sp[2]);
     }
   }
   function updateMirrorDamage(){
+    if(!mirrorArms || !mirrorArms.length) return;
     var lvl = damageLevel();
     for(var i=0; i<mirrorArms.length; i++){
       var m = mirrorArms[i];
@@ -24989,6 +25014,7 @@
 
   applyDetailToScene();   // pintarakenne kaikkiin materiaaleihin kerran, kun maailma on valmis
 
+  applyLoadedVisuals();   // tallennuksen maali, tarrat, kolhut ja varusteet nakyviin - maailma on nyt valmis
   applyQuality(qualityLevel, false); // tallennettu grafiikka-asetus voimaan heti käynnistyksessä
   openStartScreen();
   animate();
