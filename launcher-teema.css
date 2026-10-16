@@ -17,30 +17,45 @@
      "taustaUrl" JSONissa; launcher lataa sen itse ja antaa sen muuttujana
      --teema-tausta, jota .hero kayttaa valmiiksi.
    - Fontin saa Google Fontsista @import-rivilla (vain fonts.googleapis.com):
-     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+     @import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
    ========================================================================== */
 
-/* --- pieni hehku terminaalitekstiin --- */
+/* --- otsikkoon pehmea valo, ei 90-luvun kovaa pikselivarjoa --- */
 .brandTitle{
-  text-shadow:3px 3px 0 var(--accent-dim), 0 0 18px rgba(255,90,31,0.25);
+  text-shadow:0 1px 0 rgba(255,255,255,0.25), 0 2px 7px rgba(0,0,0,0.6);
 }
 
-/* --- versiokortin valinta hohtaa hieman --- */
+/* --- valittu versiokortti saa oranssin hehkun reunalleen --- */
 .vcard.sel{
   box-shadow:
-    inset 2px 2px 0 rgba(0,0,0,0.6),
-    inset -2px -2px 0 rgba(255,255,255,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 2px 8px rgba(0,0,0,0.45),
     0 0 0 1px var(--accent),
-    0 0 16px -2px var(--accent);
+    0 0 20px -4px var(--accent);
 }
 
-/* --- PELAA-nappi saa hyvin hitaan sykkeen --- */
+/* --- PELAA-nappi saa hyvin hitaan sykkeen ---
+   Varjot ovat samat kuin style.css:ssa, jotta syke vain lisaa hehkun eika
+   nollaa napin lasipintaa. */
 @keyframes jonnePulse{
-  0%,100%{ box-shadow:0 6px 0 var(--accent-dim), inset 2px 2px 0 rgba(255,255,255,0.32), inset -2px -2px 0 rgba(0,0,0,0.42); }
-  50%    { box-shadow:0 6px 0 var(--accent-dim), inset 2px 2px 0 rgba(255,255,255,0.32), inset -2px -2px 0 rgba(0,0,0,0.42), 0 0 22px -4px var(--accent); }
+  0%,100%{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.55),
+      inset 0 -3px 8px rgba(0,0,0,0.26),
+      0 3px 0 var(--accent-dim),
+      0 6px 14px rgba(0,0,0,0.42);
+  }
+  50%{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.55),
+      inset 0 -3px 8px rgba(0,0,0,0.26),
+      0 3px 0 var(--accent-dim),
+      0 6px 14px rgba(0,0,0,0.42),
+      0 0 26px -4px var(--accent);
+  }
 }
 .playBtn:not(:disabled):not(.ghost):not(.small){
-  animation:jonnePulse 2.6s ease-in-out infinite;
+  animation:jonnePulse 2.8s ease-in-out infinite;
 }
 @media (prefers-reduced-motion:reduce){
   .playBtn:not(:disabled):not(.ghost):not(.small){ animation:none; }
@@ -57,12 +72,12 @@
    Varita maisema toiseen vuodenaikaan:
    .heroArt{ filter:hue-rotate(190deg) saturate(1.2); }
 
-   Pyorista kaikki kulmat takaisin nykyaikaan:
-   :root{ --radius:10px; }
+   Teravat kulmat takaisin 90-luvulle:
+   :root{ --radius:0px; --radius-lg:0px; }
 
-   Ota kuvaputkiefekti kokonaan pois:
+   Ota ylareunan lasikiilto kokonaan pois:
    .scanlines{ display:none; }
 
-   Tee napeista litteat ilman viisteita:
-   :root{ --bevel:0px; }
+   Tee napeista litteat ilman kiiltoa:
+   .playBtn::before, .vcard::before, .gloss::before{ display:none; }
    ========================================================================== */

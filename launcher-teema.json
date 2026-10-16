@@ -1,33 +1,34 @@
 {
-  "nimi": "Kesä -96",
+  "nimi": "Kesä 2006",
 
   "_ohje": "Tämä tiedosto määrää miltä launcher näyttää. Vie se GitHubiin nimellä launcher-teema.json, niin jokaisen launcher näyttää tältä seuraavalla käynnistyksellä. Alla olevat rivit ovat esimerkkejä - muuta värejä ja tekstejä vapaasti. Kaikki kentät ovat valinnaisia: tyhjä { } tarkoittaa launcherin omaa ulkoasua.",
 
   "vars": {
-    "--accent": "#ff5a1f",
-    "--accent-dim": "#9e3310",
+    "--accent": "#ff6a26",
+    "--accent-dim": "#a8370f",
     "--accent-text": "#ffffff",
-    "--accent2": "#34d6c0",
-    "--accent3": "#f5c518",
-    "--ink": "#14161a",
-    "--ink2": "#1d2026",
-    "--panel": "#272b33",
-    "--panel-hi": "#333842",
-    "--cream": "#e9e5d6",
-    "--scan-opacity": "0.16",
-    "--scan-step": "3px",
-    "--vignette": "0.55",
-    "--radius": "0px",
-    "--bevel": "2px"
+    "--accent2": "#4fc3f7",
+    "--accent3": "#ffd34d",
+    "--ink": "#0f1a26",
+    "--ink2": "#17263a",
+    "--panel": "#23374f",
+    "--panel-hi": "#2e4765",
+    "--cream": "#eef4fb",
+    "--scan-opacity": "0.10",
+    "--scan-step": "150px",
+    "--vignette": "0.42",
+    "--radius": "7px",
+    "--radius-lg": "11px",
+    "--bevel": "1px"
   },
 
   "tekstit": {
     "brandSmall": "MY SUMMER JONNE",
     "tagline": "KESÄ -96",
-    "notesHead": "MITÄ TÄSSÄ VERSIOSSA ON UUTTA",
+    "notesHead": "Mitä tässä versiossa on uutta",
     "playBtn": "YKSINPELI",
     "multiBtn": "MONINPELI",
-    "bootLines": "JONNE BIOS v1.4  (C) 1996||Muisti .................. 640K OK|Mopo .................... OK|Bensa ................... OK|Kypara .................. TARKISTA|Ajokortti ............... EI LOYDY||Ladataan launcheria..."
+    "bootLines": "Jonnen ajokoe||Alustetaan käyttöliittymää…|Haetaan versiot…        valmis|Luetaan asetukset…      valmis|Tarkistetaan mopo…      valmis|Kypärä…                 tarkista||Ladataan launcheria…"
   },
 
   "cssUrl": "https://raw.githubusercontent.com/dgglaan384/jonnen-ajokoe/main/launcher-teema.css"
