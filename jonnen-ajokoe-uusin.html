@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:127-->
-<!--JONNE-NAME:Jonnen ajokoe 127-->
+<!--JONNE-VERSION:128-->
+<!--JONNE-NAME:Jonnen ajokoe 128-->
 <!--JONNE-DATE:2026-10-17-->
-<!--JONNE-NOTES:Neljä uutta 3D-mallia: tupakka, tupakka-aski, jerrycan ja Megaforce-tölkki|Tupakka-aski ja Megaforce ostettavissa kyläkaupasta, näkyvät hyllyllä ja lattiapyramidissa|Tupakan ja Megaforcen voi ottaa käteen repusta (puhelimen Reppu-sovellus)|Malli tulee oikeaan käteen ja hahmo nostaa sen suulleen - tupakasta nousee savu, tölkistä otetaan huikka|Y heittää kädessä olevan pois, ruudulla näkyy myös nappi|Tupakka rauhoittaa kädet: pultinkiristyksen osumaikkuna levenee, mutta kunto laskee ja nälkä kasvaa|Megaforce nopeuttaa kävelyä ja hidastaa nälkää, mutta kädet tärisevät ja lopuksi tulee krapula|Ostettu bensakanisteri näkyy nyt oikeana mallina mopon kyljessä-->
+<!--JONNE-NOTES:Hatsi tupakasta ja horppy Megaforcesta otetaan nyt HIIREN VASEMMALLA - ei enää itsestään|Tupakka ja tölkki pysyvät oikeasti kädessä: paikka mitattiin pelistä, ei arvattu|Pää kallistuu tavaraa kohti nostettaessa, tölkki kallistuu loivasti suuta kohti|Tupakka ja Megaforce näkyvät nyt myös kypäränäkymässä omana kätemallinaan|Savu nousee kypäränäkymässä kameran edestä eikä leuan alta|Tupakan vedolle oma ääni-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -11746,8 +11746,9 @@
          ((savukkeita > 0 || askeja > 0) ? '' : ' disabled') + '>🚬 Sytytä tupakka</button>';
     h += '<button class="photoBtn" id="reppuMegis" type="button"' +
          (tolkkeja > 0 ? '' : ' disabled') + '>🥫 Avaa Megaforce</button>';
-    h += '<div class="photoNote" style="margin-top:5px">Tupakka rauhoittaa kädet pultinkiristykseen. ' +
-         'Megaforce nopeuttaa kävelyä mutta tärisyttää käsiä. Kumpaakaan ei voi käyttää mopon selässä.</div>';
+    h += '<div class="photoNote" style="margin-top:5px">Kun tavara on kädessä, <b>hiiren vasen</b> ottaa ' +
+         'hatsin tai horpyn. Tupakka rauhoittaa kädet pultinkiristykseen; Megaforce nopeuttaa kävelyä ' +
+         'mutta tärisyttää käsiä. Kumpaakaan ei voi käyttää mopon selässä.</div>';
     return h;
   }
   function reppuSidoNapit(){
@@ -17685,20 +17686,32 @@
   // Kiinnityskohta on oikea kyynärvarsi, jolloin tavara seuraa käden heilahdusta
   // kävellessä ilman erillistä seurantaa. Jos hahmomalli ei latautunut eikä
   // playerLimbsia ole, kiinnitetään koko hahmoryhmään kiinteään kohtaan.
-  // Tavaraa EI ripusteta kyynarvarren luuhun. Hahmo on nivelpainotettu
-  // (skinning): luuryhmat ovat pelkkia kiertoajureita, eivatka ne seiso siella
-  // missa nakyva kasi on - luuhun kiinnitetty tolkki paatyi lantion sisaan.
-  // Siksi tavara on hahmoryhman lapsi ja sen paikka lasketaan itse: kadessa
-  // lepaava kohta ja suun kohta, ja niiden valilla liu'utaan samalla
-  // pehmennyksella jolla kattakin nousee.
-  var KASI_LEPO = new THREE.Vector3(0.215, 0.86, 0.075);   // nyrkki vartalon sivulla
-  var KASI_SUU  = new THREE.Vector3(0.050, 1.560, 0.120);  // huulten kohdalla
+  // ==========================================================================
+  // ---- MISSA KASI ON? ----
+  // Tata etsittiin kolmella tavalla ennen kuin se osui kohdalleen:
+  //
+  //   1. Tavara ripustettiin kyynarvarren luuhun. Se paatyi lantion sisaan.
+  //   2. Paikka laskettiin luiden kiertymista eteenpain (FK). Sekaan meni, koska
+  //      TAMAN hahmon luiden maailmapaikat eivat ole siella missa nakyva iho on:
+  //      merkkipallo olkaniveleen piirrettyna osui olkapaahan, mutta kyynarpaan
+  //      pallo nakyi keskella rintakehaa. Skinning-sidonta siirtaa ihon muualle.
+  //   3. Mitattiin. Peliin piirrettiin ruudukko merkkipalloja hahmon omassa
+  //      avaruudessa ja katsottiin kuvasta mika niista osuu nakyvaan kateen.
+  //
+  // Alla olevat kaksi pistetta ovat sen mittauksen tulos: nyrkki lepoasennossa
+  // ja nyrkki silloin kun kasi on nostettu alla olevaan asentoon. Tavara
+  // liu'utetaan niiden valilla, jolloin se pysyy kadessa koko noston ajan.
+  // ==========================================================================
+  var KASI_LEPO  = new THREE.Vector3(0.215, 0.860, 0.075);  // nyrkki vartalon sivulla
+  // Mitattu nyrkin paikka on (0,29 / 1,24 / 0,16). Tavaraa nostetaan siita
+  // viela vahan ylos ja sisaanpain, koska tolkkia pidetaan pohjasta kiinni -
+  // sen runko jaa nyrkin YLAPUOLELLE, suuta kohti.
+  var KASI_NOSTO = new THREE.Vector3(0.268, 1.308, 0.158);
+  // nostoasento: nama kolme kiertoa VIEVAT kaden yllä olevaan pisteeseen
+  var NOSTO_OLKA_X = -0.45, NOSTO_OLKA_Z = -0.45, NOSTO_KYYNAR_X = 1.60;
+
   function kadenKiinnitys(){
     return playerVisual || player;
-  }
-  function kadenPaikka(ryhma, nosto){
-    var p = nosto || 0;
-    ryhma.position.lerpVectors(KASI_LEPO, KASI_SUU, p);
   }
   function luoKateen(laji){
     var ryhma = new THREE.Group();
@@ -17706,7 +17719,7 @@
       var t = propMalli('tupakka');
       if(t){
         t.scale.setScalar(0.085);               // n. 8,5 cm pitkä savuke
-        t.rotation.set(0, 0, Math.PI/2);        // malli on pitkittäin, käännetään sormien suuntaiseksi
+        // perusasento asetetaan joka ruudulla paivitaKasiKasissa
         ryhma.add(t);
       } else {
         // varamalli jos GLB ei latautunut
@@ -17719,7 +17732,9 @@
       var m = makeMegisTolkki();
       ryhma.add(m);
     }
-    kadenPaikka(ryhma);
+    // Paikka paivitetaan joka ruudulla kasivarren asennosta (ks. paivitaKasiKasi).
+    // Tassa riittaa lepoasento, jottei tavara valahda origossa ensimmaisella ruudulla.
+    ryhma.position.copy(KASI_LEPO);
     kadenKiinnitys().add(ryhma);
     return ryhma;
   }
@@ -17734,7 +17749,10 @@
     savuAlusta();
     if(!kadessa || !kadessa.malli) return;
     var p = new THREE.Vector3();
-    kadessa.malli.getWorldPosition(p);
+    // Kyparanakymassa oikea malli on piilotettu ja se roikkuu vartalon vieressa,
+    // joten savu nousisi leuan alta. Otetaan silloin katemallin paikka.
+    if(kadessaFpv && kadessaFpv.visible) kadessaFpv.getWorldPosition(p);
+    else kadessa.malli.getWorldPosition(p);
     for(var i = 0; i < maara; i++){
       var pallo = new THREE.Mesh(
         new THREE.SphereGeometry(0.018 + Math.random()*0.012, 5, 4),
@@ -17802,12 +17820,14 @@
     savukkeita--;
     tupakoituYht++;
     kadessa = {laji:'tupakka', malli:luoKateen('tupakka'), t:0, vaihe:'lepo',
-               vaiheT:0, jaljella:TUPAKKA_KESTO, kesto:TUPAKKA_KESTO, vetoja:0};
+               vaiheT:0, jaljella:TUPAKKA_KESTO, kesto:TUPAKKA_KESTO, vetoja:0, pyydetty:false};
+    fpvKateenLuo('tupakka');
+    paivitaKasiNakyvyys();
     savuAlusta();
     health = Math.max(5, health - 4);          // yksi tupakka vie kuntoa
     showToast(false, '🚬 Sytytit tupakan',
-      'Kädet rauhoittuvat, mutta kunto laskee ja nälkä kasvaa nopeammin. Heitä pois: ' +
-      keyLabel(keyBind.heitaPois) + '. Askissa ' + savukkeita + ' jäljellä.', 5200);
+      'Ota hatsi hiiren vasemmalla. Kädet rauhoittuvat, mutta kunto laskee ja nälkä kasvaa. Heitä pois: ' +
+      keyLabel(keyBind.heitaPois) + '. Askissa ' + savukkeita + ' jäljellä.', 5600);
     saveGame();
   }
   function juoMegis(){
@@ -17821,9 +17841,12 @@
     if(it.count <= 0) it.owned = false;
     megiksiaYht++;
     kadessa = {laji:'megis', malli:luoKateen('megis'), t:0, vaihe:'lepo',
-               vaiheT:0, jaljella:MEGIS_KESTO, kesto:MEGIS_KESTO, vetoja:0};
+               vaiheT:0, jaljella:MEGIS_KESTO, kesto:MEGIS_KESTO, vetoja:0, pyydetty:false};
+    fpvKateenLuo('megis');
+    paivitaKasiNakyvyys();
     showToast(false, '🥫 Avasit Megaforcen',
-      'Virtaa jalkoihin, mutta kädet alkavat täristä. Heitä pois: ' + keyLabel(keyBind.heitaPois) + '.', 5000);
+      'Ota horppy hiiren vasemmalla. Virtaa jalkoihin, mutta kädet alkavat täristä. Heitä pois: ' +
+      keyLabel(keyBind.heitaPois) + '.', 5400);
     saveGame();
   }
   function heitaKadesta(hiljaa){
@@ -17831,6 +17854,7 @@
     var laji = kadessa.laji;
     var osuus = 1 - (kadessa.jaljella / kadessa.kesto);
     if(kadessa.malli && kadessa.malli.parent) kadessa.malli.parent.remove(kadessa.malli);
+    fpvKateenPois();
     kadessa = null;
     if(!hiljaa){
       if(osuus < 0.9){
@@ -17861,6 +17885,7 @@
 
     savuPaivita(dt);
     if(!kadessa) return;
+    paivitaKasiNakyvyys();
 
     // mopolle noustessa tavara putoaa kädestä
     if(mode === 'riding'){ heitaKadesta(true); paivitaKasiNappi(); return; }
@@ -17869,19 +17894,24 @@
     k.t += dt;
     k.vaiheT += dt;
     var tupakka = (k.laji === 'tupakka');
-    var taukoKesto = tupakka ? 7.0 : 3.2;
-    var nostoKesto = 0.55;
-    var suullaKesto = tupakka ? 1.3 : 1.7;
+    var nostoKesto = 0.42;
+    var suullaKesto = tupakka ? 1.1 : 1.4;
 
-    if(k.vaihe === 'lepo' && k.vaiheT >= taukoKesto){ k.vaihe = 'nosto'; k.vaiheT = 0; }
+    // Hatsi tupakasta tai horppy tolkista otetaan HIIREN VASEMMALLA. Aiemmin
+    // hahmo nosti kattaan itsekseen tasaisin valiajoin, mika nayytti silta etta
+    // tavara liikkuu omia aikojaan - ja pelaajalla ei ollut mitaan tekemista.
+    if(k.vaihe === 'lepo' && k.pyydetty){
+      k.pyydetty = false;
+      k.vaihe = 'nosto'; k.vaiheT = 0;
+    }
     else if(k.vaihe === 'nosto' && k.vaiheT >= nostoKesto){
       k.vaihe = 'suulla'; k.vaiheT = 0;
-      if(!tupakka) playGulp();
+      if(tupakka) playVeto(); else playGulp();
     }
     else if(k.vaihe === 'suulla' && k.vaiheT >= suullaKesto){
       k.vaihe = 'lasku'; k.vaiheT = 0;
       k.vetoja++;
-      if(tupakka) savuPuhallus(5 + Math.floor(Math.random()*4));
+      if(tupakka) savuPuhallus(6 + Math.floor(Math.random()*4));
       // yksi veto / huikka kuluttaa ison siivun
       k.jaljella -= k.kesto / (tupakka ? 7 : 5);
     }
@@ -17913,38 +17943,64 @@
 
   // Käden nosto suulle. Kiertokulmat lisätään kävelyanimaation PÄÄLLE, joten
   // tämä pitää ajaa applyWalkLimbsin jälkeen - muuten kävely pyyhkisi noston.
+  // Käden nosto suulle. Kiertokulmat lisätään kävely- ja lepoanimaation PÄÄLLE,
+  // joten tämä pitää ajaa updateIdlePosen jälkeen - muuten lepoasento pyyhkisi
+  // noston pois saman tien.
+  //
+  // Järjestys on tärkeä: ensin käännetään luut, VASTA SITTEN lasketaan missä
+  // nyrkki on ja siirretään tavara sinne. Toisin päin tavara laahaisi aina
+  // yhden ruudun käden perässä.
+  function nostoOsuus(k){
+    var nostoKesto = 0.42;
+    if(k.vaihe === 'nosto') return Math.min(1, k.vaiheT / nostoKesto);
+    if(k.vaihe === 'suulla') return 1;
+    if(k.vaihe === 'lasku') return Math.max(0, 1 - k.vaiheT / nostoKesto);
+    return 0;
+  }
   function paivitaKasiKasi(k){
-    var p = 0;
-    var nostoKesto = 0.55;
-    if(k.vaihe === 'nosto') p = Math.min(1, k.vaiheT / nostoKesto);
-    else if(k.vaihe === 'suulla') p = 1;
-    else if(k.vaihe === 'lasku') p = Math.max(0, 1 - k.vaiheT / nostoKesto);
-    if(!playerLimbs || !playerLimbs.armR){
-      // proseduraalinen varahahmo: pelkka paikan siirto, ei luita kaannettavaksi
-      if(k.malli) kadenPaikka(k.malli, p*p*(3 - 2*p));
-      return;
-    }
+    var p = nostoOsuus(k);
     var pehmea = p*p*(3 - 2*p);                       // pehmeä kiihdytys ja jarrutus
-    if(k.malli) kadenPaikka(k.malli, pehmea);
-    if(p > 0.001){
-      // Kyynarpaa on se joka tuo kaden suulle. Olkavartta kaannetaan vain hieman:
-      // isolla arvolla koko kasi heilahti vaakasuoraan eteen, mika nayttti silta
-      // etta hahmo osoittaa tolkilla eteenpain eika juo siita.
-      // Arvot haettiin kokeilemalla kuusi asentoa ja katsomalla kuvakaappaukset.
-      // Tassa luurangossa kyynarvarren x-kierto heilauttaa kaden SIVULLE eika
-      // ylos, joten pelkka iso koukistus jatti kasivarren torottamaan taakse.
-      // Nama kolme yhdessa pitavat olkavarren vartalon myotaisena ja nostavat
-      // kyynarvarren rintakehan eteen, jolloin tavara on huulilla ja kasi sen alla.
-      playerLimbs.armR.rotation.x += -0.45*pehmea;
-      playerLimbs.armR.rotation.z += -0.45*pehmea;
-      if(playerLimbs.foreR) playerLimbs.foreR.rotation.x += 1.60*pehmea;
+    if(playerLimbs && playerLimbs.armR){
+      playerLimbs.armR.rotation.x += NOSTO_OLKA_X*pehmea;
+      playerLimbs.armR.rotation.z += NOSTO_OLKA_Z*pehmea;
+      if(playerLimbs.foreR) playerLimbs.foreR.rotation.x += NOSTO_KYYNAR_X*pehmea;
+      // Pää kallistuu tavaraa kohti. Käsi ei yllä aivan huulille, joten loppu
+      // matkasta tehdään päällä - juuri niin kuin oikeakin ihminen tekee.
+      if(playerLimbs.head){
+        playerLimbs.head.rotation.x += 0.30*pehmea;
+        playerLimbs.head.rotation.z += -0.16*pehmea;
+      }
     }
-    // tölkkiä kallistetaan juodessa
-    if(k.laji === 'megis' && k.malli && k.vaihe === 'suulla'){
-      k.malli.rotation.z = -0.9 * Math.min(1, k.vaiheT/0.5);
-    } else if(k.malli){
-      k.malli.rotation.z = 0;
+    if(!k.malli) return;
+    k.malli.position.lerpVectors(KASI_LEPO, KASI_NOSTO, pehmea);
+    // tölkki kallistuu suuta kohti, tupakka kääntyy sormien välissä
+    if(k.laji === 'megis'){
+      // Loiva kallistus suuta kohti. Iso kulma sai tolkin nayttamaan silta
+      // kuin sisalto kaadettaisiin maahan.
+      k.malli.rotation.set(0.18*pehmea, 0, -0.62*pehmea);
+    } else {
+      k.malli.rotation.set(0, 0, Math.PI/2 - 0.55*pehmea);
     }
+  }
+  // tupakan veto: lyhyt hiljainen kohina, kuin ilmaa imettäisiin suodattimen läpi
+  function playVeto(){
+    if(muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var len = Math.floor(audioCtx.sampleRate*0.55);
+    var buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0;i<len;i++){
+      var o = i/len;
+      d[i] = (Math.random()*2-1) * Math.sin(o*Math.PI) * 0.6;
+    }
+    var src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    var filt = audioCtx.createBiquadFilter();
+    filt.type = 'bandpass'; filt.frequency.value = 850; filt.Q.value = 1.4;
+    var g = audioCtx.createGain();
+    g.gain.value = 0.085;
+    src.connect(filt).connect(g).connect(sfxOut());
+    src.start(t); src.stop(t + 0.6);
   }
   // huikkaääni: lyhyt matala "glug"
   function playGulp(){
@@ -17963,6 +18019,109 @@
     }
   }
 
+
+  // ==========================================================================
+  // ---- KYPARANAKYMA: TAVARA OMIEN SILMIEN EDESSA ----
+  // Ensimmaisessa persoonassa koko hahmo piilotetaan, joten kadessa oleva
+  // tavarakin katoaisi. Siksi siita tehdaan erillinen "katemalli", joka
+  // asetetaan joka ruudulla kameran eteen oikeaan alakulmaan - samaan tapaan
+  // kuin ammuntapeleissa ase. Nostettaessa se tuodaan kuvan keskelle alas,
+  // jolloin se peittaa nakokentan alareunan niin kuin oikeakin kasi.
+  //
+  // Malli on OMA kappaleensa eika sama kuin maailmassa oleva: sama Object3D ei
+  // voi olla kahdessa paikassa, ja kolmannen persoonan malli on hahmon lapsi.
+  // ==========================================================================
+  var kadessaFpv = null;           // katemalli (kameran edessa)
+  var fpvApuV = new THREE.Vector3();
+  // Etaisyys kamerasta on tavarakohtainen: 19 cm korkea tolkki tayttaa
+  // neljanneksen ruudusta samalta etaisyydelta jolta 8,5 cm tupakka nayttaa
+  // juuri sopivalta. Siksi tolkkia pidetaan selvasti kauempana.
+  var FPV_PAIKAT = {
+    tupakka: {lepo:new THREE.Vector3( 0.170, -0.190, -0.330),
+              suu: new THREE.Vector3( 0.085, -0.115, -0.235)},
+    megis:   {lepo:new THREE.Vector3( 0.235, -0.300, -0.580),
+              suu: new THREE.Vector3( 0.115, -0.185, -0.400)}
+  };
+
+  function fpvKateenLuo(laji){
+    fpvKateenPois();
+    var g = new THREE.Group();
+    if(laji === 'tupakka'){
+      var t = propMalli('tupakka');
+      if(t){ t.scale.setScalar(0.085); g.add(t); }
+    } else {
+      g.add(makeMegisTolkki());
+    }
+    // katemalli piirretaan aina paallimmaisena, jottei se uppoa maastoon
+    g.traverse(function(o){
+      if(o.isMesh){
+        o.castShadow = false; o.receiveShadow = false;
+        o.renderOrder = 999;
+        if(o.material){ o.material.depthTest = false; o.material.transparent = true; }
+      }
+    });
+    g.visible = false;
+    scene.add(g);
+    kadessaFpv = g;
+    return g;
+  }
+  function fpvKateenPois(){
+    if(!kadessaFpv) return;
+    scene.remove(kadessaFpv);
+    kadessaFpv = null;
+  }
+  // Kumpi malli nakyy: kolmannessa persoonassa hahmon kadessa oleva, kypara-
+  // nakymassa katemalli. Molemmat eivat saa nakya yhta aikaa.
+  function paivitaKasiNakyvyys(){
+    var fpvKaytossa = !!(fpvOn && mode !== 'riding' && kadessa);
+    if(kadessa && kadessa.malli) kadessa.malli.visible = !fpvKaytossa;
+    if(kadessaFpv) kadessaFpv.visible = fpvKaytossa;
+  }
+  function paivitaKasiFpv(k){
+    if(!kadessaFpv || !kadessaFpv.visible) return;
+    var p = nostoOsuus(k);
+    var pehmea = p*p*(3 - 2*p);
+    var paikat = FPV_PAIKAT[k.laji] || FPV_PAIKAT.megis;
+    fpvApuV.lerpVectors(paikat.lepo, paikat.suu, pehmea);
+    kadessaFpv.position.copy(fpvApuV).applyQuaternion(camera.quaternion).add(camera.position);
+    kadessaFpv.quaternion.copy(camera.quaternion);
+    // tolkki kallistuu juodessa, tupakka kaantyy suuta kohti
+    if(k.laji === 'megis'){
+      kadessaFpv.rotateZ(-0.35 - 0.85*pehmea);
+      kadessaFpv.rotateX(-0.25*pehmea);
+    } else {
+      kadessaFpv.rotateZ(Math.PI/2 - 0.5*pehmea);
+      kadessaFpv.rotateY(-0.35 + 0.25*pehmea);
+    }
+  }
+
+  // ---- hatsi / horppy hiiren vasemmalla ----
+  // Hiiren vasen on jo kameran kaanto (pohjassa raahaten), joten vedoksi
+  // kelpaa vain LYHYT napsautus joka ei liikuta hiirta. Nain kameran
+  // kaantaminen ei vahingossa polta tupakkaa.
+  var kasiKlikAlku = 0, kasiKlikX = 0, kasiKlikY = 0, kasiKlikKelpaa = false;
+  function kasiOtaVeto(){
+    if(!kadessa) return false;
+    if(kadessa.vaihe !== 'lepo') return false;
+    kadessa.pyydetty = true;
+    return true;
+  }
+  renderer.domElement.addEventListener('mousedown', function(e){
+    if(e.button !== 0) return;
+    kasiKlikAlku = performance.now();
+    kasiKlikX = e.clientX; kasiKlikY = e.clientY;
+    kasiKlikKelpaa = !!kadessa;
+  });
+  window.addEventListener('mouseup', function(e){
+    if(e.button !== 0 || !kasiKlikKelpaa) return;
+    kasiKlikKelpaa = false;
+    if(!kadessa) return;
+    var kesto = performance.now() - kasiKlikAlku;
+    var liike = Math.abs(e.clientX - kasiKlikX) + Math.abs(e.clientY - kasiKlikY);
+    // kyparanakymassa hiiri on lukittu eika clientX liiku, joten pelkka kesto ratkaisee
+    if(kesto < 320 && (fpvPointerLock || liike < 8)) kasiOtaVeto();
+  });
+
   // ---- ruudun nappi jolla tavaran heittää pois ----
   var kasiNappiEl = document.getElementById('kasiNappi');
   function paivitaKasiNappi(){
@@ -17971,7 +18130,9 @@
     kasiNappiEl.hidden = false;
     var jaljella = Math.max(0, Math.round(kadessa.jaljella));
     kasiNappiEl.innerHTML = (kadessa.laji === 'tupakka' ? '🚬 Tupakka' : '🥫 Megaforce') +
-      ' <b>' + jaljella + ' s</b> · Heitä pois: <b>' + keyLabel(keyBind.heitaPois) + '</b>';
+      ' <b>' + jaljella + ' s</b> · ' +
+      (kadessa.laji === 'tupakka' ? 'Hatsi' : 'Horppy') + ': <b>hiiren vasen</b>' +
+      ' · Heitä pois: <b>' + keyLabel(keyBind.heitaPois) + '</b>';
   }
   if(kasiNappiEl){
     kasiNappiEl.addEventListener('click', function(){ heitaKadesta(false); });
@@ -22161,6 +22322,7 @@
       // tupakan/tölkin nosto suulle tulee kävelyn päälle, ei sen tilalle
       if(kadessa) paivitaKasiKasi(kadessa);
       updateBlink(dt, playerLimbs);
+      // Kyparanakyman katemalli asetetaan vasta kameran jalkeen (ks. silmukan loppu).
       // Askelaani kantaiskussa: vaiheet pi/2 ja 3pi/2. Siirretaan vaihetta neljanneksella,
       // jolloin kokonaisluvun ylitys osuu juuri kantaiskuun.
       if(wA > 0.35 && Math.floor((wPh - Math.PI/2)/Math.PI) !== Math.floor((prevWalkPhase - Math.PI/2)/Math.PI)) playFootstep();
@@ -22766,6 +22928,11 @@
         }
       }
     }
+
+    // Kyparanakyman katemalli asetetaan VASTA tassa: se ripustetaan kameran
+    // eteen, joten kaikkien kameraliikkeiden pitaa olla jo tehty. Aiemmin
+    // asetettuna se laahaisi ruudun verran jaljessa ja tarisisi.
+    if(kadessa && kadessaFpv && kadessaFpv.visible) paivitaKasiFpv(kadessa);
 
     renderWithPost();
   }
