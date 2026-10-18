@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:128-->
-<!--JONNE-NAME:Jonnen ajokoe 128-->
-<!--JONNE-DATE:2026-10-17-->
-<!--JONNE-NOTES:Hatsi tupakasta ja horppy Megaforcesta otetaan nyt HIIREN VASEMMALLA - ei enää itsestään|Tupakka ja tölkki pysyvät oikeasti kädessä: paikka mitattiin pelistä, ei arvattu|Pää kallistuu tavaraa kohti nostettaessa, tölkki kallistuu loivasti suuta kohti|Tupakka ja Megaforce näkyvät nyt myös kypäränäkymässä omana kätemallinaan|Savu nousee kypäränäkymässä kameran edestä eikä leuan alta|Tupakan vedolle oma ääni-->
+<!--JONNE-VERSION:129-->
+<!--JONNE-NAME:Jonnen ajokoe 129-->
+<!--JONNE-DATE:2026-10-18-->
+<!--JONNE-NOTES:Moottori kasataan työpöydällä ja kannetaan itse mopon runkoon (E) - kiinni neljällä pultilla|Mopon osat eivät enää ilmesty itsestään: jokainen haetaan autotallin uudelta osahyllyltä ja kannetaan mopolle|Osat asennetaan järjestyksessä: renkaat ennen ketjua ja jarruja, moottori ennen kaasutinta, sytytystulppaa ja pakoputkea|Asennetut osat näkyvät heti rungossa - mopo rakentuu pala kerrallaan silmien edessä|Autotallin hyllyn päässä HUOLTOLISTA: mitä on tehty, mitä puuttuu ja montako pulttia kussakin osassa|Ruuvitilan E ei enää nouda seuraavaa osaa hyllyltä automaattisesti-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -7828,10 +7828,99 @@
   mopoRunko.position.copy(moped.position);
   mopoRunko.rotation.y = moped.rotation.y;
   scene.add(mopoRunko);
+
+  // ==========================================================================
+  // ---- ASENNETUT OSAT NAKYVAT RUNGOSSA ----
+  // Ennen runko nytti tasmalleen samalta kunnes kaikki kahdeksan osaa olivat
+  // paikallaan, jolloin paljas runko vaihtui kerralla valmiiksi mopoksi. Nyt
+  // jokainen asennettu osa ilmestyy runkoon heti, joten kasaamisen nakee.
+  // Paikat ovat samat kuin valmiissa mopossa (mopon oma koordinaatisto).
+  // ==========================================================================
+  var runkoOsat = null;
+  function rakennaRunkoOsat(){
+    if(runkoOsat || !mopoRunko) return;
+    runkoOsat = {};
+    var teras = new THREE.MeshStandardMaterial({color:0x9aa0a6, roughness:0.45, metalness:0.6});
+    var musta = new THREE.MeshStandardMaterial({color:0x1c1c1c, roughness:0.85});
+    var alu   = new THREE.MeshStandardMaterial({color:0x8d9399, roughness:0.5,  metalness:0.55});
+    var kupar = new THREE.MeshStandardMaterial({color:0xa9712f, roughness:0.5,  metalness:0.6});
+
+    function ryhma(id){ var g = new THREE.Group(); g.visible = false; mopoRunko.add(g); runkoOsat[id] = g; return g; }
+    function pala(g, geo, mat, x, y, z, rx, ry, rz){
+      var m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z);
+      if(rx) m.rotation.x = rx;
+      if(ry) m.rotation.y = ry;
+      if(rz) m.rotation.z = rz;
+      m.castShadow = true;
+      g.add(m);
+      return m;
+    }
+
+    // renkaat: samat paikat kuin valmiissa mopossa
+    var gr = ryhma('renkaat');
+    [[0, 0.30, 0.78], [0, 0.30, -0.72]].forEach(function(p){
+      pala(gr, new THREE.TorusGeometry(0.30, 0.085, 8, 16).rotateY(Math.PI/2), musta, p[0], p[1], p[2]);
+      pala(gr, new THREE.CylinderGeometry(0.175, 0.175, 0.05, 14), teras, p[0], p[1], p[2], 0, 0, Math.PI/2);
+    });
+
+    // moottori rungon kehtoon
+    var gm = ryhma('sylinteri');
+    pala(gm, new THREE.BoxGeometry(0.26, 0.20, 0.26), alu,   0,     0.33, 0.04);
+    pala(gm, new THREE.BoxGeometry(0.17, 0.15, 0.17), teras, 0,     0.50, 0.04);
+    pala(gm, new THREE.BoxGeometry(0.19, 0.05, 0.19), alu,   0,     0.60, 0.04);
+    pala(gm, new THREE.CylinderGeometry(0.095, 0.095, 0.05, 12), alu, 0.15, 0.33, 0.04, 0, 0, Math.PI/2);
+
+    // sytytystulppa sylinterinkanteen
+    var gs = ryhma('sytytystulppa');
+    pala(gs, new THREE.CylinderGeometry(0.016, 0.016, 0.07, 8), teras, 0, 0.585, 0.145, Math.PI/2);
+    pala(gs, new THREE.CylinderGeometry(0.011, 0.011, 0.05, 6), musta, 0, 0.585, 0.195, Math.PI/2);
+
+    // kaasutin moottorin taakse
+    var gk = ryhma('kaasutin');
+    pala(gk, new THREE.BoxGeometry(0.09, 0.11, 0.09), alu,   -0.02, 0.455, -0.13);
+    pala(gk, new THREE.CylinderGeometry(0.028, 0.028, 0.09, 8), teras, -0.02, 0.455, -0.05, Math.PI/2);
+
+    // pakoputki oikealle kyljelle
+    var gp = ryhma('pakoputki');
+    pala(gp, new THREE.TorusGeometry(0.12, 0.024, 6, 10, Math.PI*0.8), teras, 0.12, 0.38, -0.12, 0, Math.PI/2);
+    pala(gp, new THREE.CylinderGeometry(0.028, 0.028, 0.55, 8), teras, 0.22, 0.40, -0.48, Math.PI/2);
+    pala(gp, new THREE.CylinderGeometry(0.06, 0.055, 0.42, 10), teras, 0.26, 0.47, -0.88, Math.PI/2);
+
+    // ketju ja rattaat
+    var gc = ryhma('ketju');
+    pala(gc, new THREE.CylinderGeometry(0.115, 0.115, 0.014, 14), teras, 0.10, 0.30, -0.72, 0, 0, Math.PI/2);
+    pala(gc, new THREE.CylinderGeometry(0.048, 0.048, 0.014, 12), teras, 0.10, 0.31, 0.00, 0, 0, Math.PI/2);
+    pala(gc, new THREE.BoxGeometry(0.016, 0.030, 0.72), musta, 0.10, 0.415, -0.36);
+    pala(gc, new THREE.BoxGeometry(0.016, 0.030, 0.72), musta, 0.10, 0.195, -0.36);
+
+    // jarrulevy ja satula etupyoraan
+    var gj = ryhma('jarrut');
+    pala(gj, new THREE.CylinderGeometry(0.235, 0.235, 0.014, 20), teras, 0.07, 0.30, 0.78, 0, 0, Math.PI/2);
+    pala(gj, new THREE.BoxGeometry(0.05, 0.09, 0.09), musta, 0.09, 0.44, 0.78);
+
+    // akku satulan alle
+    var ga = ryhma('akku');
+    pala(ga, new THREE.BoxGeometry(0.10, 0.12, 0.16), musta, -0.13, 0.56, -0.28);
+    pala(ga, new THREE.CylinderGeometry(0.012, 0.012, 0.02, 6), kupar, -0.155, 0.63, -0.28);
+    pala(ga, new THREE.CylinderGeometry(0.012, 0.012, 0.02, 6), kupar, -0.105, 0.63, -0.28);
+  }
+  function paivitaRunkoOsat(){
+    if(!mopoRunko || typeof partById !== 'function' || typeof parts === 'undefined' || !parts) return;
+    rakennaRunkoOsat();
+    if(!runkoOsat) return;
+    for(var id in runkoOsat){
+      if(!Object.prototype.hasOwnProperty.call(runkoOsat, id)) continue;
+      var p = partById(id);
+      runkoOsat[id].visible = !!(p && p.installed);
+    }
+  }
+
   function updateMopedAssembly(){
     var done = mopedAssembled();
     moped.visible = done;
     mopoRunko.visible = !done;
+    if(!done) paivitaRunkoOsat();
     if(!done){
       // runko pysyy siellä minne mopo on parkkeerattu, jottei se jää leijumaan väärään paikkaan
       mopoRunko.position.copy(moped.position);
@@ -9524,6 +9613,7 @@
       if(p.id === 'sylinteri') return;
       if(!p.installed) garageShelf.push({partId:p.id, kind:'orig', tierIndex:p.tierIndex});
     });
+    if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
   }
   function shelfHas(partId, kind){
     for(var sh=0; sh<garageShelf.length; sh++){
@@ -9533,6 +9623,7 @@
   }
   function addToShelf(partId, kind, tierIndex){
     garageShelf.push({partId:partId, kind:kind, tierIndex:tierIndex|0});
+    if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
     if(garageOpen) renderShelf();
     saveGame();
   }
@@ -10263,23 +10354,83 @@
     engineInstalled[ep.id] = true;
     engineCarry = null;
   }
-  // Valmis moottori tayttaa parts-listan sylinterin, jolloin mopon kasaus jatkuu
-  // tasmalleen kuten ennen tata ominaisuutta.
+  // Valmis moottori EI mene mopoon itsestaan. Aiemmin viimeisen osan napsahtaessa
+  // paikalleen mopon sylinteri merkittiin asennetuksi, eli kasattu moottori
+  // teleporttasi runkoon. Nyt se jaa pukille odottamaan: se pitaa nostaa E:lla,
+  // kantaa mopolle ja pultata kiinni nelja kiinnityspulttia.
   function engineFinish(){
-    var cyl = partById('sylinteri');
-    if(cyl && !cyl.installed){
-      cyl.installed = true;
-      for(var sh = garageShelf.length - 1; sh >= 0; sh--){
-        if(garageShelf[sh].partId === 'sylinteri' && garageShelf[sh].kind === 'orig') garageShelf.splice(sh, 1);
-      }
-      updateMopedAssembly();
-      if(garageOpen) renderShelf();
-    }
     if(!engineReadyShown){
       engineReadyShown = true;
       playCatchJingle();
-      showToast(false, 'Moottori on kasassa', 'Kaikki kahdeksan osaa paikallaan. Moottori on nyt mopossa - jatka muiden osien kanssa.', 6000);
+      showToast(false, 'Moottori on kasassa',
+        'Kaikki kahdeksan osaa paikallaan. Nosta moottori pukilta (E) ja kanna se mopon runkoon.', 7000);
     }
+    if(typeof paivitaHuoltolista === 'function') paivitaHuoltolista();
+  }
+
+  // ==========================================================================
+  // ---- KASATUN MOOTTORIN NOSTO JA ASENNUS RUNKOON ----
+  // ==========================================================================
+  var moottoriKadessa = false;
+  var moottoriCarryV = new THREE.Vector3();
+  var MOOTTORI_NOSTO_R = 2.0;
+
+  function engineStandWorld(){ return worldOffset(autotalli, ENGINE_STAND[0], ENGINE_STAND[1]); }
+  function moottoriNostettavissa(){
+    if(inStore || moottoriKadessa) return false;
+    if(!engineDone()) return false;
+    var cyl = partById('sylinteri');
+    if(cyl && cyl.installed) return false;
+    var w = engineStandWorld();
+    var dx = w.x - player.position.x, dz = w.z - player.position.z;
+    return Math.sqrt(dx*dx + dz*dz) <= MOOTTORI_NOSTO_R;
+  }
+  function moottoriNosta(){
+    moottoriKadessa = true;
+    if(mopoCarry) mopoDropCarry(true);
+    showToast(false, '🔧 Nostit moottorin',
+      'Painava. Kanna se mopon runkoon ja paina E - sitten neljä kiinnityspulttia.', 4600);
+  }
+  function moottoriLaske(hiljaa){
+    if(!moottoriKadessa) return;
+    moottoriKadessa = false;
+    if(engineRoot){
+      var st = ENGINE_STAND;
+      engineRoot.position.set(st[0], ENGINE_BENCH_Y, st[1]);
+      engineRoot.rotation.set(0, 0, 0);
+    }
+    if(!hiljaa) showToast(false, 'Laskit moottorin pukille', 'Moottori odottaa työpöydällä.', 2600);
+  }
+  function updateMoottoriCarry(dt){
+    if(!moottoriKadessa || !engineRoot || !autotalli) return;
+    var h = playerHeading;
+    moottoriCarryV.set(
+      player.position.x + Math.sin(h)*0.58,
+      player.position.y + 0.72,
+      player.position.z + Math.cos(h)*0.58
+    );
+    autotalli.worldToLocal(moottoriCarryV);
+    engineRoot.position.copy(moottoriCarryV);
+    engineRoot.rotation.y = -autotalli.rotation.y + h + Math.PI;
+    void dt;
+  }
+  function moottoriAsennaRunkoon(){
+    var cyl = partById('sylinteri');
+    if(!cyl || cyl.installed) return;
+    moottoriKadessa = false;
+    if(engineRoot) engineRoot.visible = false;   // moottori on nyt mopossa, ei enaa pukilla
+    var entry = {partId:'sylinteri', kind:'orig', tierIndex:cyl.tierIndex};
+    garageShelf.push(entry);
+    enterWrenchMode(entry);
+    wrenchSeated = true;
+    var st = boltStateFor(cyl);
+    if(st) for(var i = 0; i < st.length; i++){ st[i].turn = 0; st[i].stripped = false; st[i].spin = 0; }
+    boltGhost.visible = false;
+    playRatchet('seat');
+    var lay = boltLayoutFor('sylinteri');
+    wrenchSay('Moottori rungossa. Kiristä ' + (lay ? lay.b.length : 4) + ' kiinnityspulttia.');
+    if(lay) wrenchSelectTool(lay.tool);
+    boltsRefreshVisuals();
   }
   function engineInstallCarried(){
     var ep = engineDef(engineCarry);
@@ -10579,6 +10730,12 @@
   }
   function engineReset(){
     engineCarry = null;
+    if(typeof moottoriKadessa !== 'undefined') moottoriKadessa = false;
+    if(engineRoot){
+      engineRoot.visible = true;
+      engineRoot.position.set(ENGINE_STAND[0], ENGINE_BENCH_Y, ENGINE_STAND[1]);
+      engineRoot.rotation.set(0, 0, 0);
+    }
     engineReadyShown = false;
     engineInstalled = {};
     for(var i=0; i<ENGINE_PARTS.length; i++){
@@ -10841,6 +10998,7 @@
     for(var gi=0; gi<garageShelf.length; gi++){
       if(garageShelf[gi] === it){ garageShelf.splice(gi,1); break; }
     }
+    if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
     boltMsgEl.textContent = (it.kind === 'orig' ? 'Kasattu! ' : 'Valmis! ') + (p ? p.name : 'Osa') + ' paikallaan, kunto ' + resultCondition + ' %.';
     partsInstalled++;
     updateMopedAssembly();
@@ -11853,7 +12011,9 @@
       // leikannutta tai ketjutonta mopoa ei voi ajaa: E vaihtaa työntämisen päälle ja pois
       if(mopedDead() || pushingMoped){ togglePushMoped(); return; }
       if(!mopedAssembled()){
-        showToast(false, 'Mopo on osina', 'Kasaa osat autotallin työpöydällä ('+installedCount()+'/'+parts.length+' valmiina).', 3000);
+        showToast(false, 'Mopo on osina',
+          'Moottori kasataan työpöydällä ja muut osat haetaan autotallin hyllyltä. ' +
+          'E nostaa osan, E mopon vieressä asentaa sen. (' + installedCount() + '/' + parts.length + ' valmiina.)', 5200);
         return;
       }
       mode = 'riding';
@@ -11872,6 +12032,14 @@
     // Moottorin kasaus menee hyllypaneelin EDELLE: osat ovat samalla tyopoydalla,
     // ja jos paneeli aukeaisi ensin, osaa ei paasisi koskaan nostamaan.
     if(typeof engineInteract === 'function' && engineInteract()) return;
+    // Kasattu moottori pukilta kateen, ja kadessa oleva moottori runkoon.
+    if(typeof moottoriKadessa !== 'undefined' && moottoriKadessa){
+      if(mopoLahella()) moottoriAsennaRunkoon(); else moottoriLaske(false);
+      return;
+    }
+    if(typeof moottoriNostettavissa === 'function' && moottoriNostettavissa()){ moottoriNosta(); return; }
+    // Osan nosto hyllylta ja asennus mopoon.
+    if(typeof mopoOsaInteract === 'function' && mopoOsaInteract()) return;
     // autotallin työpöytä: hyllypaneeli auki/kiinni
     var dxg = autotalliBenchPos.x - player.position.x;
     var dzg = autotalliBenchPos.z - player.position.z;
@@ -12079,7 +12247,7 @@
       if(k==='arrowup' || act==='tankkaa'){ input.fwd = false; wrenchKeyTighten = true; e.preventDefault(); return; }
       if(k==='arrowdown' || act==='kaynnista'){ input.back = false; wrenchKeyLoosen = true; e.preventDefault(); return; }
       if(k==='escape'){ exitWrenchMode(); return; }
-      if(act==='toiminto' && !e.repeat){ wrenchSeatPart(); return; }
+      if(act==='toiminto' && !e.repeat){ wrenchSeatPart(); return; }   // vain jo kadessa oleva osa paikalleen
       if(act==='vilkkuV' && !e.repeat){ wrenchCycleTool(); return; }
       if(act==='hatakorjaus' && !e.repeat){ wrenchFixThread(); return; }
       if(k==='1'){ wrenchSelectTool('kiintoavain'); return; }
@@ -20438,6 +20606,12 @@
       // Aiemmin kutsu oli ennen omistusten palautusta, joten ostettu kanisteri ei
       // nakynyt mopossa lainkaan tallennuksesta ladattaessa.
       updateKanisteriProp();
+      // Osahylly ja huoltolista ladatun tilanteen mukaisiksi. Jos moottori on jo
+      // rungossa, pukki on tyhja; muuten kasattu moottori odottaa siella.
+      if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
+      if(typeof moottoriKadessa !== 'undefined') moottoriKadessa = false;
+      var cylLad = partById('sylinteri');
+      if(engineRoot) engineRoot.visible = !(cylLad && cylLad.installed);
       storeItems.forEach(function(it){
         if(it.id === 'essanssi') essanssiMesh.visible = it.owned;
         if(it.id === 'aurinkolasit') sunglassesMesh.visible = it.owned;
@@ -21631,7 +21805,12 @@
     return true;
   }
   function wrenchSeatPart(){
-    if(!wrenchPending){ if(!wrenchTakeNextFromShelf()) return; else return; }
+    // Ei enaa automaattista "ota seuraava osa hyllylta". Osa haetaan itse
+    // autotallin hyllylta ja kannetaan mopolle; ruuvitila aukeaa vasta silloin.
+    if(!wrenchPending){
+      wrenchSay('Ei osaa kädessä. Hae osa autotallin hyllyltä ja kanna se mopolle.');
+      return;
+    }
     if(wrenchSeated){ wrenchSay('Osa on paikallaan - kiristä sen pultit.'); return; }
     var p = partById(wrenchPending.partId);
     if(!p) return;
@@ -21675,10 +21854,434 @@
         partsInstalled = Math.max(0, partsInstalled - 1);
         garageShelf.push({partId:p.id, kind: p.tierIndex > 0 ? 'tier' : 'orig', tierIndex:p.tierIndex});
         updateMopedAssembly();
+        if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
         playRatchet('snap');
         wrenchSay(p.name + ' irtosi ja on taas hyllyllä.');
         exitWrenchMode();
       }
+    }
+  }
+
+
+  // ==========================================================================
+  // ---- MOPON KASAUS: OSAT HAETAAN HYLLYLTA ITSE ----
+  //
+  // Ennen tata osat asennettiin ruuvitilassa niin, etta E otti AUTOMAATTISESTI
+  // seuraavan osan hyllylta ja naytti vihrean haamun sen paikasta. Se ei ollut
+  // kasaamista vaan listan lapikaymista: pelaajan ei tarvinnut tietaa mita osaa
+  // oli asentamassa eika missa se on mopossa.
+  //
+  // Nyt jokainen asentamaton osa makaa autotallin hyllylla omana kappaleenaan.
+  // Pelaaja kavelee haluamansa osan luo, nostaa sen E:lla, kantaa sen mopolle ja
+  // painaa E uudestaan. Vasta silloin aukeaa ruuvitila ja sen osan omat pultit.
+  // Peli ei kerro mita pitaisi ottaa seuraavaksi - seinalla on huoltolista, ja
+  // siina kaikki opastus.
+  //
+  // Moottori on erikoistapaus: se kasataan ensin tyopoydalla kahdeksasta osasta,
+  // ja vasta kasattuna sen voi nostaa pukilta ja kantaa runkoon. Aiemmin valmis
+  // moottori ilmestyi mopoon itsestaan sillä hetkellä kun viimeinen osa napsahti
+  // paikalleen poydalla.
+  // ==========================================================================
+
+  // Asennusjarjestys: mika osa vaatii minka. Tama on ainoa "opastus" pelin
+  // sisalla - vaara jarjestys kerrotaan vasta kun sita yrittaa.
+  var OSA_VAATII = {
+    sylinteri:     null,
+    kaasutin:      'sylinteri',
+    sytytystulppa: 'sylinteri',
+    pakoputki:     'sylinteri',
+    renkaat:       null,
+    ketju:         'renkaat',
+    jarrut:        'renkaat',
+    akku:          null
+  };
+  // Lepopaikat autotallin hyllylla (autotallin oma avaruus, y = korkeus lattiasta)
+  // Hyllyn paikka EI ole arvattu. Autotalli oli jo taynna kalustoa, ja kahdesti
+  // hyllyn rakensi suoraan tyokalukaapin tai seinahyllyn lapi. Lopuksi peliin
+  // ajettiin ruudukkohaku, joka kertoi mika lattia on oikeasti vapaa:
+  //
+  //       z\x  -3.0 .......... 3.0
+  //      -2.0  ###...........##
+  //       0.8  ###...####.....#     (#### = mopon paikka)
+  //       2.0  ###...####....##
+  //
+  // Vapaa kaistale on x 1,2...2,2 koko syvyydeltä. Hylly seisoo siina omilla
+  // jaloillaan, ei seinaa vasten.
+  var OSA_HYLLYPAIKAT = {
+    kaasutin:      {p:[2.10, 1.13, -1.85], s:1.0},
+    sytytystulppa: {p:[2.10, 1.09, -1.35], s:1.0},
+    akku:          {p:[2.10, 1.13, -0.85], s:1.0},
+    jarrut:        {p:[2.10, 1.08, -0.35], s:1.0},
+    pakoputki:     {p:[2.08, 0.69,  0.35], s:1.0},
+    ketju:         {p:[2.08, 0.66,  1.00], s:1.0},
+    renkaat:       {p:[2.05, 0.33,  1.70], s:1.0}
+  };
+  var OSA_NOSTO_R   = 1.5;    // kuinka lahelta osan voi nostaa hyllylta
+  var OSA_ASENNUS_R = 2.3;    // kuinka lahelta sen voi asentaa mopoon
+
+  var mopoCarry = null;        // {partId, kind, tierIndex, mesh} tai null
+  var osaMeshit = {};          // partId -> mesh hyllylla
+  var osaHyllyRyhma = null;
+  var osaCarryV = new THREE.Vector3();
+
+  // ---- osien karkeat mallit ----
+  // Samaa low poly -tyylia kuin muukin kalusto: osan tunnistaa muodosta.
+  function makeMopoOsa(id){
+    var g = new THREE.Group();
+    var musta  = engineMat(0x2e3236, 0.75, 0.2);
+    var teras  = engineMat(0xc8ccd0, 0.35, 0.7);
+    var alu    = engineMat(0x9aa0a6, 0.55, 0.35);
+    var kumi   = engineMat(0x1e2022, 0.95, 0.05);
+    var kupari = engineMat(0xb07a46, 0.45, 0.5);
+    var i;
+    if(id === 'kaasutin'){
+      var runko = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.16, 0.12), alu);
+      g.add(runko);
+      var kurkku = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 10), alu);
+      kurkku.rotation.z = Math.PI/2;
+      kurkku.position.y = 0.02;
+      g.add(kurkku);
+      var kuppi = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.07, 10), alu);
+      kuppi.position.y = -0.11;
+      g.add(kuppi);
+      var vaijeri = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 6), musta);
+      vaijeri.position.y = 0.14;
+      g.add(vaijeri);
+    } else if(id === 'sytytystulppa'){
+      var keha = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.07, 8), teras);
+      keha.position.y = 0.035;
+      var eriste = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.017, 0.055, 8),
+        engineMat(0xe8e2d4, 0.5, 0.05));
+      eriste.position.y = -0.02;
+      var kuusio = new THREE.Mesh(new THREE.CylinderGeometry(0.023, 0.023, 0.018, 6), teras);
+      kuusio.position.y = 0.0;
+      g.add(keha, eriste, kuusio);
+    } else if(id === 'akku'){
+      var kotelo = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.13, 0.08), musta);
+      g.add(kotelo);
+      [[-0.045, 0xb03030], [0.045, 0x303030]].forEach(function(n){
+        var napa = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.02, 6),
+          engineMat(n[1], 0.5, 0.6));
+        napa.position.set(n[0], 0.075, 0);
+        g.add(napa);
+      });
+      var tarra = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.05),
+        engineMat(0xd8d2c0, 0.8, 0));
+      tarra.position.set(0, 0, 0.041);
+      g.add(tarra);
+    } else if(id === 'jarrut'){
+      for(i = 0; i < 2; i++){
+        var pala = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.055, 0.016), musta);
+        pala.position.set(0, 0, i*0.028 - 0.014);
+        g.add(pala);
+        var selka = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.06, 0.005), teras);
+        selka.position.set(0, 0, i*0.028 - 0.014 + (i ? 0.011 : -0.011));
+        g.add(selka);
+      }
+    } else if(id === 'pakoputki'){
+      var kayra = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.022, 6, 10, Math.PI*0.75), teras);
+      kayra.rotation.y = Math.PI/2;
+      kayra.position.set(0, 0.06, -0.16);
+      g.add(kayra);
+      var putki = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.26, 8), teras);
+      putki.rotation.x = Math.PI/2;
+      putki.position.set(0, -0.04, -0.03);
+      g.add(putki);
+      var vaimennin = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.045, 0.30, 10), musta);
+      vaimennin.rotation.x = Math.PI/2;
+      vaimennin.position.set(0, -0.04, 0.25);
+      g.add(vaimennin);
+    } else if(id === 'ketju'){
+      // ketju kiepilla ja kaksi ratasta
+      var kiekko = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.016, 5, 16), musta);
+      kiekko.rotation.x = Math.PI/2;
+      g.add(kiekko);
+      [[0.0, 0.085], [0.0, 0.05]].forEach(function(r, k){
+        var ratas = new THREE.Mesh(new THREE.CylinderGeometry(r[1], r[1], 0.012, 12), teras);
+        ratas.position.set(k ? 0.17 : -0.17, 0.02, 0);
+        g.add(ratas);
+      });
+    } else if(id === 'renkaat'){
+      for(i = 0; i < 2; i++){
+        var rengas = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.065, 8, 16), kumi);
+        rengas.rotation.y = Math.PI/2;
+        rengas.position.set(i*0.17 - 0.085, 0.21, 0);
+        rengas.rotation.z = 0.08*(i ? 1 : -1);
+        g.add(rengas);
+        var vanne = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.035, 14), teras);
+        vanne.rotation.z = Math.PI/2;
+        vanne.position.set(i*0.17 - 0.085, 0.21, 0);
+        g.add(vanne);
+      }
+      void kupari;
+    } else {
+      g.add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), alu));
+    }
+    g.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
+    return g;
+  }
+
+  // ---- hylly ----
+  function rakennaOsahylly(){
+    if(osaHyllyRyhma) return;
+    osaHyllyRyhma = new THREE.Group();
+    var puu = new THREE.MeshStandardMaterial({color:0x7a5c38, roughness:0.9});
+    // Hylly on yksi kokonainen kaluste: kaksi yhta pitkaa lautaa ja kuusi jalkaa.
+    // Aiemmin ylalauta oli kaksi metria pitka mutta jalat vain sen toisessa
+    // paassa, joten lauta roikkui ilmassa ja koko hylly nytti kahdelta tolpalta.
+    var HY_X = 2.10, HY_Z = -0.40, HY_PIT = 3.50;   // keskikohta ja pituus
+    [1.06, 0.60].forEach(function(y){
+      var lauta = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.05, HY_PIT), puu);
+      lauta.position.set(HY_X, y, HY_Z);
+      lauta.castShadow = true; lauta.receiveShadow = true;
+      osaHyllyRyhma.add(lauta);
+    });
+    // jalat molempiin paihin ja keskelle, jotta laudat ovat tuettuja koko matkalta
+    [-2.08, -0.40, 1.28].forEach(function(z){
+      [1.92, 2.28].forEach(function(x){
+        var jalka = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.08, 0.07), puu);
+        jalka.position.set(x, 0.54, z);
+        jalka.castShadow = true;
+        osaHyllyRyhma.add(jalka);
+      });
+    });
+    // selkanojat molemmille tasoille, jottei pienia osia putoa lapi
+    [[1.19, 0.26], [0.73, 0.20]].forEach(function(sn){
+      var selka = new THREE.Mesh(new THREE.BoxGeometry(0.03, sn[1], HY_PIT), puu);
+      selka.position.set(2.30, sn[0], HY_Z);
+      osaHyllyRyhma.add(selka);
+    });
+    autotalli.add(osaHyllyRyhma);
+  }
+
+  function osaLepoAsento(id){
+    var m = osaMeshit[id];
+    var paikka = OSA_HYLLYPAIKAT[id];
+    if(!m || !paikka) return;
+    if(m.parent !== autotalli) { if(m.parent) m.parent.remove(m); autotalli.add(m); }
+    m.position.set(paikka.p[0], paikka.p[1], paikka.p[2]);
+    m.rotation.set(0, 0.5, 0);
+    m.scale.setScalar(paikka.s);
+    m.visible = true;
+  }
+  // Hyllyn sisalto nakyviin: kappale per asentamaton osa.
+  function paivitaOsahylly(){
+    // Tata kutsutaan hyllyn muuttuessa, ja kutsu voi tulla ennen kuin kaikki
+    // ylatason taulukot on alustettu. var-muuttujat ovat silloin undefined,
+    // joten ne tarkistetaan ennen kayttoa.
+    if(!OSA_HYLLYPAIKAT || !osaMeshit || !garageShelf || typeof autotalli === 'undefined' || !autotalli) return;
+    rakennaOsahylly();
+    for(var id in OSA_HYLLYPAIKAT){
+      if(!Object.prototype.hasOwnProperty.call(OSA_HYLLYPAIKAT, id)) continue;
+      var odottaa = false;
+      for(var i = 0; i < garageShelf.length; i++){
+        if(garageShelf[i].partId === id){ odottaa = true; break; }
+      }
+      if(mopoCarry && mopoCarry.partId === id) odottaa = false;   // kadessa, ei hyllylla
+      if(odottaa && !osaMeshit[id]){
+        osaMeshit[id] = makeMopoOsa(id);
+        autotalli.add(osaMeshit[id]);
+        osaLepoAsento(id);
+      } else if(odottaa && osaMeshit[id]){
+        if(!mopoCarry || mopoCarry.partId !== id) osaLepoAsento(id);
+      } else if(!odottaa && osaMeshit[id]){
+        if(osaMeshit[id].parent) osaMeshit[id].parent.remove(osaMeshit[id]);
+        delete osaMeshit[id];
+      }
+    }
+    paivitaHuoltolista();
+  }
+
+  // ---- lahin nostettava osa ----
+  function osaHyllyMaailmassa(id){
+    var paikka = OSA_HYLLYPAIKAT[id];
+    if(!paikka) return null;
+    return worldOffset(autotalli, paikka.p[0], paikka.p[2]);
+  }
+  function lahinHyllyOsa(){
+    if(inStore) return null;
+    var paras = null, parasD = OSA_NOSTO_R;
+    for(var i = 0; i < garageShelf.length; i++){
+      var it = garageShelf[i];
+      if(!OSA_HYLLYPAIKAT[it.partId]) continue;
+      var w = osaHyllyMaailmassa(it.partId);
+      if(!w) continue;
+      var dx = w.x - player.position.x, dz = w.z - player.position.z;
+      var d = Math.sqrt(dx*dx + dz*dz);
+      if(d < parasD){ parasD = d; paras = it; }
+    }
+    return paras;
+  }
+  function mopoLahella(){
+    var dx = moped.position.x - player.position.x, dz = moped.position.z - player.position.z;
+    return Math.sqrt(dx*dx + dz*dz) <= OSA_ASENNUS_R;
+  }
+
+  // ---- nosto, kanto ja lasku ----
+  function mopoPickUp(it){
+    var p = partById(it.partId);
+    if(!p) return;
+    mopoCarry = {partId:it.partId, kind:it.kind, tierIndex:it.tierIndex, entry:it};
+    paivitaOsahylly();
+    showToast(false, '🔩 Nostit osan', p.name + ' kädessä. Vie se mopolle ja paina E.', 3400);
+  }
+  function mopoDropCarry(hiljaa){
+    if(!mopoCarry) return;
+    var p = partById(mopoCarry.partId);
+    mopoCarry = null;
+    paivitaOsahylly();
+    if(!hiljaa) showToast(false, 'Laskit osan hyllylle', (p ? p.name : 'Osa') + ' odottaa taas hyllyllä.', 2600);
+  }
+  function updateMopoCarry(dt){
+    if(!mopoCarry || !autotalli) return;
+    var m = osaMeshit[mopoCarry.partId];
+    if(!m){
+      osaMeshit[mopoCarry.partId] = makeMopoOsa(mopoCarry.partId);
+      autotalli.add(osaMeshit[mopoCarry.partId]);
+      m = osaMeshit[mopoCarry.partId];
+    }
+    if(m.parent !== autotalli){ if(m.parent) m.parent.remove(m); autotalli.add(m); }
+    var h = playerHeading;
+    osaCarryV.set(
+      player.position.x + Math.sin(h)*0.46,
+      player.position.y + 0.92,
+      player.position.z + Math.cos(h)*0.46
+    );
+    autotalli.worldToLocal(osaCarryV);
+    m.position.copy(osaCarryV);
+    m.visible = true;
+    m.rotation.y += dt*0.9;
+  }
+  // Osan asentaminen: tarkistetaan jarjestys, ja jos kaikki on kunnossa,
+  // avataan ruuvitila juuri tuolle osalle ja sen omille pulteille.
+  function mopoAsennaKannettu(){
+    if(!mopoCarry) return;
+    var p = partById(mopoCarry.partId);
+    if(!p) return;
+    var vaatii = OSA_VAATII[p.id];
+    if(vaatii){
+      var vp = partById(vaatii);
+      if(vp && !vp.installed){
+        showToast(true, p.name + ' ei mene vielä',
+          (vp.name) + ' pitää olla paikallaan ensin.', 4200);
+        return;
+      }
+    }
+    var entry = mopoCarry.entry;
+    mopoCarry = null;
+    paivitaOsahylly();
+    // ruuvitila auki tälle osalle, osa valmiiksi paikallaan
+    enterWrenchMode(entry);
+    wrenchSeated = true;
+    var st = boltStateFor(p);
+    if(st) for(var i = 0; i < st.length; i++){ st[i].turn = 0; st[i].stripped = false; st[i].spin = 0; }
+    boltGhost.visible = false;
+    playRatchet('seat');
+    var lay = boltLayoutFor(p.id);
+    wrenchSay(p.name + ' paikallaan. Kiristä ' + (lay ? lay.b.length : 0) + ' pulttia: ' +
+              wrenchToolName(lay ? lay.tool : 'kiintoavain') + '.');
+    if(lay) wrenchSelectTool(lay.tool);
+    boltsRefreshVisuals();
+  }
+
+  // ---- E-napin toiminto ----
+  function mopoOsaAction(){
+    if(inStore || mode === 'riding') return null;
+    if(typeof wrenchMode !== 'undefined' && wrenchMode) return null;
+    if(mopoCarry){
+      if(mopoLahella()) return {tyyppi:'asenna', partId:mopoCarry.partId};
+      return {tyyppi:'laske', partId:mopoCarry.partId};
+    }
+    var it = lahinHyllyOsa();
+    if(it) return {tyyppi:'nosta', partId:it.partId, entry:it};
+    return null;
+  }
+  function mopoOsaInteract(){
+    var a = mopoOsaAction();
+    if(!a) return false;
+    if(a.tyyppi === 'nosta'){ mopoPickUp(a.entry); return true; }
+    if(a.tyyppi === 'laske'){ mopoDropCarry(false); return true; }
+    mopoAsennaKannettu();
+    return true;
+  }
+
+  // ==========================================================================
+  // ---- HUOLTOLISTA SEINALLA ----
+  // Ainoa opastus pelissa. Kertoo mika on tehty ja mika puuttuu, muttei naytä
+  // mihin osa menee eika ehdota mita ottaa seuraavaksi.
+  // ==========================================================================
+  var huoltolistaCanvas = null, huoltolistaTex = null, huoltolistaMesh = null;
+  function piirraHuoltolista(){
+    if(!parts || !parts.length) return;
+    if(!huoltolistaCanvas){
+      huoltolistaCanvas = document.createElement('canvas');
+      huoltolistaCanvas.width = 320; huoltolistaCanvas.height = 420;
+    }
+    var c = huoltolistaCanvas, x = c.getContext('2d');
+    x.fillStyle = '#efe9d6'; x.fillRect(0, 0, 320, 420);
+    x.strokeStyle = '#b8ae92'; x.lineWidth = 6; x.strokeRect(3, 3, 314, 414);
+    x.fillStyle = '#2b2b2b';
+    x.font = 'bold 26px Georgia, serif';
+    x.textAlign = 'center';
+    x.fillText('HUOLTOLISTA', 160, 42);
+    x.strokeStyle = '#8a8370'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(28, 56); x.lineTo(292, 56); x.stroke();
+    x.textAlign = 'left';
+    var y = 92;
+    // moottorin kasaus omana rivinaan
+    var kasassa = (typeof engineDone === 'function') ? engineDone() : false;
+    var mkpl = (typeof engineInstalledCount === 'function') ? engineInstalledCount() : 0;
+    x.font = '18px Georgia, serif';
+    x.fillStyle = kasassa ? '#2f6b2f' : '#2b2b2b';
+    x.fillText((kasassa ? '☑' : '☐') + '  Moottori kasattu  ' +
+               (kasassa ? '' : '(' + mkpl + '/8)'), 26, y);
+    y += 30;
+    x.strokeStyle = '#cfc7ae'; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(26, y - 14); x.lineTo(294, y - 14); x.stroke();
+    for(var i = 0; i < parts.length; i++){
+      var p = parts[i];
+      var lay = boltLayoutFor(p.id);
+      var pultit = lay ? lay.b.length : 0;
+      x.fillStyle = p.installed ? '#2f6b2f' : '#2b2b2b';
+      x.font = '17px Georgia, serif';
+      var nimi = (p.id === 'sylinteri') ? 'Moottori runkoon' : p.name;
+      x.fillText((p.installed ? '☑' : '☐') + '  ' + nimi, 26, y);
+      x.fillStyle = p.installed ? '#6b8a6b' : '#8a8370';
+      x.font = '13px Georgia, serif';
+      x.textAlign = 'right';
+      x.fillText(pultit ? (pultit + ' pulttia') : '', 294, y);
+      x.textAlign = 'left';
+      y += 26;
+    }
+    y += 10;
+    x.fillStyle = '#6b6450';
+    x.font = 'italic 13px Georgia, serif';
+    x.fillText('Osat hyllyllä. E nostaa, E mopon', 26, y); y += 18;
+    x.fillText('vieressä asentaa.', 26, y);
+    if(huoltolistaTex) huoltolistaTex.needsUpdate = true;
+  }
+  function paivitaHuoltolista(){
+    if(!parts || !parts.length || typeof autotalli === 'undefined' || !autotalli) return;
+    if(!huoltolistaMesh){
+      piirraHuoltolista();
+      huoltolistaTex = new THREE.CanvasTexture(huoltolistaCanvas);
+      if(THREE.sRGBEncoding) huoltolistaTex.encoding = THREE.sRGBEncoding;
+      huoltolistaMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.60),
+        new THREE.MeshStandardMaterial({map:huoltolistaTex, roughness:0.9}));
+      // Hyllyn paatyyn pystyyn, kasvot huoneeseen pain (-x suuntaan). Lista oli
+      // aiemmin niin alhaalla etta hyllyn kaasutin peitti sen alareunan, ja se
+      // nytti ilmassa leijuvalta paperilta. Nyt se on selkanojan ylapuolella ja
+      // siina on vanerinen taustalevy, johon se on naulattu.
+      var taustaLevy = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.68, 0.54),
+        new THREE.MeshStandardMaterial({color:0x8a6a42, roughness:0.92}));
+      taustaLevy.position.set(2.305, 1.64, -1.95);
+      taustaLevy.castShadow = true;
+      autotalli.add(taustaLevy);
+      huoltolistaMesh.position.set(2.284, 1.64, -1.95);
+      huoltolistaMesh.rotation.y = -Math.PI/2;
+      autotalli.add(huoltolistaMesh);
+    } else {
+      piirraHuoltolista();
     }
   }
 
@@ -22709,6 +23312,8 @@
     updateMaps(dt);
     updateStory();
     updateTracker();
+    updateMopoCarry(dt);
+    updateMoottoriCarry(dt);
     phoneTick(dt);
     updateKadessa(dt);
 
