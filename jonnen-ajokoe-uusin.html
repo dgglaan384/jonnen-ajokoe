@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:129-->
-<!--JONNE-NAME:Jonnen ajokoe 129-->
-<!--JONNE-DATE:2026-10-18-->
-<!--JONNE-NOTES:Moottori kasataan työpöydällä ja kannetaan itse mopon runkoon (E) - kiinni neljällä pultilla|Mopon osat eivät enää ilmesty itsestään: jokainen haetaan autotallin uudelta osahyllyltä ja kannetaan mopolle|Osat asennetaan järjestyksessä: renkaat ennen ketjua ja jarruja, moottori ennen kaasutinta, sytytystulppaa ja pakoputkea|Asennetut osat näkyvät heti rungossa - mopo rakentuu pala kerrallaan silmien edessä|Autotallin hyllyn päässä HUOLTOLISTA: mitä on tehty, mitä puuttuu ja montako pulttia kussakin osassa|Ruuvitilan E ei enää nouda seuraavaa osaa hyllyltä automaattisesti-->
+<!--JONNE-VERSION:131-->
+<!--JONNE-NAME:Jonnen ajokoe 131-->
+<!--JONNE-DATE:2026-10-21-->
+<!--JONNE-NOTES:PITÄJÄ: kartan keskellä on nyt Isojärvi ja sen ympäri kiertää rengastie - umpiperiä ei ole, mihin suuntaan lähdetkin päädyt lopulta kotiin|Kaikki paikat siirretty rengastien varrelle: kylä lounaaseen, talli ja poliisiasema luoteeseen, miitti pohjoiseen, Mac Donalds koilliseen|Kapeikon silta vie järven kapeimman kohdan yli - pitkä kierros vai lyhyt oikotie|Pääraitti tulee pohjoisesta rengastielle ja jatkaa etelästä eteenpäin; vanhat järven yli menneet suorat poistettu|Uimaranta on oikealla järvenrannalla, ei enää oma pikku lätäkkö|Maasto painuu rantaviivasta veden alle: järvi on oikea allas eikä sininen levy maan päällä|Teiden tasoitus johdetaan nyt suoraan tieverkosta, joten yksikään mäki ei työnny tien läpi|Poliisi partioi rengastietä, ja puut, pellot, ladot ja sähkölinja pysyvät poissa vedestä-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -2735,6 +2735,85 @@
   // dirt road strip along Z axis
   // (Y-tason nosto 0.01 -> 0.05: antaa enemmän marginaalia maaston mäkiä vastaan, ettei ruoho
   // pilkista tien läpi edes teoriassa jos korkeusfunktio pyöristyy hieman nollasta poispäin.)
+  // ==========================================================================
+  // ---- PITAJA: ISOJARVI JA RENGASTIE ----
+  // Kartta oli kapea kaistale, jossa kaikki roikkui yhdessa pitkassa suorassa ja
+  // valiin jai tyhjaa peltoa. Nyt keskella on iso jarvi ja sen ympari kiertaa
+  // rengastie, jonka varrella kaikki paikat ovat. Mihin suuntaan lahdetkin,
+  // paadyt lopulta takaisin kotiin - umpiperia ei ole.
+  //
+  // Nama mitat ovat koko maailman perusta: jarven muoto, rengastien sade ja
+  // paikkojen sijainnit johdetaan kaikki naista.
+  // ==========================================================================
+  var JARVI_KAPEIKKO_Z = 295;     // missa jarvi kuroutuu kapeaksi (sillan kohta)
+  var RENGAS_R = 720;             // rengastien sade keskipisteesta (0,0)
+  var RENGAS_LEV = 10;            // rengastien leveys
+  // Jarven reunaviiva kulmittain. Pohjoinen allas on iso ja pyorea, etelainen
+  // pienempi, ja niiden valissa on kapeikko jonka yli silta menee.
+  // Rantaviiva annetaan ohjauspisteina ja pyoristetaan Catmull-Rom-kaarella:
+  // suoraan monikulmiona jarvi nayttaisi kahdeksankulmaiselta altaalta.
+  var JARVI_OHJAUS = [
+    [-300, 170], [-420, -120], [-330, -330], [-100, -430], [180, -420],
+    [360, -290], [430, -60], [390, 120], [250, 215],
+    [95, 258], [78, 330],                       // kapeikon itapuoli
+    [170, 420], [95, 500], [-70, 515], [-215, 455], [-235, 360],
+    [-128, 330], [-112, 258]                    // kapeikon lansipuoli
+  ];
+  var JARVI_REUNA = (function pyoristaRanta(){
+    var ulos = [], n = JARVI_OHJAUS.length, JAKO = 4;
+    function kohta(i, akseli){ return JARVI_OHJAUS[((i % n) + n) % n][akseli]; }
+    for(var i = 0; i < n; i++){
+      for(var k = 0; k < JAKO; k++){
+        var t = k/JAKO, t2 = t*t, t3 = t2*t, piste = [0, 0];
+        for(var a = 0; a < 2; a++){
+          var p0 = kohta(i-1, a), p1 = kohta(i, a), p2 = kohta(i+1, a), p3 = kohta(i+2, a);
+          piste[a] = 0.5*((2*p1) + (-p0 + p2)*t + (2*p0 - 5*p1 + 4*p2 - p3)*t2 + (-p0 + 3*p1 - 3*p2 + p3)*t3);
+        }
+        ulos.push([Math.round(piste[0]*10)/10, Math.round(piste[1]*10)/10]);
+      }
+    }
+    return ulos;
+  })();
+  function jarvessa(x, z){
+    // pisteen sisaltyminen monikulmioon (ray casting)
+    var sisalla = false;
+    for(var i = 0, j = JARVI_REUNA.length - 1; i < JARVI_REUNA.length; j = i++){
+      var xi = JARVI_REUNA[i][0], zi = JARVI_REUNA[i][1];
+      var xj = JARVI_REUNA[j][0], zj = JARVI_REUNA[j][1];
+      if((zi > z) !== (zj > z) && x < (xj - xi)*(z - zi)/(zj - zi) + xi) sisalla = !sisalla;
+    }
+    return sisalla;
+  }
+
+  // ---- paikkataulukko ----
+  // worldSpread jai ennalleen varasuunnitelmaksi, mutta tunnetut paikat haetaan
+  // nyt tasta taulukosta. Nain jokainen kutsupaikka koodissa pysyy ennallaan ja
+  // kaikki niista johdettu (tiet, tasoitus, katuvalot, viitat, kartat) seuraa
+  // mukana - sama periaate kuin ennenkin, mutta sijainnit valitaan kasin niin
+  // etta ne asettuvat rengastien varrelle jarven ymparille.
+  var PITAJA_PAIKAT = {
+    '-34,52':   [-505,  470],   // Koti           - kylaa, lounaassa
+    '-25,-200': [-590,  535],   // Kylakauppa
+    '-36,-16':  [-425,  575],   // Mopokauppa
+    '-9,-58':   [-470,  520],   // kylan risteys
+    '-9,-8':    [-556,  392],   // kylan pohjoinen liittyma
+    '-9,-16':   [-433,  575],   // mopokaupan liittyma rengastiella
+    '-64,-66':  [-700, -300],   // Talli          - luoteessa
+    '27,-37':   [-645, -425],   // Poliisiasema
+    '-9,-37':   [-581, -425],   // poliisiaseman liittyma rengastiella
+    '48,-64':   [-130, -700],   // Miitti ja huoltoasema - pohjoisessa
+    '-68,-118': [-250, -840],   // Romuttamo      - renkaan ulkopuolella
+    '70,-8':    [ 430, -580],   // Mac Donalds    - koillisessa
+    '4,-260':   [ 760, -210],   // Naapurikyla    - idassa
+    '-45,300':  [ 620,  470],   // Jarvimokki     - kaakossa
+    '26,-170':  [  30,  540],   // Uimaranta      - jarven etelarannalla
+    '-48,-520': [-150,-1065]    // Crossirata     - kaukana pohjoisessa
+  };
+  function pitajaPaikka(x, z){
+    var avain = (Math.round(x*100)/100) + ',' + (Math.round(z*100)/100);
+    return PITAJA_PAIKAT[avain] || null;
+  }
+
   var roadSurfaceY = 0.05;
   // minikarttaa varten kerätään jokaisen tien keskilinja talteen sitä mukaa kun teitä rakennetaan,
   // jottei karttakoodin tarvitse tietää mitään tiegeometrian yksityiskohdista
@@ -2747,20 +2826,26 @@
   function addRoadCorridor(x1, z1, x2, z2, halfWidth){
     roadCorridors.push({x1:x1, z1:z1, x2:x2, z2:z2, hw:halfWidth});
   }
-  var road = new THREE.Mesh(
-    setRoadUV(new THREE.PlaneGeometry(12, 3200), true, 3200),
-    new THREE.MeshStandardMaterial({map:makeDirtTexture(true), roughness:0.95, metalness:0})
-  );
-  road.rotation.x = -Math.PI/2;
-  road.position.y = roadLayerY('main');
-  road.receiveShadow = true;
-  scene.add(road);
-  roadPaths.push([{x:0, z:-1600}, {x:0, z:1600}]); // pääraitti
-  addRoadCorridor(0, -1600, 0, 1600, 6);
+  // Pääraitti kulki ennen yhtenä suorana kartan laidasta laitaan. Nyt keskellä on
+  // Isojärvi, joten raitti tulee pohjoisesta rengastielle ja jatkaa etelästä taas
+  // eteenpäin: järven kohdalta sen korvaa rengastie, joka kiertää molempia puolia.
+  var PAARAITTI_PAA = RENGAS_R;            // mihin asti raitti tulee keskustaa kohti
+  var mainRoadMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(true), roughness:0.95, metalness:0});
+  [[-1600, -PAARAITTI_PAA], [PAARAITTI_PAA, 1600]].forEach(function(jakso){
+    var pit = jakso[1] - jakso[0];
+    var road = new THREE.Mesh(setRoadUV(new THREE.PlaneGeometry(12, pit), true, pit), mainRoadMat);
+    road.rotation.x = -Math.PI/2;
+    road.position.set(0, roadLayerY('main'), (jakso[0]+jakso[1])/2);
+    road.receiveShadow = true;
+    scene.add(road);
+    roadPaths.push([{x:0, z:jakso[0]}, {x:0, z:jakso[1]}]);
+    addRoadCorridor(0, jakso[0], 0, jakso[1], 6);
+  });
 
   // faint centerline dashes
   var dashMat = new THREE.MeshBasicMaterial({color:0xf3e6c8});
   for(var d=-1580; d<1580; d+=8){
+    if(Math.abs(d) < PAARAITTI_PAA) continue;   // järven kohdalla ei ole raittia
     var dash = new THREE.Mesh(new THREE.PlaneGeometry(0.42,3.2), dashMat);
     dash.rotation.x = -Math.PI/2;
     dash.position.set(0,roadLayerY('main')+0.012,d);
@@ -2773,15 +2858,20 @@
   // x-suunnassa vain ±215, eli käytännössä yksi käytävä. Kehätie siirtyy nyt kolminkertaisesti
   // ulommas, jolloin kartasta tulee oikea alue eikä kaistale. Kaikki mikä käyttää tätä muuttujaa
   // (tiegeometria, tasoitusjanat, poliisin partiointireitti, törmäyskäytävät) seuraa mukana.
-  var loopHalfWidth = 620;
-  // poikittaistiet kehän laidasta laitaan: ilman näitä leveälle alueelle ei pääsisi kuin pellon yli
-  var crossRoadZs = [-1120, -520, 520, 1120];
+  // Ulkokehä on nyt rengastien ulkopuolinen suorakaide, jonka kautta pääsee
+  // kaukokohteisiin. Se siirtyi ulommas (620 -> 1000), jottei se leikkaisi
+  // rengastietä, ja poikittaisteitä on enää kaksi: järven yli menneet
+  // z = -520 ja z = 520 korvaa Kapeikontie.
+  var loopHalfWidth = 1000;
+  var crossRoadZs = [-1180, -900, 900, 1180];
   // Kartta näytti yhdeltä pitkältä tieltä josta kaikki muu haarautui. Kaksi lisää pohjois-etelä-
   // tietä keskilinjan ja kehän puoliväliin tekee tiestöstä oikean ruudukon: viisi pystytietä
   // (-620, -310, 0, 310, 620) ja kuusi poikittaista. Silloin reittejä on monta eikä yhtä selkärankaa.
-  var midRoadXs = [-310, 310];
-  var loopZMax = 1580;
-  var loopZMin = -1580;
+  // Keskimmäiset pohjois-etelä-tiet (x = +-310) menisivat suoraan järven poikki,
+  // joten ne jäivät pois kokonaan: rengastie hoitaa saman tehtävän paremmin.
+  var midRoadXs = [];
+  var loopZMax = 1460;
+  var loopZMin = -1460;
   var loopRoadMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(true), roughness:0.95, metalness:0});
   // risteyslaattojen ja päällekkäisten palojen materiaali: sama sora mutta ilman pientareita
   var roadPlainMat = new THREE.MeshStandardMaterial({map:makeDirtTexture(false), roughness:0.95, metalness:0});
@@ -2833,12 +2923,17 @@
   });
 
   // poliisin partiointireitti seuraa kehätien nelikulmiota myötäpäivään
-  var policeLoopPoints = [
-    new THREE.Vector3(-loopHalfWidth, 0, loopZMax),
-    new THREE.Vector3(-loopHalfWidth, 0, loopZMin),
-    new THREE.Vector3(loopHalfWidth, 0, loopZMin),
-    new THREE.Vector3(loopHalfWidth, 0, loopZMax)
-  ];
+  // Poliisi partioi nyt rengastieta: siella on kaikki liikenne, joten partio
+  // myos nakyy pelaajalle. Ulkokeha on tyhja peltotie, jossa kukaan ei kayt.
+  var policeLoopPoints = [];
+  (function partioReitti(){
+    var N = 14;
+    for(var i = 0; i < N; i++){
+      var a = i/N*Math.PI*2;
+      var r = RENGAS_R + 22*Math.sin(a*3) + 14*Math.cos(a*5 + 1.0);
+      policeLoopPoints.push(new THREE.Vector3(Math.sin(a)*r, 0, Math.cos(a)*r));
+    }
+  })();
 
   // ---- puut ----
   // Aiemmin kaikki 440 puuta olivat sama kartio saman sylinterin päällä, jokainen omana
@@ -3185,6 +3280,8 @@
   // säilyvät - kaikki tiet, tasoitusalueet, viitat ja kartat johdetaan näistä samoista muuttujista,
   // joten ne seuraavat mukana ilman erillisiä muutoksia.
   function worldSpread(x, z){
+    var p = pitajaPaikka(x, z);
+    if(p) return new THREE.Vector3(p[0], 0, p[1]);
     var r = Math.sqrt(x*x + z*z);
     if(r < 0.0001) return new THREE.Vector3(x, 0, z);
     // nearScale nostettiin 2,0 -> 2,5: kohteet olivat pelaajan mielestä yhä liian tiiviissä
@@ -4370,38 +4467,272 @@
   // (läntinen koti-talli-risteys, itäinen miitti-Mac Donalds-poliisi ja eteläinen ranta-kylä), joten
   // samaan paikkaan pääsee useampaa reittiä eikä kartta ole enää yhden suoran varassa.
 
-  // kylän oma kokoojatie pohjoisesta liittymästä risteykseen: ohittaa mopokaupan ja poliisiaseman
-  makeCurvedSpurRoad(townTop.x, townTop.z, hubJunction.x, hubJunction.z, hubRoadWidth, 16, 9, 2);
-  // lyhyt liitos pääraitille, jottei kylään tarvitse tulla pelkästään etelästä
-  makeCurvedSpurRoad(townTop.x, townTop.z, 0, townTop.z, 8, 5, 3, 1);
-  // pitkä maantie kotoa kylään - pelaajan ensimmäinen ajo, joten siitä tehtiin kunnolla mutkitteleva
-  makeCurvedSpurRoad(homePos.x, homePos.z, townTop.x, townTop.z, hubRoadWidth, 30, 14, 3);
-  // läntinen maantie kotoa suoraan tallille: sulkee ison silmukan koti -> talli -> risteys -> koti
-  makeCurvedSpurRoad(homePos.x, homePos.z, kauppaPos.x, kauppaPos.z, hubRoadWidth, -26, 12, 2);
-  // risteys -> talli/kauppa, länteen. Tallilta romuttamolle jatkava pätkä mutkittelee myös.
-  makeCurvedSpurRoad(hubJunction.x, hubJunction.z, kauppaPos.x, hubJunction.z, hubRoadWidth, 14, 9, 1);
-  makeCurvedSpurRoad(kauppaPos.x, kauppaPos.z, romuPos.x, romuPos.z, hubRoadWidth, 12, 8, 2);
-  // romuttamolta takaisin pääraitille itään - romuttamo ei ole enää umpiperä
-  makeCurvedSpurRoad(romuPos.x, romuPos.z, 0, romuPos.z, 8, -20, 8, 2);
-  // risteys -> huoltoasema/miitti, itään - vastakkaiseen suuntaan kaartava S-mutka
-  makeCurvedSpurRoad(hubJunction.x, hubJunction.z, meetSpot.x, hubJunction.z, hubRoadWidth, -14, 9, 2);
-  // huoltoaseman kohdalta mutka pohjoiseen Mac Donaldsille (mutkittelevat pätkät + kulmalaatta)
-  makeCurvedSpurRoad(meetSpot.x, meetSpot.z, macdonaldsPos.x, meetSpot.z, hubRoadWidth, 9, 6, 1);
-  makeCurvedSpurRoad(macdonaldsPos.x, meetSpot.z, macdonaldsPos.x, macdonaldsPos.z, hubRoadWidth, -8, 6, 1);
-  makeStraightRoad(macdonaldsPos.x, meetSpot.z, hubRoadWidth, hubRoadWidth);
-  // risteyksen kulmalaatta pyöristämässä liittymän
+  // ==========================================================================
+  // ---- PITAJANTIE: RENGASTIE ISOJARVEN YMPARI ----
+  // Vanha tieverkko oli kylan ymparille viritetty vyyhti pistoteita, joista moni
+  // paattyi umpiperaan ja puolet kulki nyt suoraan jarven yli. Tilalle tuli yksi
+  // suljettu rengastie jarven ympari: kaikki paikat ripustetaan siihen lyhyilla
+  // pistoteilla, joten mihin suuntaan lahdetkin, paadyt lopulta takaisin kotiin.
+  // ==========================================================================
+  function rengasSade(a){
+    // pieni aaltoilu sateessa, jottei tie ole geometrisen tarkka ympyra
+    return RENGAS_R + 22*Math.sin(a*3) + 14*Math.cos(a*5 + 1.0);
+  }
+  function rengasPiste(a){
+    var r = rengasSade(a);
+    return {x: Math.sin(a)*r, z: Math.cos(a)*r};
+  }
+  // rengastien piste siihen suuntaan missa annettu paikka on: tasta lahtee sen pistotie
+  function rengasKohti(x, z){ return rengasPiste(Math.atan2(x, z)); }
+  var rengasPisteet = [];
+  (function rakennaRengastie(){
+    var N = 56, i;
+    for(i = 0; i <= N; i++) rengasPisteet.push(rengasPiste(i/N*Math.PI*2));
+    for(i = 0; i < N; i++){
+      var p0 = rengasPisteet[i], p1 = rengasPisteet[i+1];
+      var sdx = p1.x - p0.x, sdz = p1.z - p0.z;
+      var slen = Math.sqrt(sdx*sdx + sdz*sdz);
+      makeAngledRoad((p0.x+p1.x)/2, (p0.z+p1.z)/2, slen + 0.9, RENGAS_LEV,
+                     Math.atan2(-sdz, sdx), (i % 7)*0.0005);
+      addRoadCorridor(p0.x, p0.z, p1.x, p1.z, RENGAS_LEV/2);
+    }
+    roadPaths.push(rengasPisteet);
+  })();
+  // paaraitin paat kiinni renkaaseen
+  makeStraightRoad(0, -RENGAS_R, 12, 12);
+  makeStraightRoad(0,  RENGAS_R, 12, 12);
+
+  // ---- Kapeikontie: oikotie jarven kapeimman kohdan yli ----
+  // Pitka kierros rengastieta vai lyhyt mutta kapea silta - tama on se valinta
+  // joka tekee renkaasta muutakin kuin ison ympyran.
+  var kapeikkoLansi = rengasKohti(-1, 0.0001);   // rengastien lansireuna
+  (function kapeikontie(){
+    var z = JARVI_KAPEIKKO_Z;
+    var xL = -Math.sqrt(Math.max(1, RENGAS_R*RENGAS_R - z*z)) - 20;
+    var xR =  Math.sqrt(Math.max(1, RENGAS_R*RENGAS_R - z*z)) + 20;
+    makeCurvedSpurRoad(xL, z, -150, z, 8, 10, 6, 1);
+    makeCurvedSpurRoad(110, z, xR, z, 8, -10, 6, 1);
+    // itse silta vesialueen yli piirretaan jarven mukana (ks. Isojarvi)
+    void kapeikkoLansi;
+  })();
+
+  // ---- pistotiet: jokainen paikka kiinni renkaaseen ----
+  function pistotie(px, pz, leveys, mutka, segs){
+    var rp = rengasKohti(px, pz);
+    var d = Math.sqrt((px-rp.x)*(px-rp.x) + (pz-rp.z)*(pz-rp.z));
+    if(d < 6){ makeStraightRoad(px, pz, leveys, leveys); return; }
+    makeCurvedSpurRoad(rp.x, rp.z, px, pz, leveys, mutka, segs || 5, 1);
+    makeStraightRoad(rp.x, rp.z, leveys, leveys);
+  }
+
+  // kylan oma raitti: pohjoinen liittyma -> koti -> risteys, ja haara kylakaupalle
+  makeCurvedSpurRoad(townTop.x, townTop.z, homePos.x, homePos.z, hubRoadWidth, 8, 6, 1);
+  makeCurvedSpurRoad(homePos.x, homePos.z, hubJunction.x, hubJunction.z, hubRoadWidth, -7, 5, 1);
+  // kylakauppa ja poliisiasema maaritellaan vasta myohemmin tiedostossa, joten
+  // niiden sijainti haetaan tassa suoraan paikkataulukosta
+  var kylakauppaXZ = worldSpread(-25, -200);
+  var poliisiXZ    = worldSpread(27, -37);
+  makeCurvedSpurRoad(hubJunction.x, hubJunction.z, kylakauppaXZ.x, kylakauppaXZ.z, hubRoadWidth, 9, 6, 1);
   makeStraightRoad(hubJunction.x, hubJunction.z, hubRoadWidth, hubRoadWidth);
   makeStraightRoad(townTop.x, townTop.z, hubRoadWidth, hubRoadWidth);
+  pistotie(townTop.x, townTop.z, hubRoadWidth, 6, 4);
 
-  // pienet pistotiet pääraitilta (x=0) kauempana oleville kohteille, jottei niitäkään tarvitse
-  // ajaa pelkän pellon poikki. Pidemmät pistotiet (ranta/crossirata) mutkittelevat kevyesti.
-  makeCurvedSpurRoad(0, rantaPos.z, rantaPos.x, rantaPos.z, 7, 12, 7, 1);
-  // naapurikylän poikkikatu: kulkee pääraitin läpi kylän molemmille puolille, koska talot on
-  // siirretty pois tien päältä ja niille pitää päästä ajamaan
+  // luoteen pari: talli ja poliisiasema
+  pistotie(kauppaPos.x, kauppaPos.z, hubRoadWidth, 8, 5);
+  makeCurvedSpurRoad(kauppaPos.x, kauppaPos.z, poliisiXZ.x, poliisiXZ.z, 8, -10, 6, 1);
+
+  // pohjoinen: miitti ja huoltoasema, ja niiden takana romuttamo
+  pistotie(meetSpot.x, meetSpot.z, hubRoadWidth, 6, 4);
+  makeCurvedSpurRoad(meetSpot.x, meetSpot.z, romuPos.x, romuPos.z, 8, 14, 7, 1);
+  pistotie(romuPos.x, romuPos.z, 8, 10, 5);
+
+  // koillinen, ita ja kaakko
+  pistotie(macdonaldsPos.x, macdonaldsPos.z, hubRoadWidth, 6, 4);
+  pistotie(kylaPos.x, kylaPos.z, 8, 10, 5);
   makeStraightRoad(kylaPos.x - 7.3, kylaPos.z, 37, 7);
+  pistotie(jarviPos.x, jarviPos.z, 7, 10, 5);
+
+  // etela: uimaranta jarven rannalla, renkaan sisapuolella
+  pistotie(rantaPos.x, rantaPos.z, 7, 8, 5);
+
+  // kaukokohde pohjoisessa: crossirata paaraitilta
   makeCurvedSpurRoad(0, crossiPos.z, crossiPos.x, crossiPos.z, 7, -5, 4, 1);
-  // eteläinen silmukka: uimarannalta suoraan naapurikylään pääraittia sivuten
-  makeCurvedSpurRoad(rantaPos.x, rantaPos.z, kylaPos.x, kylaPos.z, 7, 16, 7, 1);
+
+  // ==========================================================================
+  // ---- ISOJARVI ----
+  // Kartan keskella on nyt vesi. Jarvi ei ole maan paalle levitetty sininen levy
+  // vaan oikea allas: maasto painuu rantaviivasta pehmeasti vedenpinnan alle,
+  // ranta on hiekkaa ja kaislikkoa, ja veteen ei paase ajamaan.
+  // ==========================================================================
+  var jarviKaislikko = null;      // kaislikko: lisataan optionalProps-listaan myohemmin
+  var JARVI_PINTA = -0.22;        // vedenpinnan korkeus
+  var JARVI_SYVYYS = 5.0;         // suurin syvyys altaan keskella
+  // etaisyys jarven rantaviivaan (positiivinen = sisalla, negatiivinen = ulkona)
+  function jarviEtaisyysReunaan(x, z){
+    var paras = 1e9;
+    for(var i = 0, j = JARVI_REUNA.length - 1; i < JARVI_REUNA.length; j = i++){
+      var d = distToSegment(x, z, JARVI_REUNA[j][0], JARVI_REUNA[j][1],
+                                  JARVI_REUNA[i][0], JARVI_REUNA[i][1]);
+      if(d < paras) paras = d;
+    }
+    return jarvessa(x, z) ? paras : -paras;
+  }
+  // altaan syvyys: nolla rannassa, kasvaa pehmeasti kohti keskustaa
+  function jarviSyvyys(x, z){
+    var d = jarviEtaisyysReunaan(x, z);
+    if(d <= 0) return 0;
+    // Pohja painuu heti rantaviivasta nopeasti vedenpinnan alle (potenssi 0,55) ja
+    // tasaantuu sitten taydeksi syvyydeksi. Lineaarisella liu'ulla ensimmaiset
+    // kymmenet metrit olisivat kuivaa maata vesipinnan alla.
+    var t = Math.min(1, d/110);
+    return JARVI_SYVYYS * Math.pow(t, 0.55);
+  }
+  var isojarvi = null;
+  (function rakennaIsojarvi(){
+    // vesipinta: monikulmio kolmioitettuna
+    // Shape piirretaan XY-tasoon ja kaannetaan vaakaan. -90 asteen kaanto pitaa
+    // pinnan normaalin ylospain, ja siksi monikulmion y kirjoitetaan kaanteisena:
+    // nain kartan z-koordinaatti sailyy oikein pain.
+    var muoto = new THREE.Shape();
+    muoto.moveTo(JARVI_REUNA[0][0], -JARVI_REUNA[0][1]);
+    for(var i = 1; i < JARVI_REUNA.length; i++) muoto.lineTo(JARVI_REUNA[i][0], -JARVI_REUNA[i][1]);
+    muoto.closePath();
+    var vesiGeo = new THREE.ShapeGeometry(muoto, 2);
+    var vesiMat = new THREE.MeshStandardMaterial({
+      color:0x2d6b8f, roughness:0.14, metalness:0.28,
+      transparent:true, opacity:0.95, side:THREE.DoubleSide
+    });
+    isojarvi = new THREE.Mesh(vesiGeo, vesiMat);
+    isojarvi.rotation.x = -Math.PI/2;
+    isojarvi.position.y = JARVI_PINTA;
+    isojarvi.receiveShadow = true;
+    scene.add(isojarvi);
+
+    // Rantakaistale on RENGAS. Sita EI voi tehda ShapeGeometryn reialla: kapeikon
+    // kohdalla sisa- ja ulkoreuna tulevat niin lahelle toisiaan, etta kolmiointi
+    // vetaa kolmioita suoraan vesialueen yli - jarvella nakyi valkoisia kiiloja.
+    // Siksi rengas kudotaan kasin kahden reunaviivan valiin kolmioliuskana.
+    (function rantaRengas(){
+      var n = JARVI_REUNA.length;
+      var pos = new Float32Array(n*6*3);
+      var o = 0;
+      function tyonna(i, ulosPain){
+        var px = JARVI_REUNA[i % n][0], pz = JARVI_REUNA[i % n][1];
+        var pit = Math.sqrt(px*px + pz*pz) || 1;
+        var d = ulosPain ? 15 : -5;
+        return [px + px/pit*d, pz + pz/pit*d];
+      }
+      for(var i = 0; i < n; i++){
+        var si = tyonna(i, false), so = tyonna(i, true);
+        var sj = tyonna(i+1, false), sjo = tyonna(i+1, true);
+        var kolmiot = [si, so, sjo, si, sjo, sj];
+        for(var k = 0; k < 6; k++){
+          pos[o++] = kolmiot[k][0];
+          pos[o++] = 0;
+          pos[o++] = kolmiot[k][1];
+        }
+      }
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.computeVertexNormals();
+      var ranta = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        color:0xd9cda2, roughness:0.98, side:THREE.DoubleSide}));
+      ranta.position.y = -0.08;
+      ranta.receiveShadow = true;
+      scene.add(ranta);
+    })();
+  })();
+
+  // ---- rantaviivan esteet ja kaislikko ----
+  // Veteen ei paase ajamaan: rantaviivalle kylvetaan nakymattomat tormaysympyrat
+  // ja niiden merkiksi kaislikkoa, jottei pelaaja tormaa tyhjaan ilmaan. Uimarannan
+  // kohdalle jatetaan aukko, jotta rannalle paasee kavelemaan.
+  var rantaEsteSpots = [];
+  (function rantaEsteet(){
+    var kaislaMat = new THREE.MeshStandardMaterial({color:0x6c7f4a, roughness:0.95});
+    var kaislaGeo = new THREE.ConeGeometry(0.5, 2.2, 5);
+    var kaislat = [], dummy = new THREE.Object3D();
+    var kokoPituus = 0, i, reitti = [];
+    for(i = 0; i < JARVI_REUNA.length; i++){
+      var a = JARVI_REUNA[i], b = JARVI_REUNA[(i+1) % JARVI_REUNA.length];
+      var L = Math.sqrt((b[0]-a[0])*(b[0]-a[0]) + (b[1]-a[1])*(b[1]-a[1]));
+      reitti.push({a:a, b:b, L:L});
+      kokoPituus += L;
+    }
+    var VALI = 26;                       // tormaysympyroiden vali metreina
+    reitti.forEach(function(osa){
+      var n = Math.max(1, Math.round(osa.L/VALI));
+      for(var k = 0; k < n; k++){
+        var t = (k + 0.5)/n;
+        var px = osa.a[0] + (osa.b[0]-osa.a[0])*t;
+        var pz = osa.a[1] + (osa.b[1]-osa.a[1])*t;
+        // uimarannan kohdalle aukko, jotta rannalle paasee kavelemaan
+        var dRanta = Math.sqrt((px-30)*(px-30) + (pz-540)*(pz-540));
+        if(dRanta < 34) continue;
+        // ja Kapeikon sillan kohdalle, jottei silta tyrmaisi nakymattomaan seinaan
+        if(Math.abs(pz - JARVI_KAPEIKKO_Z) < 26 && Math.abs(px) < 170) continue;
+        rantaEsteSpots.push({x:px, z:pz});
+        if((k % 2) === 0) kaislat.push({x:px, z:pz});
+      }
+    });
+    if(kaislat.length){
+      var kaislaMesh = new THREE.InstancedMesh(kaislaGeo, kaislaMat, kaislat.length*3);
+      var idx = 0;
+      for(i = 0; i < kaislat.length; i++){
+        for(var c = 0; c < 3; c++){
+          dummy.position.set(kaislat[i].x + (c-1)*1.5 + Math.sin(i*2.3+c)*0.9,
+                             -0.2 + 1.0,
+                             kaislat[i].z + Math.cos(i*1.7+c)*1.4);
+          dummy.rotation.set(0.08*Math.sin(i+c), i*0.7 + c, 0.06*Math.cos(i*1.3+c));
+          dummy.scale.set(1, 0.8 + 0.5*Math.abs(Math.sin(i*3.1+c)), 1);
+          dummy.updateMatrix();
+          kaislaMesh.setMatrixAt(idx++, dummy.matrix);
+        }
+      }
+      kaislaMesh.castShadow = true;
+      kaislaMesh.frustumCulled = false;
+      scene.add(kaislaMesh);
+      jarviKaislikko = kaislaMesh;
+    }
+    // nakymattomat tormaysympyrat vesirajaan
+    for(i = 0; i < rantaEsteSpots.length; i++){
+      colliders.push({x:rantaEsteSpots[i].x, z:rantaEsteSpots[i].z, r:15, obj:null, ranta:true});
+    }
+  })();
+
+  // ---- Kapeikon silta ----
+  (function kapeikonSilta(){
+    var z = JARVI_KAPEIKKO_Z;
+    // etsitaan missa vesi alkaa ja loppuu taman korkeuden kohdalla
+    var xA = null, xB = null;
+    for(var x = -300; x <= 300; x += 2){
+      if(jarvessa(x, z)){ if(xA === null) xA = x; xB = x; }
+    }
+    if(xA === null) return;
+    var pit = (xB - xA) + 24;
+    var kesk = (xA + xB)/2;
+    var sMat = new THREE.MeshStandardMaterial({color:0x8a7250, roughness:0.9});
+    var kansi = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.5, 9), sMat);
+    kansi.position.set(kesk, 0.3, z);
+    kansi.castShadow = true; kansi.receiveShadow = true;
+    scene.add(kansi);
+    var kaideMat = new THREE.MeshStandardMaterial({color:0xd8d2c2, roughness:0.8});
+    [-4.3, 4.3].forEach(function(dz){
+      var kaide = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.9, 0.22), kaideMat);
+      kaide.position.set(kesk, 1.0, z + dz);
+      kaide.castShadow = true;
+      scene.add(kaide);
+    });
+    var pilariMat = new THREE.MeshStandardMaterial({color:0x6d6a63, roughness:0.95});
+    for(var p = xA + 14; p < xB - 10; p += 26){
+      var pilari = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.2, 2.2), pilariMat);
+      pilari.position.set(p, -1.2, z);
+      scene.add(pilari);
+    }
+    // ajorata sillan paalle
+    makeStraightRoad(kesk, z, pit - 6, 8);
+  })();
+
 
   // ==========================================================================
   // ---- KAUKOKOHTEET KARTAN LAIDALLA ----
@@ -6150,7 +6481,16 @@
   }
   // true jos piste on ajoradalla (tai annettua marginaalia lähempänä sen reunaa). Käytetään sekä
   // katuvaloille että sähkötolpille - kumpikaan ei saa jäädä seisomaan keskelle tietä.
+  // Rekvisiitan sijoittelu kysyy onRoadway():lta onko paikka varattu. Isojarvi on
+  // samalla tavalla varattu: ilman tata puita, katuvaloja ja paaluja ilmestyisi
+  // keskelle vetta. Sama tarkistus hoitaa kerralla puut, pensaat, valot, paalut
+  // ja talot, koska ne kaikki kysyvat taman saman funktion kautta.
+  function vedessa(x, z, marginaali){
+    if(typeof jarviEtaisyysReunaan !== 'function') return false;
+    return jarviEtaisyysReunaan(x, z) > -(marginaali || 0);
+  }
   function onRoadway(x, z, margin){
+    if(vedessa(x, z, 4 + (margin || 0))) return true;
     for(var rc=0; rc<roadCorridors.length; rc++){
       var co = roadCorridors[rc];
       if(distToSegmentXZ(x, z, co.x1, co.z1, co.x2, co.z2) < co.hw + margin) return true;
@@ -6162,7 +6502,19 @@
   // koska ne sijoitetaan satunnaisesti tai kiinteään pisteeseen ennen kuin tiestö on tiedossa.
   // Palauttaa {x,z} tai null jos vapaata paikkaa ei löytynyt muutamalla yrityksellä.
   function pushOffRoad(x, z, clearance){
-    for(var attempt=0; attempt<5; attempt++){
+    for(var attempt=0; attempt<6; attempt++){
+      // Vesi tyontaa samalla tavalla kuin tie. Ilman tata jarveen osunut puu jai
+      // paikalleen: silmukka katsoi vain tiekaytavia, eika vedessa ole yhtaan, joten
+      // "ei mitaan tiella" ja puu jai seisomaan keskelle Isojarvea.
+      if(typeof jarviEtaisyysReunaan === 'function'){
+        var de = jarviEtaisyysReunaan(x, z);
+        if(de > -(clearance + 4)){
+          var pit = Math.sqrt(x*x + z*z) || 1;
+          var tyonto = de + clearance + 8;
+          x += (x/pit)*tyonto; z += (z/pit)*tyonto;
+          continue;
+        }
+      }
       var worst = 0, px = 0, pz = 0;
       for(var rc2=0; rc2<roadCorridors.length; rc2++){
         var co2 = roadCorridors[rc2];
@@ -6306,6 +6658,7 @@
   // versio meni rikki koska marginaali (n. 9-16) oli PIENEMPI kuin silloisen 170x170-verkon 20-yksikön
   // ruutukoko, jolloin mäki saattoi "aliasoitua" tien läpi kahden pisteen välissä. Nyt marginaali on
   // reilusti suurempi kuin verkon ruutukoko, joten yksikään tie tai piha ei voi enää mäen läpäistä.
+  var hillTransitionMargin = 40;   // pehmean liu'un pituus (m) tasaisesta tayteen makeen
   var flatAnchors = [
     {x:homePos.x, z:homePos.z, r:30}, {x:0, z:0, r:28}, {x:hubJunction.x, z:hubJunction.z, r:28},
     {x:kauppaPos.x, z:kauppaPos.z, r:32}, {x:romuPos.x, z:romuPos.z, r:38},
@@ -6318,49 +6671,39 @@
     {x:moottorirataPos.x, z:moottorirataPos.z, r:185}, {x:eramokkiPos.x, z:eramokkiPos.z, r:56},
     {x:eramokkiPos.x, z:eramokkiPos.z + 76, r:78}
   ];
-  var flatSegments = [
-    {x1:0, z1:-1600, x2:0, z2:1600, r:26},
-    {x1:-loopHalfWidth, z1:-1580, x2:-loopHalfWidth, z2:1580, r:26},
-    {x1:loopHalfWidth, z1:-1580, x2:loopHalfWidth, z2:1580, r:26},
-    {x1:-loopHalfWidth, z1:1580, x2:loopHalfWidth, z2:1580, r:26},
-    {x1:-loopHalfWidth, z1:-1580, x2:loopHalfWidth, z2:-1580, r:26},
-    // poikittaistiet tasoitetaan samalla tavalla, muuten mäki työntyisi tien läpi
-    {x1:-loopHalfWidth, z1:crossRoadZs[0], x2:loopHalfWidth, z2:crossRoadZs[0], r:24},
-    {x1:-loopHalfWidth, z1:crossRoadZs[1], x2:loopHalfWidth, z2:crossRoadZs[1], r:24},
-    {x1:-loopHalfWidth, z1:crossRoadZs[2], x2:loopHalfWidth, z2:crossRoadZs[2], r:24},
-    {x1:-loopHalfWidth, z1:crossRoadZs[3], x2:loopHalfWidth, z2:crossRoadZs[3], r:24},
-    {x1:midRoadXs[0], z1:-1560, x2:midRoadXs[0], z2:1560, r:24},
-    {x1:midRoadXs[1], z1:-1560, x2:midRoadXs[1], z2:1560, r:24},
-    // Tasoitusjanat ovat SUORIA, mutta tiet mutkittelevat: siksi jokaisen janan säteen on oltava
-    // vähintään tien mutkan syvyys + tien puolileveys + reilu marginaali, tai mäki työntyisi tien
-    // läpi mutkan kohdalla. Pitkillä maanteillä (bend 26-30) säde on siksi 44-48.
-    {x1:townTop.x, z1:townTop.z, x2:hubJunction.x, z2:hubJunction.z, r:32},
-    {x1:townTop.x, z1:townTop.z, x2:0, z2:townTop.z, r:22},
-    {x1:homePos.x, z1:homePos.z, x2:townTop.x, z2:townTop.z, r:48},
-    {x1:homePos.x, z1:homePos.z, x2:kauppaPos.x, z2:kauppaPos.z, r:44},
-    {x1:hubJunction.x, z1:hubJunction.z, x2:kauppaPos.x, z2:kauppaPos.z, r:30},
-    {x1:kauppaPos.x, z1:kauppaPos.z, x2:romuPos.x, z2:romuPos.z, r:28},
-    {x1:romuPos.x, z1:romuPos.z, x2:0, z2:romuPos.z, r:36},
-    {x1:hubJunction.x, z1:hubJunction.z, x2:meetSpot.x, z2:meetSpot.z, r:30},
-    {x1:meetSpot.x, z1:meetSpot.z, x2:macdonaldsPos.x, z2:meetSpot.z, r:26},
-    {x1:macdonaldsPos.x, z1:meetSpot.z, x2:macdonaldsPos.x, z2:macdonaldsPos.z, r:26},
-    {x1:macdonaldsPos.x, z1:macdonaldsPos.z, x2:policeStationPos.x, z2:policeStationPos.z, r:38},
-    {x1:0, z1:rantaPos.z, x2:rantaPos.x, z2:rantaPos.z, r:26},
-    {x1:rantaPos.x, z1:rantaPos.z, x2:kylaPos.x, z2:kylaPos.z, r:30},
-    {x1:0, z1:kylaPos.z, x2:kylaPos.x, z2:kylaPos.z, r:22},
-    {x1:0, z1:crossiPos.z, x2:crossiPos.x, z2:crossiPos.z, r:22},
-    {x1:kauppaPos.x, z1:kauppaPos.z, x2:romuPos.x, z2:romuPos.z, r:24}, // metsätie-oikotie
-    {x1:policeStationJunction.x, z1:policeStationJunction.z, x2:policeStationPos.x, z2:policeStationPos.z, r:20},
-    {x1:mopedShopJunction.x, z1:mopedShopJunction.z, x2:mopedShopPos.x, z2:mopedShopPos.z, r:20},
-    {x1:0, z1:kauppaIsoPos.z, x2:kauppaIsoPos.x, z2:kauppaIsoPos.z, r:22},
-    // uusien kaukokohteiden pistotiet
-    {x1:kirkonkylaPos.x, z1:crossRoadZs[0], x2:kirkonkylaPos.x, z2:kirkonkylaPos.z+40, r:34},
-    {x1:kirkonkylaPos.x, z1:kirkonkylaPos.z+40, x2:kirkonkylaAsemaPos.x, z2:kirkonkylaAsemaPos.z, r:24},
-    {x1:loopHalfWidth, z1:moottorirataPos.z, x2:moottorirataPos.x+150, z2:moottorirataPos.z, r:30},
-    {x1:kirkonkylaPos.x, z1:kirkonkylaPos.z+40, x2:kirkonkylaPos.x-6, z2:kirkonkylaPos.z-46, r:26},
-    {x1:-450, z1:crossRoadZs[3], x2:eramokkiPos.x, z2:eramokkiPos.z-22, r:52}
-  ];
-  var hillTransition = 40; // pehmeän liu'un pituus (m) tasaisesta täyteen mäkeen
+  // Tasoitusjanat johdetaan nyt SUORAAN rakennetuista tiekaytavista. Aiemmin tama
+  // oli kasin yllapidetty lista, jossa jokainen tie piti muistaa lisata erikseen -
+  // ja jos unohti, maki tyontyi tien lapi. Rengastiessa on yksinaan yli viisikymmenta
+  // patkaa, joten kasin yllapito ei enaa tullut kysymykseenkaan.
+  //
+  // Jokaiselle janalle lasketaan valmiiksi myos rajauslaatikko. flattenFactor voi
+  // silloin ohittaa kaukaiset janat neljalla vertailulla ilman neliojuurta, mika
+  // pitaa maaston muovauksen nopeana vaikka janoja on satoja.
+  var flatSegments = [];
+  (function keraaTasoitusJanat(){
+    for(var i = 0; i < roadCorridors.length; i++){
+      var c = roadCorridors[i];
+      var r = c.hw + 16;                       // ajoradan puolileveys + turvamarginaali
+      var raja = r + hillTransitionMargin;
+      flatSegments.push({
+        x1:c.x1, z1:c.z1, x2:c.x2, z2:c.z2, r:r,
+        bx1:Math.min(c.x1,c.x2) - raja, bx2:Math.max(c.x1,c.x2) + raja,
+        bz1:Math.min(c.z1,c.z2) - raja, bz2:Math.max(c.z1,c.z2) + raja
+      });
+    }
+    // Isojarven rantaviiva tasoitetaan myos: muuten maki voisi tyontya rannan lapi
+    // ja vesi leikkaisi mäkeä keskelta.
+    for(var j = 0; j < JARVI_REUNA.length; j++){
+      var a1 = JARVI_REUNA[j], b1 = JARVI_REUNA[(j+1) % JARVI_REUNA.length];
+      var rr = 26, rj = rr + hillTransitionMargin;
+      flatSegments.push({
+        x1:a1[0], z1:a1[1], x2:b1[0], z2:b1[1], r:rr,
+        bx1:Math.min(a1[0],b1[0]) - rj, bx2:Math.max(a1[0],b1[0]) + rj,
+        bz1:Math.min(a1[1],b1[1]) - rj, bz2:Math.max(a1[1],b1[1]) + rj
+      });
+    }
+  })();
+  var hillTransition = hillTransitionMargin; // pehmeän liu'un pituus (m) tasaisesta täyteen mäkeen
   function flattenFactor(x, z){
     var minDist = Infinity;
     for(var fa=0; fa<flatAnchors.length; fa++){
@@ -6370,6 +6713,8 @@
     }
     for(var fs=0; fs<flatSegments.length; fs++){
       var s = flatSegments[fs];
+      // rajauslaatikon ulkopuolella jana ei voi olla lahin: ohitetaan ilman nelioujuurta
+      if(x < s.bx1 || x > s.bx2 || z < s.bz1 || z > s.bz2) continue;
       var ds = distToSegment(x,z,s.x1,s.z1,s.x2,s.z2) - s.r;
       if(ds < minDist) minDist = ds;
     }
@@ -6377,7 +6722,16 @@
     return t*t*(3-2*t); // smoothstep - pehmeämpi liu'ku kuin suora lineaarinen
   }
   function terrainHeight(x, z){
-    return baseHillHeight(x,z) * flattenFactor(x,z);
+    var h = baseHillHeight(x,z) * flattenFactor(x,z);
+    // Isojarven allas: maasto painuu rantaviivasta pehmeasti vedenpinnan alle.
+    // Ilman tata vesi olisi pelkka sininen levy maan paalla.
+    if(typeof jarviSyvyys === 'function'){
+      var syv = jarviSyvyys(x, z);
+      // altaan sisalla maasto on PELKKA allas: jos tahan lisattaisiin viela
+      // makien korkeus, jarven pohja heittelisi ja ranta nousisi veden ylle.
+      if(syv > 0) h = -syv;
+    }
+    return h;
   }
   // tikkataulu sijoitetaan vasta tässä: sen Y-korkeus lasketaan terrainHeight():lla, joka tarvitsee
   // juuri ylempänä määritellyt flatAnchors/flatSegments-taulukot. Jos tämä tehtäisiin heti
@@ -6698,8 +7052,12 @@
     for(var br=0; br<ud.blinkR.length; br++) ud.blinkR[br].visible = right;
   }
   var mopedColors = [0x2f7a78, 0xc99a2f, 0x8a3b2b, 0x51606b, 0xe2572b, 0x3e6644];
-  var mopedRanges = [[-50,-230],[-230,-410],[-410,-590],[-590,-770],[-770,-950],[-90,-350],[-950,-1150],[-1150,-1350],[-1350,-1550],
-                     [-60,-300],[-300,-560],[-560,-820],[40,320],[320,600],[-150,-480],[-480,-820]];
+  // NPC-liikenne ajaa paaraittia pitkin, ja paaraitti on nyt poikki jarven kohdalta.
+  // Siksi kaikki kaistat pysyvat renkaan ulkopuolella (|z| >= 780): muuten vastaan
+  // tulisi mopoja keskelta Isojarvea.
+  var mopedRanges = [[-800,-980],[-980,-1160],[-1160,-1340],[-1340,-1520],[-820,-1080],
+                     [-1080,-1360],[-860,-1200],[-1200,-1540],[-900,-1300],
+                     [790,980],[980,1180],[1180,1380],[1380,1560],[800,1100],[1100,1420],[840,1240]];
   mopedRanges.forEach(function(range, nm){
     var npc = makeNpcMoped(mopedColors[nm % mopedColors.length]);
     var mopedDir = Math.random() < 0.5 ? 1 : -1;
@@ -6717,8 +7075,8 @@
     npcVehicles.push(npc);
   });
   var carColors = [0xb0402a, 0x2f4a5c, 0xd9b98a];
-  var carRanges = [[-60,-400],[-400,-750],[-750,-950],[-950,-1250],[-1250,-1550],
-                   [-80,-520],[-520,-900],[30,420],[420,780],[-200,-640],[-640,-1050]];
+  var carRanges = [[-790,-1000],[-1000,-1250],[-1250,-1550],[-830,-1150],[-1150,-1500],
+                   [-870,-1320],[-900,-1450],[800,1060],[1060,1360],[830,1240],[880,1420]];
   carRanges.forEach(function(range, nc){
     var car = makeNpcCar(carColors[nc % carColors.length]);
     var carDir = Math.random() < 0.5 ? 1 : -1;
@@ -7912,7 +8270,12 @@
     for(var id in runkoOsat){
       if(!Object.prototype.hasOwnProperty.call(runkoOsat, id)) continue;
       var p = partById(id);
-      runkoOsat[id].visible = !!(p && p.installed);
+      // Osa nakyy rungossa heti kun se on asetettu paikalleen - ei vasta kun
+      // viimeinen pultti on kiristetty. Muuten pelaaja kiristaisi pultteja
+      // tyhjaan ilmaan eika nakisi mita on asentamassa.
+      var paikallaan = !!(p && p.installed) ||
+        !!(typeof wrenchPending !== 'undefined' && wrenchPending && wrenchPending.partId === id && wrenchSeated);
+      runkoOsat[id].visible = paikallaan;
     }
   }
 
@@ -7921,6 +8284,9 @@
     moped.visible = done;
     mopoRunko.visible = !done;
     if(!done) paivitaRunkoOsat();
+    // Rungon ja valmiin mopon aariviivat ovat eri kokoiset, joten pulttien
+    // laatikkovalimuisti haetaan uudestaan kun malli vaihtuu.
+    if(typeof boltBoxCache !== 'undefined' && boltBoxCache) boltBoxCache = {};
     if(!done){
       // runko pysyy siellä minne mopo on parkkeerattu, jottei se jää leijumaan väärään paikkaan
       mopoRunko.position.copy(moped.position);
@@ -16144,6 +16510,9 @@
         inClump = clump - 1;
       }
       if(flattenFactor(x, z) < cfg.minFlat) continue;
+      // Isojarvi ei ole maata: ilman tata kivet, pensaat ja kukat kylvettiin myos
+      // veden paalle, koska tama hajasijoitus katsoo vain tasoituskerrointa.
+      if(typeof jarviEtaisyysReunaan === 'function' && jarviEtaisyysReunaan(x, z) > -8) continue;
       dummy.position.set(x, terrainHeight(x, z) + (cfg.yOff || 0), z);
       dummy.rotation.set(0, propRandom()*Math.PI*2, 0);
       var sc = cfg.minScale + propRandom()*(cfg.maxScale - cfg.minScale);
@@ -16173,6 +16542,7 @@
   // Kevyellä grafiikka-asetuksella pikkurekvisiitta piilotetaan kokonaan (ks. applyQuality), joten
   // jokainen instanssijoukko otetaan talteen tähän listaan.
   var optionalProps = [];
+  if(jarviKaislikko) optionalProps.push(jarviKaislikko);
   // scatterInstances palauttaa ruutujoukon, joten lista litistetään: optionalProps odottaa
   // yksittäisiä meshejä (applyQuality piilottaa ne kevyellä asetuksella)
   function pushProps(list){
@@ -16267,6 +16637,17 @@
       var w = 26 + propRandom()*46;
       var d = 26 + propRandom()*46;
       if(!fieldFree(cx, cz, w, d)) continue;
+      // Isojarven paalle ei kylveta peltoa: lohkon nurkat tarkistetaan erikseen,
+      // koska pelto on iso laatta eika pelkka piste.
+      if(typeof vedessa === 'function'){
+        var puoli = Math.max(w, d)*0.5 + 10, vesilla = false;
+        for(var kx = -1; kx <= 1 && !vesilla; kx++){
+          for(var kz = -1; kz <= 1 && !vesilla; kz++){
+            if(vedessa(cx + kx*puoli, cz + kz*puoli, 6)) vesilla = true;
+          }
+        }
+        if(vesilla) continue;
+      }
       var rot = propRandom()*Math.PI;
       var tone = fieldTones[Math.floor(propRandom()*fieldTones.length)];
       var seg = Math.max(4, Math.round(Math.max(w, d)/7));
@@ -16303,7 +16684,8 @@
         var bAng = rot + (propRandom()<0.5 ? 0 : Math.PI/2);
         var bx = cx + Math.cos(rot)*(w*0.5 + 6)*(propRandom()<0.5?-1:1);
         var bz = cz + Math.sin(rot)*(d*0.5 + 6)*(propRandom()<0.5?-1:1);
-        if(flattenFactor(bx,bz) > 0.95 && distToNearestRoad(bx,bz) > 14) barnSpots.push({x:bx, z:bz, rot:bAng});
+        if(flattenFactor(bx,bz) > 0.95 && distToNearestRoad(bx,bz) > 14 &&
+           !(typeof vedessa === 'function' && vedessa(bx, bz, 10))) barnSpots.push({x:bx, z:bz, rot:bAng});
       }
       placed++;
     }
@@ -16494,6 +16876,9 @@
         // risteysten kohdalla toisen tien viereen mitattu paikka voi osua toisen tien päälle, joten
         // jokainen pensas tarkistetaan vielä KAIKKIA teitä vasten - muuten ajoradalle ilmestyy pensas
         if(distToNearestRoad(bx2, bz2) < 9) continue;
+        // Kapeikon silta on tie kuten muutkin, joten sen varteen oltiin kylvamassa
+        // pensaita - keskelle Isojarvea. Vesi tarkistetaan erikseen.
+        if(typeof vedessa === 'function' && vedessa(bx2, bz2, 4)) continue;
         roadsideSpots.push({x:bx2, z:bz2, s:0.55 + propRandom()*1.1});
       }
     }
@@ -16525,29 +16910,40 @@
   // tielle, tolppaa siirretään pitkin linjaa lähimpään vapaaseen kohtaan - ja jos sellaista ei löydy,
   // tolppa jätetään väliin ja johto vain kaartaa pidemmän matkan.
   var poleShift = [0, 7, -7, 13, -13, 19, -19];
-  for(var pz=-620; pz<=400; pz+=62){
-    var usedZ = null;
-    for(var ps=0; ps<poleShift.length; ps++){
-      if(!onRoadway(poleX, pz + poleShift[ps], 1.2)){ usedZ = pz + poleShift[ps]; break; }
+  // Linja kulki ennen suoraan kartan keskelta (z = -620...400). Siella on nyt
+  // Isojarvi: tolpat jaivat pois veden takia, mutta johto jatkoi silti jaljelle
+  // jaaneiden tolppien valilla ja piirtyi mustana viivana jarven yli. Nyt linja
+  // seuraa paaraittia sen molemmilla puoliskoilla, ja johto katkaistaan jarven
+  // kohdalta omiksi jaksoikseen.
+  var linjaJaksot = [[-1540, -780], [780, 1540]];
+  linjaJaksot.forEach(function(jakso){
+    var jaksoPts = [[], []];
+    for(var pz = jakso[0]; pz <= jakso[1]; pz += 62){
+      var usedZ = null;
+      for(var ps=0; ps<poleShift.length; ps++){
+        if(!onRoadway(poleX, pz + poleShift[ps], 1.2)){ usedZ = pz + poleShift[ps]; break; }
+      }
+      if(usedZ === null) continue;
+      var poleY = terrainHeight(poleX, usedZ);
+      var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 7.6, 6), powerPoleMat);
+      pole.position.set(poleX, poleY + 3.8, usedZ);
+      pole.castShadow = true;
+      scene.add(pole);
+      var arm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.13, 0.13), powerPoleMat);
+      arm.position.set(poleX, poleY + 7.0, usedZ);
+      scene.add(arm);
+      jaksoPts[0].push(new THREE.Vector3(poleX - 1.0, poleY + 6.95, usedZ));
+      jaksoPts[1].push(new THREE.Vector3(poleX + 1.0, poleY + 6.95, usedZ));
     }
-    if(usedZ === null) continue;
-    var poleY = terrainHeight(poleX, usedZ);
-    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 7.6, 6), powerPoleMat);
-    pole.position.set(poleX, poleY + 3.8, usedZ);
-    pole.castShadow = true;
-    scene.add(pole);
-    var arm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.13, 0.13), powerPoleMat);
-    arm.position.set(poleX, poleY + 7.0, usedZ);
-    scene.add(arm);
-    wirePts[0].push(new THREE.Vector3(poleX - 1.0, poleY + 6.95, usedZ));
-    wirePts[1].push(new THREE.Vector3(poleX + 1.0, poleY + 6.95, usedZ));
-  }
-  for(var wi=0; wi<2; wi++){
-    var wireGeom = new THREE.BufferGeometry().setFromPoints(wirePts[wi]);
-    var wire = new THREE.Line(wireGeom, new THREE.LineBasicMaterial({color:0x2b2b2b, transparent:true, opacity:0.75}));
-    wire.frustumCulled = false;
-    scene.add(wire);
-  }
+    for(var wi=0; wi<2; wi++){
+      if(jaksoPts[wi].length < 2) continue;
+      var wireGeom = new THREE.BufferGeometry().setFromPoints(jaksoPts[wi]);
+      var wire = new THREE.Line(wireGeom, new THREE.LineBasicMaterial({color:0x2b2b2b, transparent:true, opacity:0.75}));
+      wire.frustumCulled = false;
+      scene.add(wire);
+    }
+  });
+  void wirePts;
 
   // ---- ruokapaikat: tienvarsigrilli ja Mac Donaldsin luukku ----
   // Ruoka ei ole pelkkä koriste: täysi vatsa antaa 3 minuutin ajan +50 % palkkiot hommista ja
@@ -16969,6 +17365,25 @@
   }
   // piirtää maastokartasta sen palan joka vastaa maailman suorakulmiota [wx0..wx1] x [wz0..wz1]
   // kanvaasin alueelle [dx,dy,dw,dh]. Reunan yli menevä osa jää pois, joten tausta täytetään ensin.
+  // Isojarvi kartalle: sama monikulmio kuin maailmassa, muunnettuna annetulla
+  // funktiolla ruutupisteiksi. Ilman tata kartan keskella olisi vain tyhja laikku
+  // jonka ympari tiet kiertavat selittamatta miksi.
+  function drawJarvi(ctx, bx, by){
+    if(typeof JARVI_REUNA === 'undefined' || !JARVI_REUNA.length) return;
+    ctx.save();
+    ctx.beginPath();
+    for(var i = 0; i < JARVI_REUNA.length; i++){
+      var px = bx(JARVI_REUNA[i][0]), py = by(JARVI_REUNA[i][1]);
+      if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#4e93b8';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(40,32,22,0.55)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+  }
   function drawTerrainBackdrop(ctx, wx0, wz0, wx1, wz1, dx, dy, dw, dh, flipX){
     ctx.fillStyle = MAP_GRASS;
     ctx.fillRect(dx, dy, dw, dh);
@@ -17114,6 +17529,9 @@
     drawTerrainBackdrop(miniCtx,
       ref.x - (W/2)/s, ref.z - (H/2)/s, ref.x + (W/2)/s, ref.z + (H/2)/s,
       0, 0, W, H, true);
+    drawJarvi(miniCtx,
+      function(wx){ return cx - (wx - ref.x)*s; },
+      function(wz){ return cy - (wz - ref.z)*s; });
 
     // Tiet piirretään kahteen kertaan: ensin tumma reunus, sitten vaalea ydin. Maastopohjaa vasten
     // yksivärinen viiva hukkuisi vihreään - reunustettu tie erottuu kuin oikeassa kartassa.
@@ -17261,6 +17679,7 @@
     // maastopohja koko kanvaasin alueelle (käänteismuunnos bx/by:stä: x = (ox - ruutuX)/s2, joten
     // ruudun vasen reuna vastaa suurinta maailman x:ää ja oikea reuna pienintä)
     drawTerrainBackdrop(bigCtx, (ox-W)/s2, (oy-H)/s2, (ox-0)/s2, (oy-0)/s2, 0, 0, W, H, true);
+    drawJarvi(bigCtx, bx, by);
 
     bigCtx.lineJoin = 'round';
     bigCtx.lineCap = 'round';
@@ -21258,13 +21677,17 @@
   // Sylinterigeometria on oletuksena Y-akselin suuntainen. Kierretään geometria kerran niin, että
   // pultin akseli osoittaa +Z:n suuntaan - silloin mesh.rotation.z pyörittää pulttia oikein
   // oman akselinsa ympäri (tämä on se mitä pelaaja näkee kun pultti kiertyy).
-  var boltHeadGeo  = new THREE.CylinderGeometry(0.031, 0.036, 0.026, 6);
+  // Mitat ovat oikean pultin mittoja: kuusiokanta n. 19 mm leveä ja 10 mm korkea,
+  // aluslevy 33 mm. Aiemmin kanta oli 72 mm ja aluslevy 92 mm, eli pultit olivat
+  // nyrkin kokoisia moykkyja mopon ymparilla. Osumapallo (boltPickGeo) pidetaan
+  // tahallaan pulttia isompana, jotta pieneen pulttiin osoittaminen onnistuu.
+  var boltHeadGeo  = new THREE.CylinderGeometry(0.0105, 0.0125, 0.0100, 6);
   boltHeadGeo.rotateX(Math.PI/2);
-  var boltWashGeo  = new THREE.CylinderGeometry(0.046, 0.046, 0.007, 12);
+  var boltWashGeo  = new THREE.CylinderGeometry(0.0165, 0.0165, 0.0028, 12);
   boltWashGeo.rotateX(Math.PI/2);
-  var boltNotchGeo = new THREE.BoxGeometry(0.052, 0.005, 0.009);
-  var boltPickGeo  = new THREE.SphereGeometry(0.085, 8, 6);
-  var boltRingGeo  = new THREE.TorusGeometry(0.062, 0.006, 6, 18);
+  var boltNotchGeo = new THREE.BoxGeometry(0.019, 0.002, 0.0035);
+  var boltPickGeo  = new THREE.SphereGeometry(0.034, 8, 6);
+  var boltRingGeo  = new THREE.TorusGeometry(0.024, 0.0028, 6, 18);
   var boltMatLoose  = new THREE.MeshStandardMaterial({color:0x6a6a68, metalness:0.75, roughness:0.55});
   var boltMatTight  = new THREE.MeshStandardMaterial({color:0xbfc3c6, metalness:0.9,  roughness:0.28});
   var boltMatStrip  = new THREE.MeshStandardMaterial({color:0x8d3f2a, metalness:0.5,  roughness:0.7});
@@ -21277,21 +21700,21 @@
   function makeBoltObject(st, p, idx, axis){
     var g = new THREE.Group();
     var wash = new THREE.Mesh(boltWashGeo, boltMatWash);
-    wash.position.z = -0.004;
+    wash.position.z = -0.0014;
     g.add(wash);
     var head = new THREE.Mesh(boltHeadGeo, boltMatLoose);
-    head.position.z = 0.016;
+    head.position.z = 0.0062;
     g.add(head);
     // kannan päälle uurre, jotta pultin kiertyminen NÄKYY eikä ole pelkkä numero ruudulla
     var notch = new THREE.Mesh(boltNotchGeo, boltMatNotch);
-    notch.position.set(0, 0, 0.0145);
+    notch.position.set(0, 0, 0.0056);
     head.add(notch);
     var ring = new THREE.Mesh(boltRingGeo, boltMatRing);
-    ring.position.z = 0.016;
+    ring.position.z = 0.0062;
     ring.visible = false;
     g.add(ring);
     var pick = new THREE.Mesh(boltPickGeo, boltMatPick);
-    pick.position.z = 0.02;
+    pick.position.z = 0.012;
     g.add(pick);
     pick.userData.bolt = st;
     boltPickList.push(pick);
@@ -21314,10 +21737,19 @@
     if(equippedMopedId === 'derbi' && typeof derbiRoot !== 'undefined' && derbiRoot) return derbiRoot;
     return null;
   }
+  // Pultit kiinnitetaan siihen mika mopossa on NAKYVISSA. Kasattuna se on mopon
+  // oma malli, mutta kasauksen aikana paljas runko - ja ne ovat eri muotoisia.
+  // Ilman tata kasausvaiheen pultit istuivat valmiin mopon pinnalle, eli runkoon
+  // nahden ilmaan: renkaiden akselimutterit esimerkiksi lattialle pukkien viereen.
+  function boltTargetRoot(){
+    if(typeof mopoRunko !== 'undefined' && mopoRunko && mopoRunko.visible) return mopoRunko;
+    return mopedModelRoot();
+  }
   function mopedLocalBox(){
-    var key = equippedMopedId;
+    var runkoNyt = (typeof mopoRunko !== 'undefined' && mopoRunko && mopoRunko.visible);
+    var key = equippedMopedId + (runkoNyt ? '|runko' : '');
     if(boltBoxCache[key]) return boltBoxCache[key];
-    var root = mopedModelRoot();
+    var root = boltTargetRoot();
     var box = new THREE.Box3();
     if(root){
       moped.updateMatrixWorld(true);
@@ -21343,35 +21775,126 @@
   // ammutaan säde ulkoa sisäänpäin ja pultti asetetaan siihen kohtaan missä säde osuu mopon
   // näkyvään pintaan. Näin sama taulukko istuu jokaiseen mopoon, oli se skootteri tai Derbi.
   var boltSurfRay = new THREE.Raycaster();
-  function boltSurfacePoint(local, axis, sign, box){
-    var root = mopedModelRoot();
-    var dir = new THREE.Vector3(axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0);
-    if(!root){
-      var sx = box.max.x - box.min.x, sy = box.max.y - box.min.y, sz = box.max.z - box.min.z;
-      return local.clone().add(dir.clone().multiplyScalar(axis === 'y' ? sy*0.04 : (axis === 'x' ? sx*0.06 : sz*0.05)));
-    }
-    moped.updateMatrixWorld(true);
-    var inv = new THREE.Matrix4().copy(moped.matrixWorld).invert();
-    var start = local.clone().add(dir.clone().multiplyScalar(1.4));
-    var wStart = start.clone().applyMatrix4(moped.matrixWorld);
-    var wEnd   = local.clone().applyMatrix4(moped.matrixWorld);
-    var wDir   = wEnd.clone().sub(wStart).normalize();
+  var boltApuV = new THREE.Vector3();
+  // Pultin paikka mopon PINNALTA.
+  //
+  // Vanha versio ampui sateen 1,4 metrin paasta sisaanpain ja otti ENSIMMAISEN
+  // osuman joka oli keskilinjan oikealla puolella. Jos nimellispiste osui kohtaan
+  // jossa mallia ei ole - esimerkiksi pyoran ja rungon valiin - sade joko osui
+  // johonkin aivan muuhun tai ei osunut mihinkaan, ja silloin pultti jai
+  // nimellispisteeseen eli tyhjaan ilmaan mopon viereen.
+  //
+  // Nyt kaikista osumista valitaan se joka on LAHINNA nimellispistetta, ja jos
+  // sade ei osu mihinkaan, nimellispistetta siirretaan vahan kerrallaan kunnes
+  // malli loytyy. Vasta viimeisena oljenkortena kaytetaan aariviivalaatikkoa.
+  function boltRayHit(local, dir, axis, sign, box, inv){
+    var root = boltTargetRoot();
+    if(!root) return null;
+    var wStart = local.clone().add(dir.clone().multiplyScalar(0.9)).applyMatrix4(moped.matrixWorld);
+    var wNom   = local.clone().applyMatrix4(moped.matrixWorld);
+    var wDir   = wNom.clone().sub(wStart).normalize();
     boltSurfRay.set(wStart, wDir);
-    boltSurfRay.far = 3.0;
+    boltSurfRay.far = 2.4;
     var hits = boltSurfRay.intersectObject(root, true);
-    // Säde voi lävistää koko mopon ja osua vastakkaiseen sisäpintaan, jolloin pultti hyppäisi
-    // väärälle puolelle (esim. oikean puolen pakoputken pultti ilmestyi vasemmalle). Kelpuutetaan
-    // siis vain osuma joka on oikealla puolella mopon keskilinjaa.
+    if(!hits.length) return null;
     var cx = (box.min.x + box.max.x)/2, cy = (box.min.y + box.max.y)/2, cz = (box.min.z + box.max.z)/2;
+    var paras = null, parasD = 1e9, varaP = null, varaD = 1e9;
     for(var hi=0; hi<hits.length; hi++){
       var lp = hits[hi].point.clone().applyMatrix4(inv);
+      var d = lp.distanceTo(local);
+      if(d < varaD){ varaD = d; varaP = lp; }
       var rel = (axis === 'x') ? (lp.x - cx) : (axis === 'y' ? (lp.y - cy) : (lp.z - cz));
-      if(sign*rel < 0.015) continue;      // meni keskilinjan yli - väärä puoli
-      return lp.add(dir.clone().multiplyScalar(0.016));   // hitusen pinnan päälle, ei sen sisään
+      if(sign*rel < 0.005) continue;          // meni keskilinjan yli - vaara puoli
+      if(d < parasD){ parasD = d; paras = lp; }
     }
-    // ei osumaa (esim. pultti mallin ääriviivojen ulkopuolella) - käytetään nimellistä paikkaa
-    var sx2 = box.max.x - box.min.x, sy2 = box.max.y - box.min.y, sz2 = box.max.z - box.min.z;
-    return local.clone().add(dir.clone().multiplyScalar(axis === 'y' ? sy2*0.04 : (axis === 'x' ? sx2*0.06 : sz2*0.05)));
+    return paras || varaP;
+  }
+  function boltSurfacePoint(local, axis, sign, box){
+    var dir = new THREE.Vector3(axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0);
+    var root = boltTargetRoot();
+    if(root){
+      moped.updateMatrixWorld(true);
+      var inv = new THREE.Matrix4().copy(moped.matrixWorld).invert();
+      var osuma = boltRayHit(local, dir, axis, sign, box, inv);
+      if(osuma) return osuma.add(dir.clone().multiplyScalar(0.005));
+      // Nimellispiste on mallin siluetin ulkopuolella. Haetaan lahin kohta jossa
+      // mallia on: kokeillaan pienia siirtoja niissa kahdessa suunnassa jotka
+      // eivat ole pultin akseli.
+      var a1 = (axis === 'x') ? 'y' : 'x';
+      var a2 = (axis === 'z') ? 'y' : 'z';
+      var askeleet = [0.05, 0.10, 0.16, 0.24];
+      for(var si = 0; si < askeleet.length; si++){
+        var r2 = askeleet[si];
+        for(var k = 0; k < 8; k++){
+          var kulma = k*Math.PI/4;
+          boltApuV.copy(local);
+          boltApuV[a1] += Math.cos(kulma)*r2;
+          boltApuV[a2] += Math.sin(kulma)*r2;
+          var o2 = boltRayHit(boltApuV, dir, axis, sign, box, inv);
+          if(o2) return o2.add(dir.clone().multiplyScalar(0.005));
+        }
+      }
+    }
+    // Viimeinen oljenkorsi: aariviivalaatikon pinta. Pultti on silloin mopon
+    // siluetilla eika ainakaan kaukana ilmassa.
+    var p2 = local.clone();
+    if(axis === 'x') p2.x = (sign > 0 ? box.max.x : box.min.x);
+    else if(axis === 'y') p2.y = (sign > 0 ? box.max.y : box.min.y);
+    else p2.z = (sign > 0 ? box.max.z : box.min.z);
+    return p2.add(dir.clone().multiplyScalar(0.005));
+  }
+
+  // ---- kasausvaiheen pultit: osan OMAAN kohtaan ----
+  // Taulukon suhteelliset paikat on mitoitettu valmiin mopon aariviivoihin. Kun
+  // mopo on osina, nakyvissa on paljas runko, ja samat suhdeluvut osuivat silloin
+  // ihan muualle: renkaiden akselimutterit paatyivat lattialle pukkien viereen.
+  // Kasauksen aikana pultit haetaan siis siita rungon osasta johon ne kuuluvat -
+  // osan aariviivalaatikon kyljelle, tasavalein. Nain akselimutterit ovat
+  // kummankin pyoran navassa ja moottorin kiinnityspultit moottorilohkon kyljessa.
+  var runkoBB = new THREE.Box3();
+  function boltRunkoPaikat(p, lay){
+    if(typeof runkoOsat === 'undefined' || !runkoOsat || !runkoOsat[p.id]) return null;
+    if(typeof mopoRunko === 'undefined' || !mopoRunko || !mopoRunko.visible) return null;
+    mopoRunko.updateMatrixWorld(true);
+    runkoBB.setFromObject(runkoOsat[p.id]);
+    if(runkoBB.isEmpty()) return null;
+    var a = mopoRunko.worldToLocal(runkoBB.min.clone());
+    var b = mopoRunko.worldToLocal(runkoBB.max.clone());
+    var minx = Math.min(a.x,b.x), maxx = Math.max(a.x,b.x);
+    var miny = Math.min(a.y,b.y), maxy = Math.max(a.y,b.y);
+    var minz = Math.min(a.z,b.z), maxz = Math.max(a.z,b.z);
+    var cx = (minx+maxx)/2, cy = (miny+maxy)/2, cz = (minz+maxz)/2;
+    var sx = maxx-minx, sy = maxy-miny, sz = maxz-minz;
+    // montako pulttia kullakin kyljella, jotta ne jakautuvat kyljittain tasan
+    var merkit = [], lkm = {};
+    for(var i=0; i<lay.b.length; i++){
+      var sp = lay.b[i], ax = sp[3];
+      var sg = (ax === 'y') ? 1 : ((ax === 'x' ? sp[0] : sp[2]) > 0.5 ? 1 : -1);
+      merkit.push({axis:ax, sign:sg});
+      var avain = ax + sg;
+      lkm[avain] = (lkm[avain] || 0) + 1;
+    }
+    var jarj = {};
+    var ulos = [];
+    for(var k=0; k<merkit.length; k++){
+      var ax2 = merkit[k].axis, sg2 = merkit[k].sign, av = ax2 + sg2;
+      jarj[av] = (jarj[av] === undefined) ? 0 : jarj[av] + 1;
+      var n = lkm[av];
+      var t = (n <= 1) ? 0.5 : (0.12 + 0.76*(jarj[av]/(n-1)));
+      var px = cx, py = cy, pz = cz;
+      if(ax2 === 'x'){
+        px = (sg2 > 0 ? maxx : minx) + sg2*0.008;
+        if(sz >= sy) pz = minz + sz*t; else py = miny + sy*t;
+      } else if(ax2 === 'y'){
+        py = (sg2 > 0 ? maxy : miny) + sg2*0.008;
+        if(sz >= sx) pz = minz + sz*t; else px = minx + sx*t;
+      } else {
+        pz = (sg2 > 0 ? maxz : minz) + sg2*0.008;
+        if(sx >= sy) px = minx + sx*t; else py = miny + sy*t;
+      }
+      ulos.push({p:new THREE.Vector3(px, py, pz), axis:ax2, sign:sg2});
+    }
+    return ulos;
   }
 
   // Pultit rakennetaan/siirretään aina kun mopo vaihtuu tai ruuvitilaan mennään.
@@ -21386,13 +21909,18 @@
       var lay = boltLayoutFor(p.id);
       if(!lay) continue;
       var st = boltStateFor(p);
+      var runkoP = boltRunkoPaikat(p, lay);
       for(var bi=0; bi<lay.b.length; bi++){
         var spec = lay.b[bi];
         var g = makeBoltObject(st[bi], p, bi, spec[3]);
         var axis = spec[3];
         var sign = (axis === 'y') ? 1 : ((axis === 'x' ? spec[0] : spec[2]) > 0.5 ? 1 : -1);
-        var nominal = new THREE.Vector3(box.min.x + spec[0]*sx, box.min.y + spec[1]*sy, box.min.z + spec[2]*sz);
-        g.position.copy(boltSurfacePoint(nominal, axis, sign, box));
+        if(runkoP){
+          g.position.copy(runkoP[bi].p);
+        } else {
+          var nominal = new THREE.Vector3(box.min.x + spec[0]*sx, box.min.y + spec[1]*sy, box.min.z + spec[2]*sz);
+          g.position.copy(boltSurfacePoint(nominal, axis, sign, box));
+        }
         if(axis === 'x' && sign < 0) g.rotation.y = -Math.PI/2;
         else if(axis === 'z' && sign < 0) g.rotation.y = Math.PI;
       }
@@ -21400,6 +21928,9 @@
     boltsRefreshVisuals();
   }
   function boltsRefreshVisuals(){
+    // Rungon osien nakyvyys seuraa samaa tilaa kuin pulttien, joten se
+    // paivitetaan samalla kertaa.
+    if(typeof paivitaRunkoOsat === 'function') paivitaRunkoOsat();
     for(var pi=0; pi<parts.length; pi++){
       var p = parts[pi];
       var st = boltStateFor(p);
@@ -21414,6 +21945,61 @@
           b.head.rotation.z = b.spin || 0;
         }
         if(b.ring) b.ring.visible = (wrenchTarget === b);
+      }
+    }
+  }
+
+
+  // ==========================================================================
+  // ---- PULTIT NAKYVIIN VAIN LAHELTA JA OIKEALLA TYOKALULLA ----
+  // My Summer Carissa mopo nayttaa mopolta: pultit ovat pienia eika niita korosteta
+  // mitenkaan. Ne huomaa vasta kun menee osan viereen oikea tyokalu kadessa. Niin
+  // tassakin: koko mopon pulttikentta ei ole enaa esilla yhdella silmayksella, vaan
+  // kerrallaan nakyvat vain ne pultit joihin oikeasti ylettyy ja joihin kadessa oleva
+  // tyokalu kay. Nain ruuvaaminen on etsimista eika listan lapikaymista.
+  // ==========================================================================
+  // Etaisyys mitataan kasien korkeudelta (jalkojen y + 0,75 m), koska pultit ovat
+  // mopon kyljessa matalalla. Pelaaja seisoo ruuvitilassa 1,15 m mopon keskelta,
+  // joten taman puolen pultit nakyvat ja vastakkaisen puolen eivat - mopon ymparille
+  // pitaa oikeasti kavella, aivan kuten My Summer Carissa.
+  var BOLT_NAKY_R = 1.25;          // metria pelaajan kasista
+  var boltNakyV = new THREE.Vector3();
+  var boltVinkkiOsa = '', boltVinkkiTyokalu = '';
+  function boltsUpdateNearby(){
+    boltVinkkiOsa = ''; boltVinkkiTyokalu = '';
+    if(!wrenchMode) return;
+    var lahinD = 1e9;
+    for(var pi=0; pi<parts.length; pi++){
+      var p = parts[pi];
+      var lay = boltLayoutFor(p.id);
+      if(!lay) continue;
+      var st = boltStateFor(p);
+      if(!st) continue;
+      var asennuksessa = !!(wrenchPending && wrenchPending.partId === p.id && wrenchSeated);
+      var seated = !!p.installed || asennuksessa;
+      var oikeaTyokalu = (lay.tool === wrenchTool);
+      // Juuri paikalleen asetetun osan pultit nakyvat kauempaa. Osan saa asentaa
+      // 2,3 metrin paasta, joten tiukalla 1,3 metrin rajalla pelaaja olisi voinut
+      // jaada tuijottamaan tyhjaa mopoa heti asennuksen jalkeen.
+      var nakyR = asennuksessa ? 2.80 : BOLT_NAKY_R;
+      for(var bi=0; bi<st.length; bi++){
+        var b = st[bi];
+        if(!b.obj) continue;
+        if(!seated){ b.obj.visible = false; continue; }
+        b.obj.getWorldPosition(boltNakyV);
+        var dx = boltNakyV.x - player.position.x;
+        var dy = boltNakyV.y - (player.position.y + 0.75);
+        var dz = boltNakyV.z - player.position.z;
+        var d2 = dx*dx + dy*dy + dz*dz;
+        var lahella = d2 < nakyR*nakyR;
+        b.obj.visible = lahella && oikeaTyokalu;
+        // Jos lahella on pultti jota nykyisella tyokalulla ei voi kaantaa, siita
+        // kerrotaan ruudun alalaidassa - muuten pelaaja etsisi nakymattomia pultteja.
+        if(lahella && !oikeaTyokalu && d2 < lahinD){
+          lahinD = d2;
+          boltVinkkiOsa = p.name;
+          boltVinkkiTyokalu = wrenchToolName(lay.tool);
+        }
       }
     }
   }
@@ -21578,7 +22164,12 @@
     player.position.z = moped.position.z + rz*1.15;
     player.position.y = inStore ? 0 : terrainHeight(player.position.x, player.position.z);
     wrenchYaw = Math.atan2(moped.position.x - player.position.x, moped.position.z - player.position.z);
-    wrenchPitch = -0.25;
+    // Katse suoraan mopon kylkeen. Aiempi -0,25 radiaania katsoi lahes vaakasuoraan
+    // mopon yli, joten pienia pultteja piti ensin etsia hiirta alaspain vetamalla.
+    var mBox = mopedLocalBox();
+    var kohdeY = moped.position.y + (mBox.min.y + mBox.max.y)*0.5;
+    var silmaY = player.position.y + 1.58*(typeof lookScaleOf === 'function' && charLook ? lookScaleOf(charLook).y : 1);
+    wrenchPitch = Math.max(-1.0, Math.min(-0.15, Math.atan2(kohdeY - silmaY, 1.15)));
     playerHeading = wrenchYaw;
     player.rotation.y = wrenchYaw;
 
@@ -21844,7 +22435,11 @@
       }
       return;
     }
-    // jo asennetun osan pultit: liian löysäksi jäänyt osa irtoaa
+    // Jo asennetun osan pultit: kun kaikki on kierretty auki, osa irtoaa. Aiemmin
+    // se katosi samalla sekunnilla hyllylle, mika oli yhta epauskottavaa kuin se
+    // etta osat ilmestyivat mopoon itsestaan. Nyt irronnut osa jaa KATEEN, ja sen
+    // voi kantaa hyllylle (E) tai asentaa takaisin (E mopon vieressa) - kuten
+    // oikeassa tallissa, jossa irrotettu osa on siina missa sen jatti.
     if(p.installed){
       var st = boltStateFor(p);
       var allOff = true;
@@ -21852,12 +22447,30 @@
       if(allOff && st.length){
         p.installed = false;
         partsInstalled = Math.max(0, partsInstalled - 1);
-        garageShelf.push({partId:p.id, kind: p.tierIndex > 0 ? 'tier' : 'orig', tierIndex:p.tierIndex});
+        var irtoEntry = {partId:p.id, kind: p.tierIndex > 0 ? 'tier' : 'orig', tierIndex:p.tierIndex};
+        garageShelf.push(irtoEntry);
+        // Moottori on liian painava kateen ruuvitilasta: se palaa tyopoydan pukille
+        // kasattuna, josta sen voi nostaa uudestaan E:lla.
+        if(p.id === 'sylinteri'){
+          if(typeof engineRoot !== 'undefined' && engineRoot){
+            engineRoot.visible = true;
+            engineRoot.position.set(ENGINE_STAND[0], ENGINE_BENCH_Y, ENGINE_STAND[1]);
+            engineRoot.rotation.set(0, 0, 0);
+          }
+        } else if(typeof mopoCarry !== 'undefined' && OSA_HYLLYPAIKAT[p.id]){
+          mopoCarry = {partId:p.id, kind:irtoEntry.kind, tierIndex:irtoEntry.tierIndex, entry:irtoEntry};
+        }
         updateMopedAssembly();
         if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
         playRatchet('snap');
-        wrenchSay(p.name + ' irtosi ja on taas hyllyllä.');
         exitWrenchMode();
+        if(p.id === 'sylinteri'){
+          showToast(false, '🔧 Moottori irtosi',
+            'Moottori on taas työpöydän pukilla. Nosta se E:llä kun haluat asentaa sen takaisin.', 5400);
+        } else {
+          showToast(false, '🔧 ' + p.name + ' irtosi',
+            'Osa on kädessäsi. E laskee sen hyllylle, E mopon vieressä asentaa takaisin.', 5400);
+        }
       }
     }
   }
@@ -22324,6 +22937,10 @@
     camera.updateMatrixWorld(true);
     boltGroup.updateMatrixWorld(true);
 
+    // Nakyvyys ensin, tahtays vasta sitten: piilotettuun pulttiin ei saa pystya
+    // tahtaamaan, koska sita ei nae.
+    boltsUpdateNearby();
+
     // tähtäys
     var prev = wrenchTarget;
     wrenchTarget = wrenchPick();
@@ -22404,11 +23021,14 @@
     } else if(wrenchCardEl){
       wrenchCardEl.hidden = true;
     }
-    if(wrenchTipEl){
+    if(wrenchTipEl && boltVinkkiOsa && !wrenchTarget && wrenchMsgTime <= 0){
+      wrenchTipEl.textContent = boltVinkkiOsa + ': pultteihin tarvitaan ' + boltVinkkiTyokalu +
+                                ' · Q vaihtaa työkalua';
+    } else if(wrenchTipEl){
       wrenchTipEl.textContent = wrenchMsgTime > 0 ? wrenchMsgText
         : (wrenchPending && !wrenchSeated ? 'E asettaa osan paikalleen · Q vaihtaa työkalua · Esc pois'
         : (garageShelf.length ? 'Rulla tai ↑/R kiristää, ↓/F löysää · E ottaa seuraavan osan hyllyltä · Q työkalu · Esc pois'
-        : 'Osoita pulttia · rulla tai ↑ / R kiristää, ↓ / F löysää · Q työkalu · G korjaa kierre · Esc pois'));
+        : 'Mene osan viereen - pultit näkyvät läheltä oikealla työkalulla · rulla tai ↑ / R kiristää, ↓ / F löysää · Q työkalu · G korjaa kierre · Esc pois'));
     }
     // sivulista: osien kiinnitystilanne
     if(wrenchListEl){
@@ -27039,6 +27659,11 @@
   // iskusuuntaan sisäänpäin pehmeällä vaimennuksella, ja mukaan sekoitetaan pientä
   // satunnaisuutta - muuten jälki olisi siisti pallonmuotoinen kuoppa eikä rutistunut pelti.
   var dmgV = new THREE.Vector3();
+  var dmgO = new THREE.Vector3();
+  // Kuinka kauas yksi karkipiste saa kaikkiaan siirtya alkuperaiselta paikaltaan.
+  // Ilman tata rajaa 26 perakkaista kolhua saattoivat tyontaa saman karkipisteen
+  // metrien paahan, jolloin mopo nytti repaleiselta piikkipallolta eika lommoiselta.
+  var DAMAGE_MAX_DENT = 0.055;
   function damageApplyImpact(root, imp){
     var ix = imp.p[0], iy = imp.p[1], iz = imp.p[2];
     var dx = imp.d[0], dy = imp.d[1], dz = imp.d[2];
@@ -27047,19 +27672,32 @@
       var m = damageMeshMatrices(mesh);
       var pos = g.attributes.position;
       var arr = pos.array;
+      var orig = g.userData.dmgOrig;
       var moved = false;
       for(var i=0; i<pos.count; i++){
-        dmgV.set(arr[i*3], arr[i*3+1], arr[i*3+2]).applyMatrix4(m.to);
-        var ax = dmgV.x - ix, ay = dmgV.y - iy, az = dmgV.z - iz;
+        // Kolhun muoto lasketaan AINA alkuperaisesta karkipisteesta, ei jo lommotusta.
+        // Aiemmin etaisyys ja satunnaisheitto luettiin edellisten kolhujen jaljilta,
+        // jolloin kolhut ruokkivat toisiaan: jokainen uusi osuma venytti samoja
+        // karkipisteita yha kauemmas ja malli hajosi piikeiksi.
+        dmgO.set(orig[i*3], orig[i*3+1], orig[i*3+2]).applyMatrix4(m.to);
+        var ax = dmgO.x - ix, ay = dmgO.y - iy, az = dmgO.z - iz;
         var d2 = ax*ax + ay*ay + az*az;
         if(d2 > r*r) continue;
         var d = Math.sqrt(d2);
         var k = 1 - d/r;
         k = k*k*(3 - 2*k);                       // pehmeä reuna
         // rutistusta: pieni kärkipistekohtainen heitto, jottei jälki ole sileä kuoppa
-        var jit = Math.sin(dmgV.x*37.1 + dmgV.y*61.7 + dmgV.z*23.3)*0.35 + 1;
+        var jit = Math.sin(dmgO.x*37.1 + dmgO.y*61.7 + dmgO.z*23.3)*0.35 + 1;
         var amt = depth * k * jit;
+        dmgV.set(arr[i*3], arr[i*3+1], arr[i*3+2]).applyMatrix4(m.to);
         dmgV.x += dx*amt; dmgV.y += dy*amt; dmgV.z += dz*amt;
+        // kokonaissiirtyma alkuperaisesta rajataan: pelti lommoaa, muttei venahda piikiksi
+        var ox = dmgV.x - dmgO.x, oy = dmgV.y - dmgO.y, oz = dmgV.z - dmgO.z;
+        var olen = Math.sqrt(ox*ox + oy*oy + oz*oz);
+        if(olen > DAMAGE_MAX_DENT){
+          var sk = DAMAGE_MAX_DENT/olen;
+          dmgV.set(dmgO.x + ox*sk, dmgO.y + oy*sk, dmgO.z + oz*sk);
+        }
         dmgV.applyMatrix4(m.from);
         arr[i*3] = dmgV.x; arr[i*3+1] = dmgV.y; arr[i*3+2] = dmgV.z;
         moved = true;
@@ -28087,6 +28725,11 @@
     }
   }
   lisaaKaupanTuotteet();
+
+  // Kaytossa oleva mopomalli voimaan heti. Ilman tata equipMoped jai ajamatta
+  // kunnes pelaaja vaihtoi mopoa tai latasi tallennuksen, jolloin proseduraalisen
+  // mopon ajovalokuula ja pakoputki jaivat leijumaan GLB-mallin paalle.
+  if(typeof equipMoped === 'function') equipMoped(equippedMopedId);
 
   applyLoadedVisuals();   // tallennuksen maali, tarrat, kolhut ja varusteet nakyviin - maailma on nyt valmis
   applyQuality(qualityLevel, false); // tallennettu grafiikka-asetus voimaan heti käynnistyksessä
