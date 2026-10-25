@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:131-->
-<!--JONNE-NAME:Jonnen ajokoe 131-->
-<!--JONNE-DATE:2026-10-21-->
-<!--JONNE-NOTES:PITÄJÄ: kartan keskellä on nyt Isojärvi ja sen ympäri kiertää rengastie - umpiperiä ei ole, mihin suuntaan lähdetkin päädyt lopulta kotiin|Kaikki paikat siirretty rengastien varrelle: kylä lounaaseen, talli ja poliisiasema luoteeseen, miitti pohjoiseen, Mac Donalds koilliseen|Kapeikon silta vie järven kapeimman kohdan yli - pitkä kierros vai lyhyt oikotie|Pääraitti tulee pohjoisesta rengastielle ja jatkaa etelästä eteenpäin; vanhat järven yli menneet suorat poistettu|Uimaranta on oikealla järvenrannalla, ei enää oma pikku lätäkkö|Maasto painuu rantaviivasta veden alle: järvi on oikea allas eikä sininen levy maan päällä|Teiden tasoitus johdetaan nyt suoraan tieverkosta, joten yksikään mäki ei työnny tien läpi|Poliisi partioi rengastietä, ja puut, pellot, ladot ja sähkölinja pysyvät poissa vedestä-->
+<!--JONNE-VERSION:136-->
+<!--JONNE-NAME:Jonnen ajokoe 136-->
+<!--JONNE-DATE:2026-10-25-->
+<!--JONNE-NOTES:Reppu omaan paneeliin: TAB avaa tavarat, tupakat, megikset ja mopon tilan|Kasino Kultainen Mopo naapurikylään: blackjack, ruletti, baccarat ja slotti|Kasinolle ei pääse ilman väärennettyä henkilökorttia - diileri kyläkaupan takana klo 00-04|Panoskatot: blackjack, ruletti ja baccarat 1000 euroa, slotti 100 euroa|Kasino auki klo 18-04, kello neljältä ovimies saattaa ulos-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -328,6 +328,74 @@
   .miniSteps button:hover{background:rgba(251,246,233,0.18);}
   .miniSteps button.done{background:rgba(122,196,96,0.28);border-color:rgba(122,196,96,0.55);opacity:.75;cursor:default;}
   .miniSteps button.bad{background:rgba(216,64,44,0.30);border-color:rgba(216,64,44,0.6);}
+  /* maalipinta (ruiskumaalaus): 16 ruutua joihin maali kerrostuu */
+  .maaliPinta{position:relative;display:flex;gap:2px;height:84px;margin:12px 0 8px;padding:4px;
+              border-radius:8px;background:rgba(10,12,10,0.55);border:1px solid rgba(251,246,233,0.18);}
+  .maaliPinta i{flex:1;border-radius:3px;background:#55534c;}
+  .maaliPinta i.valuma{box-shadow:inset 0 -12px 0 rgba(0,0,0,0.5);}
+  .maaliPinta i.kuiva{outline:1px dashed rgba(232,163,63,0.75);outline-offset:-2px;}
+  .maaliSuutin{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:#fbf6e9;
+               box-shadow:0 0 6px rgba(0,0,0,0.6);border-radius:2px;}
+  .maaliSuutin.on{background:#8ce99a;box-shadow:0 0 12px rgba(140,233,154,0.95);}
+  /* reppu (TAB): oma paneeli, leveampi kuin korjauspaneelit koska siina on kaksi saraketta */
+  .reppuPanel{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:14px;
+    padding:16px 18px;width:min(520px,92vw);max-height:84vh;overflow:auto;pointer-events:auto;
+  }
+  .reppuPanel[hidden]{display:none;}
+  .reppuGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:8px 0 4px;}
+  .reppuSlot{background:rgba(251,246,233,0.08);border:1px solid var(--panel-line);border-radius:10px;
+             padding:9px 7px;text-align:center;}
+  .reppuSlot .ikoni{font-size:24px;line-height:1.1;display:block;}
+  .reppuSlot .nimi{font:600 10.5px/1.25 'Karla',sans-serif;opacity:.85;margin-top:3px;display:block;}
+  .reppuSlot .maara{font:700 13px/1.2 'Teko',sans-serif;color:var(--accent);display:block;margin-top:2px;}
+  .reppuSlot.tyhja{opacity:.35;}
+  .reppuSlot.kaytossa{border-color:rgba(122,196,96,0.6);background:rgba(122,196,96,0.16);}
+  /* kasino */
+  .kasinoPanel{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:linear-gradient(180deg,rgba(32,16,26,0.96),rgba(18,10,16,0.97));
+    border:1px solid rgba(255,90,168,0.42);border-radius:14px;
+    padding:16px 18px;width:min(560px,94vw);max-height:88vh;overflow:auto;pointer-events:auto;
+    box-shadow:0 0 40px rgba(255,90,168,0.12);
+  }
+  .kasinoPanel[hidden]{display:none;}
+  .kasinoPanel .tuneLabel{color:#ff8ec4;letter-spacing:.14em;}
+  .kasinoValikko{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+  .kasinoValikko button{flex:1 1 auto;background:rgba(251,246,233,0.08);border:1px solid rgba(255,90,168,0.28);
+    border-radius:8px;color:var(--cream);font:600 11.5px/1 'Karla',sans-serif;padding:8px 9px;cursor:pointer;}
+  .kasinoValikko button.active{background:rgba(255,90,168,0.26);border-color:rgba(255,142,196,0.75);}
+  .kasinoValikko button:hover{background:rgba(255,90,168,0.18);}
+  .kasinoPanos{display:flex;align-items:center;gap:5px;margin:8px 0 4px;}
+  .kasinoPanos button{background:rgba(251,246,233,0.10);border:1px solid var(--panel-line);border-radius:7px;
+    color:var(--cream);font:700 11px/1 'Karla',sans-serif;padding:7px 9px;cursor:pointer;}
+  .kasinoPanos button:hover{background:rgba(251,246,233,0.2);}
+  .kasinoPanos .nayt{flex:1;text-align:center;font:700 19px/1 'Teko',sans-serif;color:#f3c623;}
+  .kasinoKortit{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0;}
+  .kortti{min-width:38px;padding:7px 6px;border-radius:6px;background:#f4efe2;color:#1a1a1a;
+    font:700 15px/1.1 'Karla',sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.45);}
+  .kortti.puna{color:#c2283a;}
+  .kortti.pimea{background:#2d2730;color:#8a8a8a;}
+  .kasinoRivi{display:flex;justify-content:space-between;gap:10px;font:600 12px/1.5 'Karla',sans-serif;
+    padding:3px 0;border-bottom:1px solid rgba(251,246,233,0.08);}
+  .kasinoRivi b{color:#f3c623;}
+  .kasinoViesti{font:600 13px/1.45 'Karla',sans-serif;margin:8px 0 4px;min-height:36px;color:#ffd9ec;}
+  .kasinoNapit{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .kasinoNapit button{flex:1 1 110px;background:rgba(255,90,168,0.20);border:1px solid rgba(255,142,196,0.5);
+    border-radius:8px;color:var(--cream);font:700 12px/1 'Karla',sans-serif;padding:10px 8px;cursor:pointer;}
+  .kasinoNapit button:hover{background:rgba(255,90,168,0.34);}
+  .kasinoNapit button:disabled{opacity:.35;cursor:default;}
+  .kasinoNumerot{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:6px 0;}
+  .kasinoNumerot button{background:rgba(251,246,233,0.08);border:1px solid var(--panel-line);border-radius:5px;
+    color:var(--cream);font:600 10.5px/1 'Karla',sans-serif;padding:6px 2px;cursor:pointer;}
+  .kasinoNumerot button.puna{background:rgba(194,40,58,0.42);}
+  .kasinoNumerot button.vihrea{background:rgba(60,140,80,0.5);}
+  .kasinoNumerot button.active{outline:2px solid #f3c623;}
+  .slottiRullat{font-size:44px;letter-spacing:12px;text-align:center;margin:12px 0 6px;
+    background:rgba(10,8,10,0.5);border-radius:10px;padding:10px 0;}
+  .reppuNapit{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;}
+  .reppuNapit button{flex:1 1 150px;}
   .miniStrikes{display:flex;gap:6px;justify-content:center;margin-bottom:4px;}
   .miniStrikes i{width:16px;height:6px;border-radius:3px;background:rgba(251,246,233,0.2);}
   .miniStrikes i.on{background:#d8402c;}
@@ -1356,6 +1424,36 @@
       <div class="tuneLabel">Talli — osta korjaussarjat ja viritysosat</div>
       <div id="partsList"></div>
       <div class="repairFoot">Raha: <b id="repairMoney">40</b> €</div>
+    </div>
+    <div class="repairPanel" id="romuPanel" hidden>
+      <div class="tuneLabel">Romuttamo — myy vanhat, osta käytettyjä</div>
+      <div id="romuMyy"></div>
+      <div id="romuOsta"></div>
+      <div class="repairFoot">Raha: <b id="romuMoney">0</b> € · varasto vaihtuu joka aamu</div>
+    </div>
+    <div class="kasinoPanel" id="kasinoPanel" hidden>
+      <div class="tuneLabel">Kasino Kultainen Mopo</div>
+      <div class="kasinoValikko" id="kasinoValikko"></div>
+      <div id="kasinoSisalto"></div>
+      <div class="repairFoot">Raha: <b id="kasinoMoney">0</b> € · illan saldo: <b id="kasinoSaldo">0</b> €</div>
+    </div>
+    <div class="repairPanel" id="diiliPanel" hidden>
+      <div class="tuneLabel">Kaupan takapiha</div>
+      <div id="diiliTeksti"></div>
+      <div class="partActions"><button class="repairBtn" id="diiliOstaBtn" type="button">Osta</button></div>
+      <div class="repairFoot">Raha: <b id="diiliMoney">0</b> €</div>
+    </div>
+    <div class="reppuPanel" id="reppuPanel" hidden>
+      <div class="tuneLabel">Reppu — tavarat, rahat ja mopon tila</div>
+      <div id="reppuSisalto"></div>
+    </div>
+    <div class="repairPanel" id="maalaamoPanel" hidden>
+      <div class="tuneLabel">Maalaamo — oikaise pelti, ruiskuta maali</div>
+      <div id="maalaamoTila"></div>
+      <div id="maalaamoTyot"></div>
+      <div class="tuneLabel">Väri</div>
+      <div class="swatches" id="maaliVarit"></div>
+      <div class="repairFoot">Raha: <b id="maalaamoMoney">0</b> € · maali <b id="maalaamoHinta">0</b> €</div>
     </div>
     <div class="garagePanel" id="garagePanel" hidden>
       <div class="tuneLabel">Autotalli — asenna osat mopoon</div>
@@ -2802,7 +2900,8 @@
     '27,-37':   [-645, -425],   // Poliisiasema
     '-9,-37':   [-581, -425],   // poliisiaseman liittyma rengastiella
     '48,-64':   [-130, -700],   // Miitti ja huoltoasema - pohjoisessa
-    '-68,-118': [-250, -840],   // Romuttamo      - renkaan ulkopuolella
+    '-68,-118': [-250, -840],   // Romuttamo
+    '33,-144':  [ 120, -740],   // Maalaamo      - renkaan ulkopuolella
     '70,-8':    [ 430, -580],   // Mac Donalds    - koillisessa
     '4,-260':   [ 760, -210],   // Naapurikyla    - idassa
     '-45,300':  [ 620,  470],   // Jarvimokki     - kaakossa
@@ -3168,8 +3267,22 @@
     }
     return false;
   }
+  // Kapeikon sillan kaiteet. Nama olivat ensin rivi tormaysympyroita, mutta
+  // viiden metrin valilla ja puolentoista metrin sateella niiden valiin jai kahden
+  // metrin rako - mopo livahti siita jarveen. Kaide on suora jana, joten se on
+  // yksinkertaisinta ja tarkinta tarkistaa suoraan rajana.
+  function resolveSillanKaide(pos, radius){
+    if(typeof SILTA_ALUE === 'undefined' || !SILTA_ALUE) return false;
+    if(pos.x < SILTA_ALUE.x1 - 2 || pos.x > SILTA_ALUE.x2 + 2) return false;
+    var raja = SILTA_ALUE.puolileveys - 0.5 - radius;   // kaiteen sisapinta
+    var d = pos.z - SILTA_ALUE.z;
+    if(d > raja){ pos.z = SILTA_ALUE.z + raja; return true; }
+    if(d < -raja){ pos.z = SILTA_ALUE.z - raja; return true; }
+    return false;
+  }
   function resolveCollisions(pos, radius){
     var hit = false;
+    if(resolveSillanKaide(pos, radius)) hit = true;
     for(var i=0; i<colliders.length; i++){
       if(resolveAgainstCircle(pos, radius, colliders[i].x, colliders[i].z, colliders[i].r)) hit = true;
     }
@@ -3814,6 +3927,224 @@
     registerCollider(g, 0, 0, 1.1);
   })();
 
+
+  // ---- maalaamo (paint shop) ----
+  // Oma rakennus, koska maalaaminen ei ole autotallin hommaa: pelti pitaa oikaista
+  // ja ruiskuttaa polyttomassa tilassa. Halli on edesta AUKI, joten mopolla ajetaan
+  // sisaan - siksi etuseinaa ei ole lainkaan ja torm ysympyrat jaavat seinien kohdille.
+  function makeMaalaamo(collOut){
+    var g = new THREE.Group();
+    var pad = new THREE.Mesh(new THREE.PlaneGeometry(22, 17),
+      new THREE.MeshStandardMaterial({color:0x474641, roughness:0.99}));
+    pad.rotation.x = -Math.PI/2; pad.position.y = 0.016; pad.receiveShadow = true;
+    g.add(pad);
+    var wallMat  = new THREE.MeshStandardMaterial({color:0x7f8a86, roughness:0.86, metalness:0.12});
+    var roofMat  = new THREE.MeshStandardMaterial({color:0x4a5150, roughness:0.72, metalness:0.2});
+    var steelMat = new THREE.MeshStandardMaterial({color:0x6a6f74, roughness:0.75, metalness:0.35});
+    var woodMat  = new THREE.MeshStandardMaterial({color:0x7a5c3c, roughness:0.95});
+
+    // hallin sisalattia: maalipoly ja roiskeet tekevat pinnasta tyopaikan eika parkkipaikan
+    var lattia = new THREE.Mesh(new THREE.PlaneGeometry(12.4, 8.6),
+      new THREE.MeshStandardMaterial({color:0x4f4e49, roughness:0.99}));
+    lattia.rotation.x = -Math.PI/2; lattia.position.set(0, 0.03, -0.2); lattia.receiveShadow = true;
+    g.add(lattia);
+    var roiskeVarit = [0xc33c22, 0x2f7a78, 0xd8b23a, 0x3a4d8f, 0xf0ece0];
+    for(var ri = 0; ri < 16; ri++){
+      var rs = new THREE.Mesh(new THREE.CircleGeometry(0.10 + (ri % 4)*0.05, 7),
+        new THREE.MeshStandardMaterial({color:roiskeVarit[ri % roiskeVarit.length], roughness:0.9}));
+      rs.rotation.x = -Math.PI/2;
+      rs.position.set(-5.4 + (ri*1.37) % 11, 0.035, -4.0 + ((ri*2.9) % 8));
+      g.add(rs);
+    }
+
+    // seinat: taka ja kaksi sivua
+    var taka = new THREE.Mesh(new THREE.BoxGeometry(13.2, 4.4, 0.3), wallMat);
+    taka.position.set(0, 2.2, -4.6); taka.castShadow = true; taka.receiveShadow = true;
+    g.add(taka);
+    [-6.6, 6.6].forEach(function(sx){
+      var sivu = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.4, 9.2), wallMat);
+      sivu.position.set(sx, 2.2, 0); sivu.castShadow = true; sivu.receiveShadow = true;
+      g.add(sivu);
+    });
+    // aallotus: ohuet pystyrimat seinien pintaan
+    for(var ax = -6.2; ax <= 6.2; ax += 0.62){
+      var rima = new THREE.Mesh(new THREE.BoxGeometry(0.09, 4.3, 0.09), roofMat);
+      rima.position.set(ax, 2.2, -4.78);
+      g.add(rima);
+    }
+    // pulpettikatto: etureuna korkeammalla, jotta sisaan nakee
+    var katto = new THREE.Mesh(new THREE.BoxGeometry(13.8, 0.22, 9.9), roofMat);
+    katto.position.set(0, 4.62, 0.1); katto.rotation.x = -0.075;
+    katto.castShadow = true; katto.receiveShadow = true;
+    g.add(katto);
+    // etureunan palkki ja kaksi pylvasta aukon laidoille
+    var palkki = new THREE.Mesh(new THREE.BoxGeometry(13.4, 0.46, 0.28), wallMat);
+    palkki.position.set(0, 4.28, 4.5); palkki.castShadow = true;
+    g.add(palkki);
+    [-6.5, 6.5].forEach(function(px){
+      var pyl = new THREE.Mesh(new THREE.BoxGeometry(0.34, 4.3, 0.34), wallMat);
+      pyl.position.set(px, 2.15, 4.5); pyl.castShadow = true;
+      g.add(pyl);
+    });
+
+    // kyltti etureunaan
+    var signTex = makeSignTexture('MAALAAMO', '#25303a', '#f0ece0');
+    var sign = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.3),
+      new THREE.MeshStandardMaterial({map:signTex, side:THREE.DoubleSide}));
+    sign.position.set(0, 4.30, 4.70);
+    g.add(sign);
+
+    // maalauskammio: muoviverhot katosta ja kaksi loisteputkea
+    var verhoMat = new THREE.MeshStandardMaterial({color:0xdfe4e0, roughness:0.35,
+      transparent:true, opacity:0.30, side:THREE.DoubleSide});
+    [-3.1, 3.1].forEach(function(vx){
+      var verho = new THREE.Mesh(new THREE.PlaneGeometry(0.1 + 7.4, 3.2), verhoMat);
+      verho.rotation.y = Math.PI/2;
+      verho.position.set(vx, 2.7, -0.4);
+      g.add(verho);
+    });
+    [-1.6, 1.6].forEach(function(lx){
+      var putki = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 5.4),
+        new THREE.MeshStandardMaterial({color:0xfdf8e6, emissive:0xfdf3cf, emissiveIntensity:0.55, roughness:0.4}));
+      putki.position.set(lx, 4.22, -0.6);
+      g.add(putki);
+    });
+
+    // maalitynnyrit takaseinustalla
+    var tynnyriVarit = [0xc33c22, 0x2f7a78, 0xd8b23a, 0x3a4d8f, 0x2b2b2b, 0xf0ece0];
+    for(var ti = 0; ti < 6; ti++){
+      var tx = -5.4 + ti*1.25;
+      var tyn = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.30, 0.78, 12),
+        new THREE.MeshStandardMaterial({color:tynnyriVarit[ti], roughness:0.55, metalness:0.28}));
+      tyn.position.set(tx, 0.39, -4.0); tyn.castShadow = true;
+      var kansi = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.06, 12), steelMat);
+      kansi.position.set(tx, 0.80, -4.0);
+      g.add(tyn, kansi);
+    }
+    // kompressori sivuseinustalla
+    var sailio = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 1.5, 12),
+      new THREE.MeshStandardMaterial({color:0x2f6e8a, roughness:0.6, metalness:0.32}));
+    sailio.rotation.z = Math.PI/2; sailio.position.set(-5.5, 0.42, -2.9); sailio.castShadow = true;
+    var moottori = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.42, 0.5), steelMat);
+    moottori.position.set(-5.5, 0.96, -2.9); moottori.castShadow = true;
+    var letku = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.055, 6, 16),
+      new THREE.MeshStandardMaterial({color:0x1d1f21, roughness:0.9}));
+    letku.position.set(-4.7, 1.6, -2.9); letku.rotation.y = Math.PI/2;
+    g.add(sailio, moottori, letku);
+    // pukit ja konepelti oikaistavana
+    [[4.3, 2.2], [4.3, 3.4]].forEach(function(pp){
+      var pukki = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.10, 0.16), woodMat);
+      pukki.position.set(pp[0], 0.74, pp[1]); pukki.castShadow = true;
+      g.add(pukki);
+      [-0.6, 0.6].forEach(function(dx){
+        var jalka = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.74, 0.09), woodMat);
+        jalka.position.set(pp[0] + dx, 0.37, pp[1]);
+        g.add(jalka);
+      });
+    });
+    var pelti = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.07, 1.5),
+      new THREE.MeshStandardMaterial({color:0x8a3b2b, roughness:0.75, metalness:0.2}));
+    pelti.position.set(4.3, 0.83, 2.8); pelti.rotation.z = 0.04; pelti.castShadow = true;
+    g.add(pelti);
+    // tyopoyta hallin vasemmalla seinustalla: tasta E avaa maalaamon paneelin.
+    // Oma piste eika hallin keskipiste siksi, etta mopo seisoo keskella kammiota -
+    // keskipisteessa seisova pelaaja olisi mopon vieressa ja E nostaisi hanet kyytiin.
+    var poyta = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 1.0), steelMat);
+    poyta.position.set(-4.6, 0.86, 1.7); poyta.castShadow = true; poyta.receiveShadow = true;
+    g.add(poyta);
+    [[-1.15,-0.38],[1.15,-0.38],[-1.15,0.38],[1.15,0.38]].forEach(function(lp){
+      var jalka = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.86, 0.09), steelMat);
+      jalka.position.set(-4.6 + lp[0], 0.43, 1.7 + lp[1]);
+      g.add(jalka);
+    });
+    // maaliruisku poydalla
+    var ruiskuRunko = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.22, 0.14),
+      new THREE.MeshStandardMaterial({color:0xc9c4b4, roughness:0.4, metalness:0.5}));
+    ruiskuRunko.position.set(-5.3, 1.03, 1.7);
+    var ruiskuKuppi = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.18, 10),
+      new THREE.MeshStandardMaterial({color:0xd8d3c4, roughness:0.45, metalness:0.35}));
+    ruiskuKuppi.position.set(-5.3, 1.23, 1.7);
+    var ruiskuSuutin = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 8),
+      new THREE.MeshStandardMaterial({color:0x8c8578, roughness:0.4, metalness:0.6}));
+    ruiskuSuutin.rotation.z = Math.PI/2; ruiskuSuutin.position.set(-5.14, 1.06, 1.7);
+    g.add(ruiskuRunko, ruiskuKuppi, ruiskuSuutin);
+    // vasarat ja oikaisuraudat poydalla
+    [[-4.2, 1.52], [-4.0, 1.86]].forEach(function(hp){
+      var varsi = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.36, 6), woodMat);
+      varsi.rotation.z = Math.PI/2; varsi.position.set(hp[0], 0.95, hp[1]);
+      var paa = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.07, 0.07), steelMat);
+      paa.position.set(hp[0] + 0.20, 0.95, hp[1]);
+      g.add(varsi, paa);
+    });
+    // maalarinteippirullat ja suojapaperipinkka
+    for(var mi = 0; mi < 3; mi++){
+      var rulla = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.09, 12),
+        new THREE.MeshStandardMaterial({color:0xd9c68a, roughness:0.9}));
+      rulla.position.set(5.6, 0.05 + mi*0.10, -1.4);
+      g.add(rulla);
+    }
+
+    // katon ilmanvaihtopiippu ja seinavalaisin: pelkka laatikko nayttaisi varastolta
+    var piippu = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.25, 10), roofMat);
+    piippu.position.set(-3.4, 5.25, -2.2); piippu.castShadow = true;
+    var hattu = new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.38, 10), roofMat);
+    hattu.position.set(-3.4, 6.00, -2.2);
+    g.add(piippu, hattu);
+    var valo = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.3),
+      new THREE.MeshStandardMaterial({color:0xfdf8e6, emissive:0xf6e3a8, emissiveIntensity:0.5, roughness:0.5}));
+    valo.position.set(0, 3.95, 4.42);
+    g.add(valo);
+    // pihalla: lavapino, maalipurkkeja ja odottava romuauto
+    var lavaMat = new THREE.MeshStandardMaterial({color:0x6e5637, roughness:0.96});
+    for(var li = 0; li < 4; li++){
+      var lava = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.14, 0.9), lavaMat);
+      lava.position.set(-8.6, 0.09 + li*0.16, -1.2); lava.castShadow = true;
+      g.add(lava);
+    }
+    for(var pi = 0; pi < 5; pi++){
+      var purkki = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.26, 10),
+        new THREE.MeshStandardMaterial({color:tynnyriVarit[pi], roughness:0.5, metalness:0.3}));
+      purkki.position.set(-8.3 + (pi % 3)*0.42, 0.13, 0.9 + Math.floor(pi/3)*0.42);
+      purkki.castShadow = true;
+      g.add(purkki);
+    }
+    g.add(makeCarHusk(8.6, -1.6, 1.25, 0x4f6b78));
+    g.add(makeParkedMoped(7.4, 3.6, -0.4, 0x8a3b2b));
+    if(collOut){
+      collOut.push({x:-8.6, z:-1.2, r:0.75});
+      collOut.push({x:8.6, z:-1.6, r:1.3});
+      collOut.push({x:7.4, z:3.6, r:0.55});
+      collOut.push({x:0, z:-4.6, r:0.9});
+      for(var cx = -5.5; cx <= 5.5; cx += 1.8) collOut.push({x:cx, z:-4.6, r:0.9});
+      for(var cz = -4.0; cz <= 4.2; cz += 1.8){
+        collOut.push({x:-6.6, z:cz, r:0.9});
+        collOut.push({x: 6.6, z:cz, r:0.9});
+      }
+      collOut.push({x:-5.5, z:-2.9, r:0.7});
+      collOut.push({x: 4.3, z:2.8, r:0.9});
+    }
+    return g;
+  }
+  var maalaamoPos = worldSpread(33, -144);
+  var maalaamoColl = [];
+  var maalaamo = makeMaalaamo(maalaamoColl);
+  maalaamo.position.copy(maalaamoPos);
+  // Aukon suunta mitattiin: pistotie tulee rengastielta pohjoisesta (+z), joten
+  // local +z (= hallin aukko) kaannetaan samaan suuntaan pienella tien mukaisella kallistuksella.
+  maalaamo.rotation.y = -0.18;
+  scene.add(maalaamo);
+  registerColliders(maalaamo, maalaamoColl);
+  // tyopisteet hallin sisalla: vasara pukkien luona, ruisku kammiossa
+  // Tyopisteen maailmakoordinaatit lasketaan hallin kierrosta, jotta piste pysyy
+  // poydan kohdalla vaikka rakennusta kaannettaisiin.
+  var maalaamoBenchPos = (function(){
+    var lx = -4.6, lz = 2.9;   // poydan edusta
+    var c = Math.cos(maalaamo.rotation.y), s = Math.sin(maalaamo.rotation.y);
+    return {x: maalaamoPos.x + lx*c + lz*s, z: maalaamoPos.z - lx*s + lz*c};
+  })();
+  var maalaamoBenchRadius = 3.4;   // tasta E avaa paneelin
+  var maalaamoRadius = 15;         // tahan sateeseen mopon on mahduttava
+
   // uimaranta (beach)
   function makeUimaranta(collOut){
     var g = new THREE.Group();
@@ -4129,6 +4460,143 @@
   naapurikyla.position.copy(kylaPos);
   scene.add(naapurikyla);
   registerColliders(naapurikyla, naapurikylaColl);
+
+
+  // ---- kasino (naapurikylän laidalla) ----
+  // Kylän itäreunalle, talojen taakse. Matalalla kynnyksellä ei mennä sisään: ovella
+  // seisoo ovimies joka tarkistaa iän, ja paikka on auki vain klo 18-04. Rakennus on
+  // tarkoituksella muusta kylästä poikkeava - tumma tiili, neon ja punainen matto.
+  function makeKasino(collOut){
+    var g = new THREE.Group();
+    var tiiliMat = new THREE.MeshStandardMaterial({color:0x3a2630, roughness:0.9});
+    var listaMat = new THREE.MeshStandardMaterial({color:0x6b5230, roughness:0.6, metalness:0.45});
+    var kattoMat = new THREE.MeshStandardMaterial({color:0x241a1f, roughness:0.85});
+
+    var pad = new THREE.Mesh(new THREE.PlaneGeometry(24, 18),
+      new THREE.MeshStandardMaterial({color:0x3c3a36, roughness:0.98}));
+    pad.rotation.x = -Math.PI/2; pad.position.set(0, 0.018, 2); pad.receiveShadow = true;
+    g.add(pad);
+
+    var runko = new THREE.Mesh(new THREE.BoxGeometry(14, 5.2, 11), tiiliMat);
+    runko.position.set(0, 2.6, -2); runko.castShadow = true; runko.receiveShadow = true;
+    g.add(runko);
+    var rapays = new THREE.Mesh(new THREE.BoxGeometry(14.6, 0.5, 11.6), kattoMat);
+    rapays.position.set(0, 5.35, -2); rapays.castShadow = true;
+    g.add(rapays);
+    // kultainen vaakalista julkisivuun
+    var lista = new THREE.Mesh(new THREE.BoxGeometry(14.2, 0.22, 0.14), listaMat);
+    lista.position.set(0, 3.9, 3.58);
+    g.add(lista);
+
+    // ovi ja ovensuun katos
+    var ovi = new THREE.Mesh(new THREE.BoxGeometry(2.6, 3.0, 0.16),
+      new THREE.MeshStandardMaterial({color:0x14100f, roughness:0.4, metalness:0.3}));
+    ovi.position.set(0, 1.5, 3.56);
+    g.add(ovi);
+    [-0.65, 0.65].forEach(function(kx){
+      var kahva = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.1, 8), listaMat);
+      kahva.position.set(kx, 1.5, 3.66);
+      g.add(kahva);
+    });
+    var katos = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.24, 2.2), kattoMat);
+    katos.position.set(0, 3.5, 4.4); katos.castShadow = true;
+    g.add(katos);
+    [[-2.2, 5.3], [2.2, 5.3]].forEach(function(pp){
+      var pylvas = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.5, 8), listaMat);
+      pylvas.position.set(pp[0], 1.75, pp[1]); pylvas.castShadow = true;
+      g.add(pylvas);
+      if(collOut) collOut.push({x:pp[0], z:pp[1], r:0.22});
+    });
+
+    // punainen matto ovelta ulos
+    var matto = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 7),
+      new THREE.MeshStandardMaterial({color:0x8e1f28, roughness:0.95}));
+    matto.rotation.x = -Math.PI/2; matto.position.set(0, 0.03, 7.2);
+    g.add(matto);
+    // samettiköydet matton reunoille
+    [-1.7, 1.7].forEach(function(sx){
+      [4.6, 7.2, 9.8].forEach(function(sz){
+        var tolppa = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.0, 8), listaMat);
+        tolppa.position.set(sx, 0.5, sz); tolppa.castShadow = true;
+        var nuppi = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), listaMat);
+        nuppi.position.set(sx, 1.04, sz);
+        g.add(tolppa, nuppi);
+        if(collOut) collOut.push({x:sx, z:sz, r:0.16});
+      });
+      [[sx, 5.9], [sx, 8.5]].forEach(function(kp){
+        var koysi = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 2.6, 6),
+          new THREE.MeshStandardMaterial({color:0x7a1b24, roughness:0.9}));
+        koysi.rotation.x = Math.PI/2;
+        koysi.position.set(kp[0], 0.86, kp[1]);
+        g.add(koysi);
+      });
+    });
+
+    // neonkyltti: MeshBasicMaterial hohtaa myos pimeassa ilman valoa
+    var neonTex = makeSignTexture('KASINO', '#1a0d16', '#ff5aa8');
+    var neon = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 1.9),
+      new THREE.MeshBasicMaterial({map:neonTex, transparent:false}));
+    neon.position.set(0, 4.6, 3.60);
+    g.add(neon);
+    var neonTeline = new THREE.Mesh(new THREE.BoxGeometry(8.0, 2.3, 0.12), kattoMat);
+    neonTeline.position.set(0, 4.6, 3.50);
+    g.add(neonTeline);
+    // pikkukyltti: KULTAINEN MOPO
+    var nimiTex = makeSignTexture('KULTAINEN MOPO', '#120b10', '#f3c623');
+    var nimi = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 0.95),
+      new THREE.MeshBasicMaterial({map:nimiTex}));
+    // Riippuu katoksen alareunasta, ei katoksen edessa: aiemmin tama lauta leijui
+    // neonkyltin ja ikkunoiden paalla ja peitti julkisivun keskelta.
+    nimi.position.set(0, 3.00, 5.34);
+    nimi.rotation.x = -0.10;
+    g.add(nimi);
+
+    // ikkunat: lampimasti hohtavat, jotta paikka nayttaa auki olevalta yolla
+    var ikkunaMat = new THREE.MeshBasicMaterial({color:0xf0b24a});
+    [-4.6, -2.9, 2.9, 4.6].forEach(function(ix){
+      var ikk = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.9), ikkunaMat);
+      ikk.position.set(ix, 2.5, 3.56);
+      g.add(ikk);
+      var kehys = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.1, 0.08), listaMat);
+      kehys.position.set(ix, 2.5, 3.52);
+      g.add(kehys);
+    });
+
+    // ilmastointi katolle ja pari tyhjaa tynnyria taakse
+    var iv = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.9, 1.6), kattoMat);
+    iv.position.set(-3.4, 6.05, -3.5); iv.castShadow = true;
+    g.add(iv);
+    [[6.2, -6.4], [7.1, -5.2]].forEach(function(tp){
+      var tyn = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.0, 10),
+        new THREE.MeshStandardMaterial({color:0x4a4a44, roughness:0.9, metalness:0.2}));
+      tyn.position.set(tp[0], 0.5, tp[1]); tyn.castShadow = true;
+      g.add(tyn);
+      if(collOut) collOut.push({x:tp[0], z:tp[1], r:0.5});
+    });
+
+    if(collOut){
+      for(var cx = -6.2; cx <= 6.2; cx += 1.8){
+        collOut.push({x:cx, z:3.5, r:0.95});    // julkisivu, ovi jaa valiin
+        collOut.push({x:cx, z:-7.5, r:0.95});   // takaseina
+      }
+      for(var cz = -7.0; cz <= 3.2; cz += 1.8){
+        collOut.push({x:-7.0, z:cz, r:0.95});
+        collOut.push({x: 7.0, z:cz, r:0.95});
+      }
+    }
+    return g;
+  }
+  var kasinoPos = kylaPos.clone().add(new THREE.Vector3(26, 0, -4));
+  var kasinoColl = [];
+  var kasino = makeKasino(kasinoColl);
+  kasino.position.copy(kasinoPos);
+  kasino.rotation.y = -Math.PI/2;      // ovi kohti kylän keskustaa (länteen)
+  scene.add(kasino);
+  registerColliders(kasino, kasinoColl);
+  // Ovi ja ovimiehen paikka maailmakoordinaateissa: E tassa pisteessa koputtaa oveen.
+  var kasinoOviPos = worldOffset(kasino, 0, 6.0);
+  var kasinoOvimiesPos = worldOffset(kasino, 2.3, 5.0);
+  var kasinoOviRadius = 4.2;
 
   // crossirata: motocross-rata kaukana kartan perällä, antaa suuremmalle kartalle tekemistä
   function makeRamp(x,z,rotY,scaleH){
@@ -4545,6 +5013,10 @@
   pistotie(meetSpot.x, meetSpot.z, hubRoadWidth, 6, 4);
   makeCurvedSpurRoad(meetSpot.x, meetSpot.z, romuPos.x, romuPos.z, 8, 14, 7, 1);
   pistotie(romuPos.x, romuPos.z, 8, 10, 5);
+  // Pistotien paa EI saa olla hallin keskipisteessa: soratie piirtyisi suoraan
+  // maalauskammion lattian lapi. Paa viedaan 12 metria aukon eteen, jolloin tie
+  // loppuu pihalaattaan ja halliin ajetaan betonin yli.
+  pistotie(maalaamoPos.x - 1.7, maalaamoPos.z + 9.2, 7, 8, 4);
 
   // koillinen, ita ja kaakko
   pistotie(macdonaldsPos.x, macdonaldsPos.z, hubRoadWidth, 6, 4);
@@ -4700,7 +5172,76 @@
     }
   })();
 
+
+  // ---- lahto- ja maalikaari ----
+  // Pitajan ymparajo alkaa ja paattyy kylan kohdalta. Ilman nakyvaa porttia
+  // lahtopaikka olisi pelkka koordinaatti kartalla; nyt se on paikka johon
+  // ajetaan odottamaan lahtoa.
+  var maalikaariPos = null;
+  (function maalikaari(){
+    if(!rengasPisteet.length) return;
+    var kehä = rengasPisteet.length - 1, aloitus = 0, paras = 1e9, i;
+    for(i = 0; i < kehä; i++){
+      var dx = rengasPisteet[i].x - hubJunction.x, dz = rengasPisteet[i].z - hubJunction.z;
+      var d = dx*dx + dz*dz;
+      if(d < paras){ paras = d; aloitus = i; }
+    }
+    var p = rengasPisteet[aloitus], q = rengasPisteet[(aloitus + 1) % kehä];
+    var suunta = Math.atan2(q.x - p.x, q.z - p.z);
+    maalikaariPos = new THREE.Vector3(p.x, 0, p.z);
+
+    var g = new THREE.Group();
+    var tolppaMat = new THREE.MeshStandardMaterial({color:0xe8e4d8, roughness:0.75});
+    var ruutuMat  = new THREE.MeshStandardMaterial({color:0x24242a, roughness:0.85});
+    [-6.2, 6.2].forEach(function(dx2){
+      var tolppa = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 5.4, 8), tolppaMat);
+      tolppa.position.set(dx2, 2.7, 0);
+      tolppa.castShadow = true;
+      g.add(tolppa);
+      // jalusta
+      var jalka = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.4, 1.1), ruutuMat);
+      jalka.position.set(dx2, 0.2, 0);
+      g.add(jalka);
+    });
+    // poikkipalkki ja shakkiruutunauha
+    var palkki = new THREE.Mesh(new THREE.BoxGeometry(13.2, 0.9, 0.3), tolppaMat);
+    palkki.position.set(0, 5.0, 0);
+    palkki.castShadow = true;
+    g.add(palkki);
+    for(var r = 0; r < 22; r++){
+      for(var c2 = 0; c2 < 2; c2++){
+        if((r + c2) % 2) continue;
+        var ruutu = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.06), ruutuMat);
+        ruutu.position.set(-6.3 + r*0.6, 5.22 - c2*0.45, 0.19);
+        g.add(ruutu);
+      }
+    }
+    // teksti-taulu keskelle
+    var taulu = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.0),
+      new THREE.MeshStandardMaterial({map:makeSignTexture('LÄHTÖ / MAALI', '#1d1d22', '#f0e2b8'),
+                                      side:THREE.DoubleSide, roughness:0.9}));
+    taulu.position.set(0, 3.9, 0.16);
+    g.add(taulu);
+
+    g.position.set(p.x, 0, p.z);
+    g.rotation.y = suunta;
+    scene.add(g);
+    // tolpat ovat ajoradan reunan ulkopuolella, joten ne saavat tormaysympyrat
+    [-6.2, 6.2].forEach(function(dx3){
+      var wx = p.x + Math.cos(suunta)*dx3;
+      var wz = p.z - Math.sin(suunta)*dx3;
+      colliders.push({x:wx, z:wz, r:0.6, obj:null});
+    });
+  })();
+
   // ---- Kapeikon silta ----
+  // Silta on PENGERSILTA, jonka kansi on samassa tasossa kuin molempien rantojen
+  // maa. Ensimmainen versio oli puoli metria maata ylempana ja pelkka koriste:
+  // mopon korkeus luetaan terrainHeight():sta, joka antaa jarven kohdalla altaan
+  // pohjan, joten sillalle ajanut putosi kannen lapi jarven pohjalle. Nyt
+  // terrainHeight tuntee sillan (ks. SILTA_ALUE alempana) ja kaiteissa on
+  // tormaysympyrat, jottei reunan yli voi ajaa.
+  var SILTA_ALUE = null;
   (function kapeikonSilta(){
     var z = JARVI_KAPEIKKO_Z;
     // etsitaan missa vesi alkaa ja loppuu taman korkeuden kohdalla
@@ -4709,29 +5250,53 @@
       if(jarvessa(x, z)){ if(xA === null) xA = x; xB = x; }
     }
     if(xA === null) return;
-    var pit = (xB - xA) + 24;
+    var pit = (xB - xA) + 30;          // kannet ulottuvat reilusti rannoille asti
     var kesk = (xA + xB)/2;
+    var LEV = 11;                      // kannen leveys
+    // Kannen YLAPINTA on nollassa eli samassa tasossa kuin rantojen maa: nain
+    // sillalle ei tule kynnysta kummassakaan paassa.
+    SILTA_ALUE = {x1: kesk - pit/2, x2: kesk + pit/2, z: z, puolileveys: LEV/2};
+
     var sMat = new THREE.MeshStandardMaterial({color:0x8a7250, roughness:0.9});
-    var kansi = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.5, 9), sMat);
-    kansi.position.set(kesk, 0.3, z);
+    var kansi = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.6, LEV), sMat);
+    kansi.position.set(kesk, -0.30, z);          // ylapinta y = 0
     kansi.castShadow = true; kansi.receiveShadow = true;
     scene.add(kansi);
+
     var kaideMat = new THREE.MeshStandardMaterial({color:0xd8d2c2, roughness:0.8});
-    [-4.3, 4.3].forEach(function(dz){
-      var kaide = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.9, 0.22), kaideMat);
-      kaide.position.set(kesk, 1.0, z + dz);
+    var kaideZ = LEV/2 - 0.35;
+    [-kaideZ, kaideZ].forEach(function(dz){
+      var kaide = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.95, 0.26), kaideMat);
+      kaide.position.set(kesk, 0.48, z + dz);
       kaide.castShadow = true;
       scene.add(kaide);
+      // tolpat kaiteeseen, ja samalla tormaysympyrat jottei reunan yli paase
+      for(var tx = kesk - pit/2 + 3; tx <= kesk + pit/2 - 3; tx += 5){
+        if(tx > xA - 4 && tx < xB + 4){
+          var tolppa = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.0, 0.22), kaideMat);
+          tolppa.position.set(tx, 0.5, z + dz);
+          scene.add(tolppa);
+        }
+        void tx;   // kaiteen tormays hoidetaan resolveCollisions():ssa janana
+      }
     });
+
     var pilariMat = new THREE.MeshStandardMaterial({color:0x6d6a63, roughness:0.95});
-    for(var p = xA + 14; p < xB - 10; p += 26){
-      var pilari = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.2, 2.2), pilariMat);
-      pilari.position.set(p, -1.2, z);
+    for(var p = xA + 12; p < xB - 8; p += 24){
+      var pilari = new THREE.Mesh(new THREE.BoxGeometry(1.8, 4.4, 2.4), pilariMat);
+      pilari.position.set(p, -2.4, z);
+      pilari.castShadow = true;
       scene.add(pilari);
     }
     // ajorata sillan paalle
-    makeStraightRoad(kesk, z, pit - 6, 8);
+    makeStraightRoad(kesk, z, pit - 4, 8);
   })();
+  // onko piste sillan kannella? Kaytetaan maaston korkeudessa.
+  function sillalla(x, z){
+    if(!SILTA_ALUE) return false;
+    return x > SILTA_ALUE.x1 && x < SILTA_ALUE.x2 &&
+           Math.abs(z - SILTA_ALUE.z) < SILTA_ALUE.puolileveys;
+  }
 
 
   // ==========================================================================
@@ -6460,6 +7025,8 @@
     {x:meetSpot.x, z:meetSpot.z, r:11}, {x:macdonaldsPos.x, z:macdonaldsPos.z, r:11},
     {x:policeStationPos.x, z:policeStationPos.z, r:9}, {x:mopedShopPos.x, z:mopedShopPos.z, r:9},
     {x:romuPos.x, z:romuPos.z, r:11}, {x:kauppaIsoPos.x, z:kauppaIsoPos.z, r:10},
+    {x:maalaamoPos.x, z:maalaamoPos.z, r:13},
+    {x:kasinoPos.x, z:kasinoPos.z, r:14},
     {x:autotalliPos.x, z:autotalliPos.z, r:9}
   ];
   // Katuvalo hylätään kolmesta syystä: se osuisi rakennukseen, se seisoisi keskellä jotain ajorataa,
@@ -6669,7 +7236,8 @@
     // kartan laidan uudet kohteet
     {x:kirkonkylaPos.x, z:kirkonkylaPos.z, r:56}, {x:kirkonkylaAsemaPos.x, z:kirkonkylaAsemaPos.z, r:30},
     {x:moottorirataPos.x, z:moottorirataPos.z, r:185}, {x:eramokkiPos.x, z:eramokkiPos.z, r:56},
-    {x:eramokkiPos.x, z:eramokkiPos.z + 76, r:78}
+    {x:eramokkiPos.x, z:eramokkiPos.z + 76, r:78},
+    {x:maalaamoPos.x, z:maalaamoPos.z, r:34}
   ];
   // Tasoitusjanat johdetaan nyt SUORAAN rakennetuista tiekaytavista. Aiemmin tama
   // oli kasin yllapidetty lista, jossa jokainen tie piti muistaa lisata erikseen -
@@ -6730,6 +7298,10 @@
       // altaan sisalla maasto on PELKKA allas: jos tahan lisattaisiin viela
       // makien korkeus, jarven pohja heittelisi ja ranta nousisi veden ylle.
       if(syv > 0) h = -syv;
+      // Kapeikon sillan kansi on kuitenkin kiintea pinta veden paalla: ilman tata
+      // sillalle ajanut putoaisi suoraan jarven pohjalle, koska mopon korkeus
+      // luetaan tasta funktiosta eika sillan geometriasta.
+      if(typeof sillalla === 'function' && sillalla(x, z)) h = 0;
     }
     return h;
   }
@@ -10139,12 +10711,17 @@
       return p.name + ' — ' + (t ? t.label : 'viritysosa');
     }
     if(it.kind === 'orig') return p.name + ' — alkuperäinen osa';
+    if(it.kind === 'kaytetty'){
+      var tk = p.tiers[it.tierIndex];
+      return p.name + ' — käytetty' + (tk && it.tierIndex > 0 ? ' ' + tk.label : '');
+    }
     return p.name + ' — korjaussarja';
   }
   function shelfItemHint(it){
     var p = partById(it.partId);
     if(it.kind === 'tier') return 'Vaihtaa osan uuteen malliin';
     if(it.kind === 'orig') return 'Kasataan mopoon · kunto ' + Math.round(p ? p.condition : 0) + ' %';
+    if(it.kind === 'kaytetty') return 'Romuttamolta · kunto ' + Math.round(it.cond || 0) + ' %';
     return 'Nykyinen kunto ' + Math.round(p ? p.condition : 0) + ' %';
   }
   function renderShelf(){
@@ -11126,6 +11703,350 @@
 
   buildEngineBench();
 
+
+  // ==========================================================================
+  // ---- ROMUTTAMO: VANHAT OSAT RAHAKSI, KAYTETYT OSAT HALVALLA ----
+  // Romuttamo oli tahan asti pelkka hitsauspiste ja maisemaa. Nyt se on se paikka
+  // minne vaihdetut osat viedaan: hyllylle kertyvat vanhat osat saa rahaksi, ja
+  // vastineeksi sielta loytyy joka aamu muutama kaytetty osa halvalla - mutta
+  // kunto on arpapelia, ja huono osa hajoaa nopeammin kuin tallin uusi.
+  // ==========================================================================
+  var romuPanelEl  = document.getElementById('romuPanel');
+  var romuMyyEl    = document.getElementById('romuMyy');
+  var romuOstaEl   = document.getElementById('romuOsta');
+  var romuMoneyEl  = document.getElementById('romuMoney');
+  var romuOpen = false;
+  var romuStock = [];          // tamanpaivainen valikoima
+  var romuStockDay = -1;       // mille paivalle valikoima on arvottu
+
+  // Myyntihinta: osan uushinnasta reilu nipistys ja kunto paalle. Alkuperaisesta
+  // vakio-osasta saa aina edes muutaman euron, jottei hylly ole pelkkaa painolastia.
+  function romuHinta(it){
+    var p = partById(it.partId);
+    if(!p) return 0;
+    var t = p.tiers[it.tierIndex] || p.tiers[0];
+    var pohja = Math.max(9, (t.price || 0) * 0.28);
+    var kunto = (it.cond !== undefined && it.cond !== null) ? it.cond : p.condition;
+    return Math.max(4, Math.round(pohja * (0.45 + kunto/170)));
+  }
+  // Saako taman osan myyda? Viimeista asentamatonta kappaletta ei: muuten mopon
+  // voisi vahingossa myyda palasina niin, ettei sita saa enaa kasaan.
+  function romuMyytavissa(it){
+    var p = partById(it.partId);
+    if(!p) return {ok:false, syy:'Tuntematon osa'};
+    if(p.installed) return {ok:true};
+    var muita = 0;
+    for(var i = 0; i < garageShelf.length; i++){
+      if(garageShelf[i] !== it && garageShelf[i].partId === it.partId) muita++;
+    }
+    if(muita > 0) return {ok:true};
+    return {ok:false, syy:'Mopon ainoa ' + p.name.toLowerCase() + ' - ilman sitä mopo ei mene kasaan'};
+  }
+  function romuMyy(it){
+    var lupa = romuMyytavissa(it);
+    if(!lupa.ok){ showToast(true, 'Reiska ei osta', lupa.syy + '.', 4200); return; }
+    var hinta = romuHinta(it);
+    for(var i = 0; i < garageShelf.length; i++){
+      if(garageShelf[i] === it){ garageShelf.splice(i, 1); break; }
+    }
+    money += hinta;
+    updateMoneyDisplay();
+    if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
+    if(garageOpen) renderShelf();
+    playRatchet('click');
+    showToast(false, '💰 Myyty romuttamolle', shelfItemLabel(it) + ' · +' + hinta + ' €', 3600);
+    romuRender();
+    saveGame();
+  }
+  // Paivan valikoima arvotaan kerran ja pysyy samana aamuun asti.
+  function romuArvoVarasto(){
+    romuStockDay = summerDay;
+    romuStock = [];
+    var ehdokkaat = [];
+    for(var i = 0; i < parts.length; i++){
+      var p = parts[i];
+      // vakio-osa ja korkeintaan ensimmainen viritysporras: romuttamolta ei loydy
+      // kilpaosia, ne ostetaan tallilta uutena
+      for(var t = 0; t < Math.min(2, p.tiers.length); t++){
+        if(p.tiers[t].requires) continue;
+        ehdokkaat.push({partId:p.id, tierIndex:t});
+      }
+    }
+    var maara = 3 + Math.floor(Math.random()*2);
+    for(var k = 0; k < maara && ehdokkaat.length; k++){
+      var idx = Math.floor(Math.random()*ehdokkaat.length);
+      var e = ehdokkaat.splice(idx, 1)[0];
+      var p2 = partById(e.partId);
+      var tt = p2.tiers[e.tierIndex];
+      var kunto = Math.round(28 + Math.random()*52);          // 28-80 %
+      var uusi = Math.max(18, tt.price || 18);
+      var hinta = Math.max(6, Math.round(uusi * 0.42 * (0.55 + kunto/150)));
+      romuStock.push({partId:e.partId, tierIndex:e.tierIndex, cond:kunto, price:hinta, myyty:false});
+    }
+  }
+  function romuTarkistaVarasto(){
+    if(romuStockDay !== summerDay) romuArvoVarasto();
+  }
+  function romuOsta(idx){
+    romuTarkistaVarasto();
+    var it = romuStock[idx];
+    if(!it || it.myyty) return;
+    if(money < it.price){
+      showToast(true, 'Rahat eivät riitä', it.price + ' € tarvitaan, kassassa ' + Math.round(money) + ' €.', 3600);
+      return;
+    }
+    money -= it.price;
+    updateMoneyDisplay();
+    it.myyty = true;
+    garageShelf.push({partId:it.partId, kind:'kaytetty', tierIndex:it.tierIndex, cond:it.cond});
+    if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
+    if(garageOpen) renderShelf();
+    playRatchet('seat');
+    var p = partById(it.partId);
+    showToast(false, '🔩 Ostit käytetyn osan',
+      (p ? p.name : 'Osa') + ' (kunto ' + it.cond + ' %) odottaa autotallin hyllyllä.', 4600);
+    romuRender();
+    saveGame();
+  }
+  function romuRender(){
+    if(!romuPanelEl) return;
+    romuTarkistaVarasto();
+    if(romuMoneyEl) romuMoneyEl.textContent = Math.round(money);
+
+    // ---- myytavat ----
+    var h = '<div class="tuneLabel" style="margin:2px 0 6px">Myytävänä hyllyltä</div>';
+    romuMyyEl.innerHTML = '';
+    var otsikko = document.createElement('div');
+    otsikko.innerHTML = h;
+    romuMyyEl.appendChild(otsikko);
+    if(!garageShelf.length){
+      var tyhja = document.createElement('p');
+      tyhja.className = 'shelfEmpty';
+      tyhja.textContent = 'Hyllyllä ei ole mitään myytävää. Vaihdetut vanhat osat päätyvät tänne.';
+      romuMyyEl.appendChild(tyhja);
+    } else {
+      garageShelf.forEach(function(it){
+        var lupa = romuMyytavissa(it);
+        var hinta = romuHinta(it);
+        var row = document.createElement('div');
+        row.className = 'shelfRow';
+        row.innerHTML =
+          '<div class="shelfInfo">' + shelfItemLabel(it) +
+            '<small>' + (lupa.ok ? shelfItemHint(it) : lupa.syy) + '</small>' +
+          '</div>' +
+          '<button class="tuneBtn"' + (lupa.ok ? '' : ' disabled') + '>' +
+            (lupa.ok ? hinta + ' €' : '—') + '</button>';
+        if(lupa.ok) row.querySelector('button').addEventListener('click', function(){ romuMyy(it); });
+        romuMyyEl.appendChild(row);
+      });
+    }
+
+    // ---- ostettavat ----
+    romuOstaEl.innerHTML = '';
+    var o = document.createElement('div');
+    o.innerHTML = '<div class="tuneLabel" style="margin:12px 0 6px">Reiskan käytetyt osat</div>';
+    romuOstaEl.appendChild(o);
+    var jaljella = 0;
+    romuStock.forEach(function(it, idx){
+      if(it.myyty) return;
+      jaljella++;
+      var p = partById(it.partId);
+      var tt = p ? p.tiers[it.tierIndex] : null;
+      var row = document.createElement('div');
+      row.className = 'shelfRow';
+      row.innerHTML =
+        '<div class="shelfInfo">' + (p ? p.name : 'Osa') +
+          (it.tierIndex > 0 && tt ? ' — ' + tt.label : ' — vakio') +
+          '<small>Kunto ' + it.cond + ' % · uutena ' + (tt && tt.price ? tt.price + ' €' : 'ei myynnissä') + '</small>' +
+        '</div>' +
+        '<button class="tuneBtn">' + it.price + ' €</button>';
+      row.querySelector('button').addEventListener('click', function(){ romuOsta(idx); });
+      romuOstaEl.appendChild(row);
+    });
+    if(!jaljella){
+      var tyhja2 = document.createElement('p');
+      tyhja2.className = 'shelfEmpty';
+      tyhja2.textContent = 'Reiskan varasto on tältä päivältä tyhjä. Uutta tavaraa tulee aamulla.';
+      romuOstaEl.appendChild(tyhja2);
+    }
+  }
+  // ==========================================================================
+  // ---- MAALAAMO ----
+  // Kolhittu mopo oli tahan asti joko lommoilla tai autotallissa maksettu suoraksi.
+  // Maalaamo antaa saman tyon KASIN: oikaisu vasaralla on ilmaista mutta vaatii
+  // tarkkuutta, ja maali ruiskutetaan itse ja arvostellaan. Pinnan laatu nakyy
+  // mopossa (kiilto), joten huolellinen tyo erottuu hatatyosta ilman numeroita.
+  // ==========================================================================
+  var MAALI_VARIT = [
+    {nimi:'Oranssi',      vari:'#e2572b', hinta:45},
+    {nimi:'Petroli',      vari:'#2f7a78', hinta:45},
+    {nimi:'Keltainen',    vari:'#c99a2f', hinta:45},
+    {nimi:'Matta musta',  vari:'#2b2b2b', hinta:45},
+    {nimi:'Niittyvihreä', vari:'#3f8f4a', hinta:58},
+    {nimi:'Hopeametalli', vari:'#b9bfc4', hinta:74},
+    {nimi:'Yönsininen',   vari:'#27406b', hinta:74},
+    {nimi:'Luumu',        vari:'#6c2f4f', hinta:74}
+  ];
+  var maalaamoPanelEl = document.getElementById('maalaamoPanel');
+  var maalaamoTilaEl  = document.getElementById('maalaamoTila');
+  var maalaamoTyotEl  = document.getElementById('maalaamoTyot');
+  var maaliVaritEl    = document.getElementById('maaliVarit');
+  var maalaamoMoneyEl = document.getElementById('maalaamoMoney');
+  var maalaamoHintaEl = document.getElementById('maalaamoHinta');
+  var maalaamoOpen = false;
+  var maaliValittu = 0;
+
+  function maaliLaatu(){
+    if(typeof maaliLaatuBy === 'undefined' || !maaliLaatuBy) return 0.58;
+    var v = maaliLaatuBy[equippedMopedId];
+    return (v === undefined || v === null) ? 0.58 : v;
+  }
+  function maaliArvosana(q){
+    if(q >= 0.88) return 'lasimainen';
+    if(q >= 0.72) return 'siisti';
+    if(q >= 0.52) return 'kelpaa';
+    if(q >= 0.30) return 'laikullinen';
+    return 'surkea';
+  }
+  function maalausVari(){
+    var v = MAALI_VARIT[maaliValittu];
+    return v ? v.vari : '#e2572b';
+  }
+  function mopoMaalaamossa(){
+    if(typeof moped === 'undefined' || !moped) return false;
+    var dx = moped.position.x - maalaamoPos.x, dz = moped.position.z - maalaamoPos.z;
+    return Math.sqrt(dx*dx + dz*dz) <= maalaamoRadius + 3;
+  }
+  function vaadiMopoMaalaamossa(){
+    if(mopoMaalaamossa()) return true;
+    showToast(true, 'Mopo ei ole maalaamossa', 'Aja mopo hallin eteen, astu kyydistä ja paina E.', 3600);
+    return false;
+  }
+  function maalaamoRender(){
+    if(!maalaamoPanelEl) return;
+    var lommot = damageList(equippedMopedId).length;
+    var lvl = Math.round(damageLevel()*100);
+    var laatu = maaliLaatu();
+    maalaamoTilaEl.innerHTML =
+      '<div class="invRow"><span class="invName">Pelti</span><span class="invVal">' +
+        (lommot ? lommot + ' lommoa · vaurio ' + lvl + ' %' : 'suorassa') + '</span></div>' +
+      '<div class="invRow"><span class="invName">Maalipinta</span><span class="invVal">' +
+        Math.round(laatu*100) + ' % · ' + maaliArvosana(laatu) + '</span></div>' +
+      '<div class="invRow"><span class="invName">Mopo</span><span class="invVal">' +
+        (mopoMaalaamossa() ? 'hallissa' : 'ei paikalla') + '</span></div>';
+    var v = MAALI_VARIT[maaliValittu] || MAALI_VARIT[0];
+    maalaamoTyotEl.innerHTML =
+      '<div class="miniSteps">' +
+        '<button type="button" id="maalaamoOikaise">Oikaise pelti vasaralla — ilmainen' +
+          (lommot ? ' (' + lommot + ' lommoa)' : ' (ei oikaistavaa)') + '</button>' +
+        '<button type="button" id="maalaamoRuiskuta">Ruiskuta ' + v.nimi.toLowerCase() +
+          ' — ' + v.hinta + ' €</button>' +
+      '</div>';
+    var oikBtn = document.getElementById('maalaamoOikaise');
+    if(oikBtn) oikBtn.addEventListener('click', maalaamoAloitaOikaisu);
+    var ruiBtn = document.getElementById('maalaamoRuiskuta');
+    if(ruiBtn) ruiBtn.addEventListener('click', maalaamoAloitaMaalaus);
+    var html = '';
+    for(var i=0; i<MAALI_VARIT.length; i++){
+      html += '<button class="swatch' + (i === maaliValittu ? ' active' : '') +
+              '" data-maali="' + i + '" style="background:' + MAALI_VARIT[i].vari +
+              '" title="' + MAALI_VARIT[i].nimi + ' · ' + MAALI_VARIT[i].hinta +
+              ' €" type="button"></button>';
+    }
+    maaliVaritEl.innerHTML = html;
+    Array.prototype.forEach.call(maaliVaritEl.querySelectorAll('button'), function(btn){
+      btn.addEventListener('click', function(){
+        maaliValittu = parseInt(btn.getAttribute('data-maali'), 10) || 0;
+        maalaamoRender();
+      });
+    });
+    maalaamoMoneyEl.textContent = Math.round(money);
+    maalaamoHintaEl.textContent = v.hinta;
+  }
+  function maalaamoAloitaOikaisu(){
+    if(!vaadiMopoMaalaamossa()) return;
+    if(!damageList(equippedMopedId).length){
+      showToast(false, 'Pelti on suorassa', 'Mopossa ei ole yhtään lommoa.', 2800);
+      return;
+    }
+    openMini('vasara', maalaamoPanelEl, function(q){
+      var jaljella = damageList(equippedMopedId).length;
+      showToast(jaljella > 0, jaljella ? 'Osa lommoista jäi' : 'Pelti on suorassa',
+        jaljella
+          ? jaljella + ' lommoa odottaa vielä vasaraa. Maalaus niiden päälle ei peitä niitä.'
+          : 'Kaikki lommot oikaistu. Nyt kannattaa ruiskuttaa maali.',
+        4200);
+      if(q >= 0.85) repVillageAdd(3);
+      maalaamoRender();
+      saveGame();
+    });
+  }
+  function maalaamoAloitaMaalaus(){
+    if(!vaadiMopoMaalaamossa()) return;
+    var v = MAALI_VARIT[maaliValittu] || MAALI_VARIT[0];
+    if(typeof mopedAssembled === 'function' && !mopedAssembled()){
+      showToast(true, 'Mopo ei ole kasassa', 'Katteet ja osat pitää olla paikallaan ennen maalausta.', 3600);
+      return;
+    }
+    if(money < v.hinta){
+      showToast(true, 'Rahat eivät riitä', v.nimi + ' maksaa ' + v.hinta + ' € (maali ja ohenne).', 3600);
+      return;
+    }
+    money -= v.hinta;
+    updateMoneyDisplay();
+    openMini('maalaus', maalaamoPanelEl, function(q){
+      maaliLaatuBy[equippedMopedId] = q;
+      // tarrasarja ja maali ovat sama pinta: ruiskutus peittaa tarrat
+      if(bodyMat){
+        bodyMat.map = null;
+        bodyMat.color.set(v.vari);
+        bodyMat.needsUpdate = true;
+      }
+      damagePaintApply();
+      // tuunauspaneelin valinnat seuraavat mukana, jos vari loytyy sielta
+      var sw = document.querySelector('.swatch[data-color="' + v.vari + '"]');
+      if(sw){
+        Array.prototype.forEach.call(document.querySelectorAll('.swatch[data-color]'), function(b){ b.classList.remove('active'); });
+        sw.classList.add('active');
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('.finishBtn'), function(b){ b.classList.remove('active'); });
+      var maaliBtn = document.querySelector('.finishBtn[data-finish="maali"]');
+      if(maaliBtn) maaliBtn.classList.add('active');
+      showToast(q < 0.5, 'Maalaus valmis · ' + Math.round(q*100) + ' %',
+        v.nimi + ', pinta ' + maaliArvosana(q) + '.', 4600);
+      if(q >= 0.80) repVillageAdd(5);
+      maalaamoRender();
+      saveGame();
+    });
+  }
+  function openMaalaamo(){
+    maalaamoOpen = true;
+    maalaamoPanelEl.hidden = false;
+    missionPanel.hidden = true;
+    tunePanel.hidden = true;
+    inventoryPanel.hidden = true; inventoryOpen = false;
+    closeRepair(); closeMopedShop(); closeGarage(); closeRomu();
+    maalaamoRender();
+  }
+  function closeMaalaamo(){
+    maalaamoOpen = false;
+    if(maalaamoPanelEl) maalaamoPanelEl.hidden = true;
+  }
+
+  function openRomu(){
+    romuOpen = true;
+    romuPanelEl.hidden = false;
+    missionPanel.hidden = true;
+    tunePanel.hidden = true;
+    inventoryPanel.hidden = true; inventoryOpen = false;
+    closeRepair(); closeMopedShop(); closeGarage(); closeMaalaamo();
+    romuRender();
+  }
+  function closeRomu(){
+    romuOpen = false;
+    if(romuPanelEl) romuPanelEl.hidden = true;
+  }
+
   function openGarage(){
     if(!requireMopedInGarage()) return;
     garageOpen = true;
@@ -11136,6 +12057,8 @@
     inventoryOpen = false;
     closeRepair();
     closeMopedShop();
+    closeRomu();
+    closeMaalaamo();
     renderShelf();
   }
   function closeGarage(){
@@ -11340,8 +12263,13 @@
     var p = partById(it.partId);
     var resultCondition = Math.round(78 + q01*22);
     if(p){
-      if(it.kind === 'tier') p.tierIndex = Math.max(p.tierIndex, it.tierIndex);
-      if(it.kind === 'orig'){
+      if(it.kind === 'tier' || it.kind === 'kaytetty') p.tierIndex = Math.max(p.tierIndex, it.tierIndex);
+      if(it.kind === 'kaytetty'){
+        // Kaytetty osa tuo mukanaan OMAN kuntonsa: huolellinen asennus antaa pienen
+        // bonuksen, mutta romuttamolta ostettu osa ei muutu asennuksessa uudeksi.
+        p.installed = true;
+        p.condition = Math.min(100, (it.cond || 40) + q01*8);
+      } else if(it.kind === 'orig'){
         // Alkuperäinen osa on jo valmiiksi kulunut: kasaaminen ei tee siitä uutta, vaan huolellinen
         // kiristys antaa korkeintaan pienen bonuksen. Uudet osat tallilta ovat se oikea korjaus.
         p.installed = true;
@@ -11792,6 +12720,247 @@
     }
   }
 
+  // ---- 5. VASARA: lommot pois kasin, yksi kerrallaan ----
+  // Autotallin hitsaus on nopea mutta maksaa rahaa ja hoitaa kaikki lommot yhdella
+  // laadulla. Maalaamolla oikaistaan ILMAISEKSI mutta kasin: jokainen lommo valitaan
+  // listalta ja lyodaan erikseen, ja huti venyttaa peltia pahemmaksi kuin se oli.
+  // Minipeli muokkaa SUORAAN vauriolistaa (damageByMoped), joten tulos nakyy mallissa.
+  function vasaraLommot(){ return damageList(equippedMopedId); }
+  function vasaraKSumma(){
+    var list = vasaraLommot(), s = 0;
+    for(var i=0; i<list.length; i++) s += list[i].k;
+    return s;
+  }
+  function vasaraNimi(imp){
+    var z = imp.p[2], x = imp.p[0];
+    var pitk = z > 0.25 ? 'Keulassa' : (z < -0.25 ? 'Takana' : 'Keskellä');
+    var sivu = x > 0.08 ? 'oikealla' : (x < -0.08 ? 'vasemmalla' : 'keskilinjassa');
+    return pitk + ' ' + sivu;
+  }
+  function openVasara(){
+    var list = vasaraLommot();
+    mini.s = {iskut: Math.min(18, list.length + 4), kaytetty: 0, valittu: -1,
+              pos: 0, dir: 1, speed: 1.35, kayy: false,
+              alkuSumma: vasaraKSumma(), alkuMaara: list.length,
+              alkuTaso: damageLevel(), pois: 0, venytys: 0};
+    miniTitleEl.textContent = 'Pellin oikaisu vasaralla';
+    miniHintEl.textContent = 'Valitse lommo listalta, VÄLILYÖNTI käynnistää heilurin ja toinen painallus lyö. Keskellä lommo suoristuu, laidalla pelti venyy. Esc lopettaa.';
+    miniBodyEl.innerHTML =
+      '<div class="miniTrack" id="vasaraTrack">' +
+        '<i style="position:absolute;top:0;bottom:0;left:34%;width:32%;background:rgba(232,163,63,0.28)"></i>' +
+        '<i class="target" style="left:44.5%;width:11%"></i>' +
+        '<i class="needle" id="vasaraNeedle" style="left:0%"></i>' +
+      '</div>' +
+      '<div class="miniSub" id="vasaraSub">Iskuja jäljellä 0</div>' +
+      '<div class="miniSteps" id="vasaraList"></div>';
+    renderVasaraList();
+    renderVasara();
+    miniMsgEl.textContent = 'Valitse lommo listalta.';
+  }
+  function renderVasaraList(){
+    var el = document.getElementById('vasaraList');
+    if(!el) return;
+    var list = vasaraLommot();
+    if(!list.length){ el.innerHTML = '<div class="miniSub">Pelti on suorassa.</div>'; return; }
+    var html = '';
+    for(var i=0; i<list.length; i++){
+      html += '<button type="button" data-dent="' + i + '"' +
+              (mini.s.valittu === i ? ' class="done"' : '') + '>' +
+              vasaraNimi(list[i]) + ' · ' + Math.round(list[i].k*1000) + ' mm</button>';
+    }
+    el.innerHTML = html;
+    Array.prototype.forEach.call(el.querySelectorAll('button'), function(btn){
+      btn.addEventListener('click', function(){ vasaraValitse(parseInt(btn.getAttribute('data-dent'), 10)); });
+    });
+  }
+  function renderVasara(){
+    var st = mini.s;
+    var n = document.getElementById('vasaraNeedle');
+    if(n) n.style.left = (st.pos*100) + '%';
+    var s = document.getElementById('vasaraSub');
+    if(s) s.textContent = 'Iskuja jäljellä ' + Math.max(0, st.iskut - st.kaytetty) +
+                          ' · suoraksi ' + st.pois + '/' + st.alkuMaara;
+  }
+  function vasaraValitse(i){
+    if(!mini.active || mini.kind !== 'vasara' || mini.done) return;
+    var list = vasaraLommot();
+    if(i < 0 || i >= list.length) return;
+    mini.s.valittu = i;
+    mini.s.kayy = false;
+    mini.s.pos = 0; mini.s.dir = 1;
+    renderVasaraList();
+    miniMsgEl.textContent = 'Lommo valittu. VÄLILYÖNTI käynnistää heilurin.';
+  }
+  function vasaraIsku(){
+    var st = mini.s;
+    if(st.valittu < 0){ miniMsgEl.textContent = 'Valitse ensin lommo listalta.'; return; }
+    if(!st.kayy){ st.kayy = true; miniMsgEl.textContent = 'Heiluri käy - lyö keskelle.'; return; }
+    var list = vasaraLommot();
+    var imp = list[st.valittu];
+    st.kayy = false;
+    if(!imp){ st.valittu = -1; renderVasaraList(); return; }
+    st.kaytetty++;
+    var err = Math.abs(st.pos - 0.5);
+    if(err < 0.055){
+      list.splice(st.valittu, 1);
+      st.pois++;
+      playBoltSound(true);
+      miniMsgEl.textContent = 'Napakka isku - lommo suoristui.';
+    } else if(err < 0.16){
+      imp.k *= 0.55; imp.r *= 0.92;
+      playBoltSound(true);
+      miniMsgEl.textContent = 'Osa lommosta lähti, jälki jäi vielä näkyviin.';
+    } else {
+      imp.k = Math.min(0.18, imp.k*1.22);
+      st.venytys++;
+      playBoltSound(false, true);
+      miniMsgEl.textContent = 'Huti! Pelti venyi pahemmaksi.';
+    }
+    st.valittu = -1;
+    vasaraPaivitaVaurio();
+    renderVasaraList();
+    renderVasara();
+    if(!vasaraLommot().length || st.kaytetty >= st.iskut) vasaraValmis();
+  }
+  // Vauriotaso lasketaan lommojen syvyyksien SUHTEESTA alkutilaan - ei vahennetaan
+  // askel kerrallaan, koska silloin pyoristykset kasaantuisivat iskujen myota.
+  function vasaraPaivitaVaurio(){
+    var st = mini.s;
+    var nyt = vasaraKSumma();
+    var suhde = st.alkuSumma > 0.00001 ? nyt/st.alkuSumma : 0;
+    var lvl = Math.min(1, st.alkuTaso*suhde);
+    if(!vasaraLommot().length) lvl = 0;
+    damageLevelBy[equippedMopedId] = lvl;
+    damageRebuild();
+  }
+  function vasaraValmis(){
+    var st = mini.s;
+    var q = st.alkuMaara > 0
+      ? Math.max(0, Math.min(1, st.pois/st.alkuMaara - st.venytys*0.08))
+      : 1;
+    miniFinish('Oikaistu ' + st.pois + '/' + st.alkuMaara + ' lommoa' +
+      (st.venytys ? ', ' + st.venytys + ' hutia' : '') +
+      ' · vaurio ' + Math.round(damageLevel()*100) + ' %', q);
+  }
+  function updateVasara(dt){
+    var st = mini.s;
+    if(st.kayy){
+      st.pos += st.dir*st.speed*dt;
+      if(st.pos >= 1){ st.pos = 1; st.dir = -1; }
+      else if(st.pos <= 0){ st.pos = 0; st.dir = 1; }
+    }
+    renderVasara();
+  }
+
+  // ---- 6. RUISKUMAALAUS: tasainen kerros koko pinnalle ----
+  // Pinta on jaettu 16 ruutuun. Nuolet liikuttavat suutinta, valilyonti ruiskuttaa, ja
+  // maali kerrostuu suuttimen alle kolmiopainotuksella. Ihannekerros on 1,0: ohuempi
+  // jattaa pohjan nakyviin ja paksumpi valuu. Lommot nakyvat maalin alta, eli pelti
+  // kannattaa oikaista ENNEN ruiskutusta.
+  var MAALAUS_RUUDUT = 16;
+  var MAALAUS_AIKA   = 22;
+  var MAALAUS_LEVEYS = 1.8;   // ruutua suuttimen kummallekin puolelle
+  function openMaalaus(){
+    var kerros = [], i;
+    for(i=0; i<MAALAUS_RUUDUT; i++) kerros.push(0);
+    mini.s = {kerros:kerros, nozz:0, vas:false, oik:false, ruiskuttaa:false,
+              aika:MAALAUS_AIKA, vari: maalausVari(), vedot:0};
+    miniTitleEl.textContent = 'Ruiskumaalaus';
+    miniHintEl.textContent = 'NUOLET liikuttavat ruiskua, VÄLILYÖNTI ruiskuttaa. Vedä tasaisesti päästä päähän ja pysäytä kun kerros on 100 %: ylimääräinen valuu. Valmis-napista pääset kuivumaan ennen ajan loppua. Esc peruu.';
+    var html = '<div class="maaliPinta" id="maaliPinta">';
+    for(i=0; i<MAALAUS_RUUDUT; i++) html += '<i></i>';
+    html += '<b class="maaliSuutin" id="maaliSuutin"></b></div>' +
+            '<div class="miniBig" id="miniBig">' + MAALAUS_AIKA.toFixed(1) + ' s</div>' +
+            '<div class="miniSub" id="miniSub">Kerros 0 % · tavoite 100 % · ohuita 16 · valumia 0</div>' +
+            '<div class="miniSteps"><button type="button" id="maalausValmis">Valmis - jätä kuivumaan</button></div>';
+    miniBodyEl.innerHTML = html;
+    var valmisBtn = document.getElementById('maalausValmis');
+    if(valmisBtn) valmisBtn.addEventListener('click', function(){
+      if(mini.active && mini.kind === 'maalaus' && !mini.done) maalausArvio();
+    });
+    renderMaalaus();
+    miniMsgEl.textContent = 'Aloita reunasta.';
+  }
+  function maalausPaino(down){
+    if(!mini.active || mini.kind !== 'maalaus' || mini.done) return;
+    mini.s.ruiskuttaa = down;
+  }
+  function maalausNuoli(dir, down){
+    if(!mini.active || mini.kind !== 'maalaus' || mini.done) return;
+    if(dir < 0) mini.s.vas = down; else mini.s.oik = down;
+  }
+  function renderMaalaus(){
+    var st = mini.s;
+    var pinta = document.getElementById('maaliPinta');
+    if(!pinta) return;
+    var ruudut = pinta.querySelectorAll('i');
+    var ohuita = 0, valumia = 0, summa = 0;
+    for(var i=0; i<ruudut.length; i++){
+      var t = st.kerros[i] || 0;
+      summa += t;
+      var el = ruudut[i];
+      var peitto = Math.min(1, t);
+      el.style.background = st.vari;
+      el.style.opacity = (0.14 + peitto*0.86).toFixed(3);
+      if(t > 1.42){ el.classList.add('valuma'); valumia++; } else el.classList.remove('valuma');
+      if(t < 0.62){ el.classList.add('kuiva'); ohuita++; } else el.classList.remove('kuiva');
+    }
+    var suutin = document.getElementById('maaliSuutin');
+    if(suutin){
+      suutin.style.left = (4 + st.nozz*(pinta.clientWidth - 8)) + 'px';
+      if(st.ruiskuttaa) suutin.classList.add('on'); else suutin.classList.remove('on');
+    }
+    var bigEl = document.getElementById('miniBig');
+    if(bigEl) bigEl.textContent = Math.max(0, st.aika).toFixed(1) + ' s';
+    var subEl = document.getElementById('miniSub');
+    if(subEl) subEl.textContent = 'Kerros ' + Math.round(summa/MAALAUS_RUUDUT*100) +
+                                  ' % · tavoite 100 % · ohuita ' + ohuita + ' · valumia ' + valumia;
+  }
+  function updateMaalaus(dt){
+    var st = mini.s;
+    var v = (st.oik ? 1 : 0) - (st.vas ? 1 : 0);
+    if(v !== 0){
+      st.nozz += v*0.62*dt;
+      if(st.nozz < 0) st.nozz = 0;
+      if(st.nozz > 1) st.nozz = 1;
+    }
+    if(st.ruiskuttaa){
+      var keski = st.nozz*(MAALAUS_RUUDUT - 1);
+      for(var i=0; i<MAALAUS_RUUDUT; i++){
+        var d = Math.abs(i - keski);
+        if(d > MAALAUS_LEVEYS) continue;
+        var w = 1 - d/MAALAUS_LEVEYS;
+        st.kerros[i] += dt*1.25*w*w;
+      }
+    }
+    st.aika -= dt;
+    renderMaalaus();
+    if(!mini.done){
+      miniMsgEl.textContent = st.ruiskuttaa ? 'Ruisku käy.' : 'Ruisku kiinni.';
+    }
+    if(st.aika <= 0) maalausArvio();
+  }
+  function maalausArvio(){
+    var st = mini.s;
+    var hyva = 0, ohuita = 0, valumia = 0;
+    for(var i=0; i<MAALAUS_RUUDUT; i++){
+      var t = st.kerros[i] || 0;
+      if(t < 0.62) ohuita++;
+      else if(t > 1.42) valumia++;
+      hyva += Math.max(0, 1 - Math.abs(t - 1.0)/0.75);
+    }
+    var q = hyva/MAALAUS_RUUDUT;
+    // Lommoinen pelti ei maalilla suoristu: oikaisematon kolhu nakyy kiiltavan pinnan alta.
+    var lvl = damageLevel();
+    var lommoSakko = Math.min(0.45, lvl*0.85);
+    q = Math.max(0, Math.min(1, q*(1 - lommoSakko)));
+    var txt = 'Pinta ' + Math.round(q*100) + ' % (' + maaliArvosana(q) + ')';
+    if(ohuita) txt += ' · ' + ohuita + ' ohutta kohtaa';
+    if(valumia) txt += ' · ' + valumia + ' valumaa';
+    if(lommoSakko > 0.02) txt += ' · lommot näkyvät maalin alta';
+    miniFinish(txt, q);
+  }
+
   // ---- yhteinen käynnistys ja päivitys ----
   function openMini(kind, panel, onDone){
     if(bolt.active) cancelBoltGame();
@@ -11806,6 +12975,8 @@
     else if(kind === 'kaasutin') openKaasutin();
     else if(kind === 'paikkaus') openPaikkaus();
     else if(kind === 'hitsaus') openHitsaus();
+    else if(kind === 'vasara') openVasara();
+    else if(kind === 'maalaus') openMaalaus();
     miniEl.hidden = false;
     if(mini.panel) mini.panel.hidden = true;
   }
@@ -11819,12 +12990,24 @@
     if(mini.kind === 'tankkaus') updateTankkaus(dt);
     else if(mini.kind === 'kaasutin') updateKaasutin(dt);
     else if(mini.kind === 'hitsaus') updateHitsaus(dt);
+    else if(mini.kind === 'vasara') updateVasara(dt);
+    else if(mini.kind === 'maalaus') updateMaalaus(dt);
   }
   // välilyönnin paino/nosto ohjautuu oikealle minipelille
+  // Nuolinappaimet minipelille. Muut minipelit eivat niita kayta, joten tama on
+  // kayttamaton kaikilla paitsi ruiskumaalauksella - mutta ilman tata kytkentaa
+  // nuolet menisivat hahmon ohjaukseen minipelin alla.
+  function miniNuoli(dir, down){
+    if(!mini.active || mini.done) return false;
+    if(mini.kind === 'maalaus'){ maalausNuoli(dir, down); return true; }
+    return false;
+  }
   function miniSpace(down){
     if(!mini.active || mini.done) return true;   // true = tapahtuma käsiteltiin
     if(mini.kind === 'tankkaus'){ tankkausHold(down); return true; }
     if(mini.kind === 'hitsaus'){ hitsausHold(down); return true; }
+    if(mini.kind === 'vasara'){ if(down) vasaraIsku(); return true; }
+    if(mini.kind === 'maalaus'){ maalausPaino(down); return true; }
     if(mini.kind === 'kaasutin'){ if(down) kaasutinTap(); return true; }
     return true;
   }
@@ -12249,45 +13432,87 @@
   var inventoryListEl = document.getElementById('inventoryList');
   // Kädessä pidettävät tavarat omaan osioonsa repun alkuun, koska niitä
   // käytetään kesken pelin eikä vain katsella.
-  function reppuKaytaHTML(){
+  function renderInventory(){
+    if(!inventoryListEl) return;
+    inventoryListEl.innerHTML = reppuTavaratHTML() + reppuTiedotHTML();
+    reppuSidoNapit();
+  }
+
+  // ==========================================================================
+  // ---- REPPU (TAB) ----
+  // Varusteluettelo oli puhelimen sisalla yhtena sovelluksena, eli kolmen klikkauksen
+  // takana. Nyt TAB avaa sen suoraan omana paneelinaan: ylhaalla ruudukko kaytettavista
+  // tavaroista (tupakat, megikset, feikki-ID), alla rahat ja mopon tila. Puhelimeen
+  // paasee repusta napilla, joten TAB on edelleen yksi nappi joka avaa "kaikki omat jutut".
+  // ==========================================================================
+  var reppuOpen = false;
+  var reppuPanelEl = document.getElementById('reppuPanel');
+  var reppuSisaltoEl = document.getElementById('reppuSisalto');
+
+  function reppuRuutu(ikoni, nimi, maara, luokka){
+    return '<div class="reppuSlot' + (luokka ? ' ' + luokka : (maara ? '' : ' tyhja')) + '">' +
+           '<span class="ikoni">' + ikoni + '</span>' +
+           '<span class="nimi">' + nimi + '</span>' +
+           '<span class="maara">' + maara + '</span></div>';
+  }
+  function reppuTavaratHTML(){
     var aski = storeItemById('tupakkaaski');
     var meg  = storeItemById('megis');
-    var askeja = aski ? (aski.count||0) : 0;
-    var tolkkeja = meg ? (meg.count||0) : 0;
-    var h = '<div class="invSection">Käytä</div>';
+    var askeja   = aski ? (aski.count || 0) : 0;
+    var tolkkeja = meg ? (meg.count || 0) : 0;
+    var h = '<div class="invSection">Tavarat</div><div class="reppuGrid">';
     if(kadessa){
-      h += '<div class="invRow"><span class="invName">Kädessä</span><span class="invVal">' +
-           (kadessa.laji === 'tupakka' ? '🚬 Tupakka' : '🥫 Megaforce') + ' · ' +
-           Math.max(0, Math.round(kadessa.jaljella)) + ' s</span></div>';
-      h += '<button class="photoBtn" id="reppuHeita" type="button">Heitä pois</button>';
-      return h;
+      h += reppuRuutu(kadessa.laji === 'tupakka' ? '🚬' : '🥫', 'Kädessä',
+                      Math.max(0, Math.round(kadessa.jaljella)) + ' s', 'kaytossa');
     }
-    h += '<div class="invRow"><span class="invName">Savukkeita avatussa askissa</span><span class="invVal">' +
-         savukkeita + '</span></div>';
-    h += '<div class="invRow"><span class="invName">Askeja repussa</span><span class="invVal">' + askeja + '</span></div>';
-    h += '<div class="invRow"><span class="invName">Megaforce-tölkkejä</span><span class="invVal">' + tolkkeja + '</span></div>';
-    h += '<button class="photoBtn" id="reppuTupakka" type="button"' +
-         ((savukkeita > 0 || askeja > 0) ? '' : ' disabled') + '>🚬 Sytytä tupakka</button>';
-    h += '<button class="photoBtn" id="reppuMegis" type="button"' +
-         (tolkkeja > 0 ? '' : ' disabled') + '>🥫 Avaa Megaforce</button>';
-    h += '<div class="photoNote" style="margin-top:5px">Kun tavara on kädessä, <b>hiiren vasen</b> ottaa ' +
+    h += reppuRuutu('🚬', 'Savukkeita', savukkeita);
+    h += reppuRuutu('📦', 'Askeja', askeja);
+    h += reppuRuutu('🥫', 'Megaforce', tolkkeja);
+    if(typeof feikkiIdOwned !== 'undefined' && feikkiIdOwned){
+      h += reppuRuutu('🪪', 'Henkilökortti', '✓', 'kaytossa');
+    }
+    var kaytettavat = storeItems.filter(function(it){ return it.owned && it.consumable &&
+      it.id !== 'tupakkaaski' && it.id !== 'megis'; });
+    kaytettavat.forEach(function(it){
+      h += reppuRuutu('🧰', it.name, (it.count || 0) + ' kpl');
+    });
+    h += '</div>';
+    h += '<div class="reppuNapit">';
+    if(kadessa){
+      h += '<button class="photoBtn" id="reppuHeita" type="button">Heitä pois</button>';
+    } else {
+      h += '<button class="photoBtn" id="reppuTupakka" type="button"' +
+           ((savukkeita > 0 || askeja > 0) ? '' : ' disabled') + '>🚬 Sytytä tupakka</button>';
+      h += '<button class="photoBtn" id="reppuMegis" type="button"' +
+           (tolkkeja > 0 ? '' : ' disabled') + '>🥫 Avaa Megaforce</button>';
+    }
+    h += '<button class="photoBtn" id="reppuPuhelin" type="button">📱 Puhelin</button>';
+    h += '</div>';
+    h += '<div class="photoNote" style="margin-top:4px">Kun tavara on kädessä, <b>hiiren vasen</b> ottaa ' +
          'hatsin tai horpyn. Tupakka rauhoittaa kädet pultinkiristykseen; Megaforce nopeuttaa kävelyä ' +
          'mutta tärisyttää käsiä. Kumpaakaan ei voi käyttää mopon selässä.</div>';
     return h;
   }
   function reppuSidoNapit(){
     var a = document.getElementById('reppuTupakka');
-    if(a) a.addEventListener('click', function(){ sytytaTupakka(); renderInventory(); });
+    if(a) a.addEventListener('click', function(){ sytytaTupakka(); reppuPiirra(); });
     var b = document.getElementById('reppuMegis');
-    if(b) b.addEventListener('click', function(){ juoMegis(); renderInventory(); });
+    if(b) b.addEventListener('click', function(){ juoMegis(); reppuPiirra(); });
     var c = document.getElementById('reppuHeita');
-    if(c) c.addEventListener('click', function(){ heitaKadesta(false); renderInventory(); });
+    if(c) c.addEventListener('click', function(){ heitaKadesta(false); reppuPiirra(); });
+    var d = document.getElementById('reppuPuhelin');
+    if(d) d.addEventListener('click', function(){ closeReppu(); togglePhone(); });
   }
-  function renderInventory(){
+  // Loput riveista (raha, mopo, osat, viimeistely, ostokset) ovat samat kuin puhelimen
+  // Reppu-sovelluksessa, joten ne rakennetaan yhdessa paikassa ja piirretaan molempiin.
+  function reppuTiedotHTML(){
     var html = '';
-    html += reppuKaytaHTML();
     html += '<div class="invSection">Raha</div>';
     html += '<div class="invRow"><span class="invName">Käteinen</span><span class="invVal">'+Math.round(money)+' €</span></div>';
+    if(typeof kasinoNetto !== 'undefined' && kasinoNetto !== 0){
+      html += '<div class="invRow"><span class="invName">Kasinosaldo</span><span class="invVal">'+
+              (kasinoNetto > 0 ? '+' : '') + Math.round(kasinoNetto)+' €</span></div>';
+    }
     html += '<div class="invSection">Mopo</div>';
     var activeMopedInfo = mopedModels.filter(function(m){ return m.id === equippedMopedId; })[0];
     html += '<div class="invRow"><span class="invName">Käytössä</span><span class="invVal">'+(activeMopedInfo ? activeMopedInfo.name : '—')+'</span></div>';
@@ -12299,19 +13524,45 @@
     html += '<div class="invSection">Viimeistely</div>';
     html += '<div class="invRow"><span class="invName">Pakoputki</span><span class="invVal">'+(exhaustMode==='kilpa' ? 'Kilpaputki' : 'Vakio')+'</span></div>';
     html += '<div class="invRow"><span class="invName">Kate</span><span class="invVal">'+(tarraOwned && bodyMat.map ? 'Tarrasarja' : 'Maali')+'</span></div>';
+    if(typeof maaliLaatu === 'function'){
+      html += '<div class="invRow"><span class="invName">Maalipinta</span><span class="invVal">'+
+              Math.round(maaliLaatu()*100)+' % · '+maaliArvosana(maaliLaatu())+'</span></div>';
+    }
     html += '<div class="invSection">Kaupan tarvikkeet</div>';
     var ownedStoreItems = storeItems.filter(function(it){ return it.owned; });
     if(ownedStoreItems.length){
       ownedStoreItems.forEach(function(it){
         html += '<div class="invRow"><span class="invName">'+it.name+'</span><span class="invVal">'+
           (it.consumable ? ((it.count||0)+' kpl')
-            : (it.id === 'kanisteri' ? (Math.round(canFuel)+' % bensaa') : 'Omistat \u2713'))+'</span></div>';
+            : (it.id === 'kanisteri' ? (Math.round(canFuel)+' % bensaa') : 'Omistat ✓'))+'</span></div>';
       });
     } else {
       html += '<div class="invRow"><span class="invName">Ei vielä ostoksia</span><span class="invVal">—</span></div>';
     }
-    inventoryListEl.innerHTML = html;
-    reppuSidoNapit();   // innerHTML pyyhkii vanhat kuuntelijat, joten ne sidotaan joka piirrolla
+    return html;
+  }
+  function reppuPiirra(){
+    if(!reppuSisaltoEl) return;
+    reppuSisaltoEl.innerHTML = reppuTavaratHTML() + reppuTiedotHTML();
+    reppuSidoNapit();   // innerHTML pyyhkii kuuntelijat, joten ne sidotaan joka piirrolla
+  }
+  function openReppu(){
+    reppuOpen = true;
+    reppuPanelEl.hidden = false;
+    tunePanel.hidden = true;
+    closeRepair(); closeMopedShop(); closeGarage();
+    if(typeof closeRomu === 'function') closeRomu();
+    if(typeof closeMaalaamo === 'function') closeMaalaamo();
+    reppuPiirra();
+  }
+  function closeReppu(){
+    reppuOpen = false;
+    if(reppuPanelEl) reppuPanelEl.hidden = true;
+  }
+  // TAB: jos puhelin on auki, se sulkeutuu ensin - muuten reppu aukeaa ja sulkeutuu.
+  function toggleReppu(){
+    if(missionPanel && !missionPanel.hidden){ togglePhone(); return; }
+    if(reppuOpen) closeReppu(); else openReppu();
   }
 
   function setFirstInput(){
@@ -12413,6 +13664,33 @@
       if(garageOpen) closeGarage(); else openGarage();
       return;
     }
+    // romuttamo: vanhat osat rahaksi ja kaytettyja tilalle
+    var dxr = romuPos.x - player.position.x, dzr = romuPos.z - player.position.z;
+    if(!inStore && Math.sqrt(dxr*dxr + dzr*dzr) <= 14){
+      // kadessa kannettu osa menee suoraan kaupaksi
+      if(typeof mopoCarry !== 'undefined' && mopoCarry){
+        var kannettu = mopoCarry.entry;
+        mopoCarry = null;
+        if(typeof paivitaOsahylly === 'function') paivitaOsahylly();
+        romuMyy(kannettu);
+        return;
+      }
+      if(romuOpen) closeRomu(); else openRomu();
+      return;
+    }
+    // kasinon ovi naapurikylässä: ovimies tarkistaa aukioloajan ja kortin
+    var dxka = kasinoOviPos.x - player.position.x, dzka = kasinoOviPos.z - player.position.z;
+    if(!inStore && Math.sqrt(dxka*dxka + dzka*dzka) <= kasinoOviRadius){
+      kasinoOviInteract();
+      return;
+    }
+    // maalaamo: pellin oikaisu vasaralla ja ruiskumaalaus
+    var dxma = maalaamoBenchPos.x - player.position.x, dzma = maalaamoBenchPos.z - player.position.z;
+    if(!inStore && Math.sqrt(dxma*dxma + dzma*dzma) <= maalaamoBenchRadius){
+      if(!maalaamoOpen && !placeOpen('maalaamo')){ closedToast('maalaamo'); return; }
+      if(maalaamoOpen) closeMaalaamo(); else openMaalaamo();
+      return;
+    }
     var dxt = talli.position.x - player.position.x;
     var dzt = talli.position.z - player.position.z;
     if(Math.sqrt(dxt*dxt+dzt*dzt) <= talliRadius){
@@ -12508,6 +13786,11 @@
       if(npcC.indoor) continue; // sisätilan hahmot käsitellään kaupan omassa haarassa
       var dxn = npcC.pos.x - player.position.x, dzn = npcC.pos.z - player.position.z;
       if(Math.sqrt(dxn*dxn+dzn*dzn) <= npcC.radius){
+        if(npcC.diileri){
+          if(!diileriPaikalla()) continue;   // paivalla takapiha on tyhja
+          if(diiliOpen) closeDiili(); else openDiili();
+          return;
+        }
         if(npcC.exam){ startExam(); return; }
         if(npcC.lesson && lessonAvailable()){ startLesson(); return; }
         chatWithNpc(npcC);
@@ -12600,7 +13883,7 @@
       if(act==='kaynnista'){ photoKeys.f = true; return; }
       if(act==='jarru'){ if(!e.repeat) takePhoto(); e.preventDefault(); return; }
       if(act==='valokuva' || k==='escape'){ if(!e.repeat) togglePhotoMode(); return; }
-      if(act==='puhelin'){ e.preventDefault(); togglePhone(); return; }
+      if(act==='puhelin'){ e.preventDefault(); toggleReppu(); return; }
       return;
     }
     if(act==='fwd'  || k==='arrowup') input.fwd = true;
@@ -12632,6 +13915,8 @@
     if(mini.active){
       if(act==='jarru'){ e.preventDefault(); if(!e.repeat) miniSpace(true); return; }
       if(k==='escape'){ cancelMini(); return; }
+      if(act==='left' || k==='arrowleft'){ e.preventDefault(); miniNuoli(-1, true); return; }
+      if(act==='right'|| k==='arrowright'){ e.preventDefault(); miniNuoli(1, true); return; }
       return;   // minipelin aikana muut näppäimet eivät ohjaa hahmoa tai avaa paneeleita
     }
     if(act==='jarru'){ input.back = true; e.preventDefault(); }
@@ -12664,6 +13949,11 @@
     if(k==='escape'){
       var suljettiin = false;
       if(garageOpen){ closeGarage(); suljettiin = true; }
+      if(reppuOpen){ closeReppu(); suljettiin = true; }
+      if(diiliOpen){ closeDiili(); suljettiin = true; }
+      if(kasinoOpen){ closeKasino(); suljettiin = true; }
+      if(romuOpen){ closeRomu(); suljettiin = true; }
+      if(maalaamoOpen){ closeMaalaamo(); suljettiin = true; }
       if(!tunePanel.hidden){ tunePanel.hidden = true; suljettiin = true; }
       if(audioPanelEl && !audioPanelEl.hidden){ closeAudioPanel(); suljettiin = true; }
       if(missionPanel && !missionPanel.hidden){ missionPanel.hidden = true; suljettiin = true; }
@@ -12671,7 +13961,7 @@
       if(!suljettiin && !e.repeat) openPauseMenu();
       return;
     }
-    if(act==='puhelin' && !e.repeat){ e.preventDefault(); togglePhone(); }
+    if(act==='puhelin' && !e.repeat){ e.preventDefault(); toggleReppu(); }
     setFirstInput();
   });
   window.addEventListener('keyup', function(e){
@@ -12690,6 +13980,10 @@
     if(wrenchMode){
       if(k==='arrowup' || act==='tankkaa') wrenchKeyTighten = false;
       if(k==='arrowdown' || act==='kaynnista') wrenchKeyLoosen = false;
+    }
+    if(mini.active){
+      if(act==='left' || k==='arrowleft') miniNuoli(-1, false);
+      if(act==='right'|| k==='arrowright') miniNuoli(1, false);
     }
     if(act==='fwd'  || k==='arrowup') input.fwd = false;
     if(act==='back' || k==='arrowdown') input.back = false;
@@ -15019,6 +16313,9 @@
   // Ajo-opettaja seisoo huoltoaseman pihassa. Paikka maaritellaan tassa eika V119:n
   // moduulissa, koska NPC-lista tarvitsee sen jo nyt - moduuli ajetaan vasta paljon myohemmin.
   var LESSON_SPOT = meetSpot.clone().add(new THREE.Vector3(-5, 0, 4));
+  // Kaupan takapiha: kauppa on käännetty (rotation.y -0,4), joten paikallinen -z
+  // pitää muuntaa maailmaan samalla kierrolla kuin itse rakennus.
+  var diiliSpot = worldOffset(kauppaIso, -1.2, -6.4);
   var npcCharacters = [
     {
       name: 'Äiti',
@@ -15047,6 +16344,7 @@
         'Kuulin että crossiradalla on kova meno tänään.',
         'Onks sulla varaa uusiin osiin? Mä oon aina kuivilla rahasta.',
         'Ens viikolla pitäis järjestää isompi miitti - levitä sanaa.',
+        'Kuulin et naapurikylässä on kasino. Sinne ei pääse ilman korttia, ja kortteja myy yks tyyppi kyläkaupan takana keskiyön jälkeen.',
         'Älä unohda tankata, huoltoasemalta saa vielä halvalla.'
       ]
     },
@@ -15081,6 +16379,39 @@
         'Kuulin huhun jostain kadonneesta legendaarisesta osasta... tai sitten en kuullut mitään.',
         'Älä kysy mistä tää romu tuli. Tärkeintä on että se toimii.',
         'Jos tarvit osia, ota keikka puhelimesta - niitä kuljetetaan tallille jatkuvasti.'
+      ]
+    },
+    {
+      // Ovimies seisoo kasinon ovella. Hanelle ei tarvitse puhua: E ovella hoitaa
+      // tarkistuksen, ja repliikit ovat vain makua.
+      name: 'Ovimies',
+      pos: new THREE.Vector3(kasinoOvimiesPos.x, 0, kasinoOvimiesPos.z),
+      radius: 2.2,
+      baseRotY: -Math.PI/2,
+      mesh: makeNpcFigure('normi', [0x101014, 0x16161c, 0x1d1d24, 0xb98a63, 0x0e0e0c], 1.92),
+      lineIndex: 0,
+      lines: [
+        'Kortti esiin, sitten saat mennä.',
+        'Talo ei vastaa häviöistä. Eikä voitoista, jos oot epäkohtelias.',
+        'Alaikäisiä ei päästetä. Sääntö on sääntö.'
+      ]
+    },
+    {
+      // Diileri seisoo kyläkaupan TAKAPIHALLA ja vain yöllä klo 00-04. Kauppa on
+      // suunnattu local +z:aan (ovi, katos ja piha), joten takapiha on -z.
+      // Hahmo piilotetaan kokonaan päiväksi (ks. updateDiileri), joten kukaan ei
+      // seiso tyhjän panttina aurinkoisella takapihalla.
+      name: 'Diileri',
+      diileri: true,
+      pos: new THREE.Vector3(diiliSpot.x, 0, diiliSpot.z),
+      radius: 3.2,
+      baseRotY: -0.4 + Math.PI,
+      mesh: makeNpcFigure('normi', [0x16161a, 0x1d1d22, 0x2a2a30, 0xc49a74, 0x14140f], 1.81),
+      lineIndex: 0,
+      lines: [
+        'Älä huuda. Mitä tarvit?',
+        'Kortti maksaa mitä maksaa. Älä tingi.',
+        'Mä en oo täällä päivisin. Tiedät kyllä miksi.'
       ]
     },
     {
@@ -15218,7 +16549,8 @@
   var OPENING = {
     talli:      {from: 8,  to: 19, nimi: 'Talli'},
     mopokauppa: {from: 9,  to: 18, nimi: 'Mopokauppa'},
-    kauppa:     {from: 7,  to: 21, nimi: 'Kyläkauppa'}
+    kauppa:     {from: 7,  to: 21, nimi: 'Kyläkauppa'},
+    maalaamo:   {from: 9,  to: 18, nimi: 'Maalaamo'}
   };
   function placeOpen(id){
     var o = OPENING[id];
@@ -16095,6 +17427,650 @@
     npc.mesh.rotation.y = npc.baseRotY;
     scene.add(npc.mesh);
   });
+  // ==========================================================================
+  // ---- DIILERI JA VÄÄRENNETTY HENKILÖKORTTI ----
+  // Kasinolle ei pääse ilman paperia joka väittää sinun olevan täysi-ikäinen.
+  // Sellaista ei myydä kaupassa vaan kaupan TAKANA, ja vain yöllä klo 00-04.
+  // Tämä on pelin sisäinen juonilaite: mitään oikeaa ohjetta ei anneta eikä
+  // korttia tehdä, se vain ostetaan valmiina ja menee reppuun.
+  // ==========================================================================
+  var FEIKKI_ID_HINTA = 250;
+  var diiliPanelEl   = document.getElementById('diiliPanel');
+  var diiliTekstiEl  = document.getElementById('diiliTeksti');
+  var diiliOstaBtnEl = document.getElementById('diiliOstaBtn');
+  var diiliMoneyEl   = document.getElementById('diiliMoney');
+  var diiliOpen = false;
+  var diiliVihjeAnnettu = false;
+
+  function diileriPaikalla(){
+    var h = dayTime*24;
+    return h >= 0 && h < 4;
+  }
+  function diiliRender(){
+    if(!diiliTekstiEl) return;
+    var h = '';
+    if(feikkiIdOwned){
+      h += '<div class="invRow"><span class="invName">Henkilökortti</span><span class="invVal">On jo repussa ✓</span></div>' +
+           '<div class="photoNote">"Sulla on jo kortti. Älä tuu tänne turhaan."</div>';
+      diiliOstaBtnEl.disabled = true;
+      diiliOstaBtnEl.textContent = 'Kortti on jo';
+    } else {
+      h += '<div class="invRow"><span class="invName">Väärennetty henkilökortti</span><span class="invVal">' +
+           FEIKKI_ID_HINTA + ' €</span></div>' +
+           '<div class="photoNote">"Naapurikylän kasinon ovimies ei päästä penskoja sisään. ' +
+           'Tällä kortilla sä oot kahdenkymmenen. Käteisellä, eikä tästä puhuta kenellekään."</div>';
+      diiliOstaBtnEl.disabled = (money < FEIKKI_ID_HINTA);
+      diiliOstaBtnEl.textContent = 'Osta ' + FEIKKI_ID_HINTA + ' €';
+    }
+    diiliTekstiEl.innerHTML = h;
+    diiliMoneyEl.textContent = Math.round(money);
+  }
+  function diiliOsta(){
+    if(feikkiIdOwned) return;
+    if(money < FEIKKI_ID_HINTA){
+      showToast(true, 'Rahat eivät riitä', 'Kortti maksaa ' + FEIKKI_ID_HINTA + ' €. Diileri ei anna velaksi.', 3600);
+      return;
+    }
+    money -= FEIKKI_ID_HINTA;
+    feikkiIdOwned = true;
+    updateMoneyDisplay();
+    diiliRender();
+    if(reppuOpen) reppuPiirra();
+    showToast(false, '🪪 Kortti repussa',
+      'Naapurikylän kasinon ovimies kelpuuttaa tämän. Älä hukkaa sitä.', 5200);
+    saveGame();
+  }
+  function openDiili(){
+    diiliOpen = true;
+    diiliPanelEl.hidden = false;
+    missionPanel.hidden = true;
+    tunePanel.hidden = true;
+    closeRepair(); closeMopedShop(); closeGarage(); closeReppu();
+    diiliRender();
+  }
+  function closeDiili(){
+    diiliOpen = false;
+    if(diiliPanelEl) diiliPanelEl.hidden = true;
+  }
+  if(diiliOstaBtnEl) diiliOstaBtnEl.addEventListener('click', diiliOsta);
+
+  // Hahmo nakyy vain yolla. Samalla annetaan kerran vihje, jos pelaaja sattuu
+  // kulkemaan kaupan ohi yolla ennen kuin tietaa mitaan koko tyypista.
+  var diileriNpc = null;
+  function updateDiileri(){
+    if(!diileriNpc){
+      for(var i=0; i<npcCharacters.length; i++){
+        if(npcCharacters[i].diileri){ diileriNpc = npcCharacters[i]; break; }
+      }
+      if(!diileriNpc) return;
+    }
+    var paikalla = diileriPaikalla();
+    diileriNpc.mesh.visible = paikalla;
+    if(!paikalla){
+      if(diiliOpen) closeDiili();
+      return;
+    }
+    if(!diiliVihjeAnnettu && mode !== 'riding'){
+      var dx = diiliSpot.x - player.position.x, dz = diiliSpot.z - player.position.z;
+      if(dx*dx + dz*dz < 26*26){
+        diiliVihjeAnnettu = true;
+        showToast(false, 'Joku seisoo kaupan takana',
+          'Hupparipäinen tyyppi nojailee kaupan takaseinään. Täällä ei pitäisi olla ketään tähän aikaan.', 5200);
+      }
+    }
+  }
+
+  // ==========================================================================
+  // ---- KASINO: BLACKJACK, RULETTI, BACCARAT JA SLOTTI ----
+  // Kaikki neljä peliä pyörivät samassa paneelissa ja samassa money-muuttujassa kuin
+  // muukin pelin talous. Panoskatot ovat talon sääntö ja ne on asetettu pelikohtaisesti.
+  // Pelit on toteutettu oikeilla säännöillä, ei "arvo luku ja kerro kahdella":
+  //   - blackjack: ässä 11/1, jakaja nostaa 17:ään, blackjack maksaa 3:2
+  //   - ruletti: eurooppalainen yhden nollan kiekko (37 numeroa), oikeat kertoimet
+  //   - baccarat: punto banco kolmannen kortin sääntöineen, pankista 5 % komissio
+  //   - slotti: painotettu rullanauha, palautusprosentti n. 90
+  // ==========================================================================
+  var KASINO_PELIT = [
+    {id:'blackjack', nimi:'Blackjack', min:5,  max:1000},
+    {id:'ruletti',   nimi:'Ruletti',   min:5,  max:1000},
+    {id:'baccarat',  nimi:'Baccarat',  min:10, max:1000},
+    {id:'slotti',    nimi:'Slotti',    min:1,  max:100}
+  ];
+  var kasinoPanelEl   = document.getElementById('kasinoPanel');
+  var kasinoValikkoEl = document.getElementById('kasinoValikko');
+  var kasinoSisaltoEl = document.getElementById('kasinoSisalto');
+  var kasinoMoneyEl   = document.getElementById('kasinoMoney');
+  var kasinoSaldoEl   = document.getElementById('kasinoSaldo');
+  var kasinoOpen  = false;
+  var kasinoPeli  = 'blackjack';
+  var kasinoPanos = 10;
+
+  function kasinoNykyPeli(){
+    for(var i=0;i<KASINO_PELIT.length;i++) if(KASINO_PELIT[i].id === kasinoPeli) return KASINO_PELIT[i];
+    return KASINO_PELIT[0];
+  }
+  function kasinoRajaaPanos(){
+    var p = kasinoNykyPeli();
+    kasinoPanos = Math.round(kasinoPanos);
+    if(kasinoPanos < p.min) kasinoPanos = p.min;
+    if(kasinoPanos > p.max) kasinoPanos = p.max;
+  }
+  function kasinoTilitys(muutos){
+    money += muutos;
+    kasinoNetto += muutos;
+    updateMoneyDisplay();
+    if(reppuOpen) reppuPiirra();
+  }
+  function kasinoVaraaPanos(){
+    kasinoRajaaPanos();
+    if(money < kasinoPanos) return false;
+    kasinoTilitys(-kasinoPanos);
+    return true;
+  }
+  function kasinoAuki(){
+    var h = dayTime*24;
+    return h >= 18 || h < 4;    // ilta ja yö
+  }
+
+  // ---- kortit ----
+  var KORTTI_MAAT  = ['♠','♥','♦','♣'];
+  var KORTTI_ARVOT = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  function nostaKortti(){
+    return {arvo: KORTTI_ARVOT[Math.floor(Math.random()*13)],
+            maa:  KORTTI_MAAT[Math.floor(Math.random()*4)]};
+  }
+  function korttiHTML(k, piilossa){
+    if(piilossa) return '<span class="kortti pimea">?</span>';
+    var puna = (k.maa === '♥' || k.maa === '♦');
+    return '<span class="kortti' + (puna ? ' puna' : '') + '">' + k.arvo + k.maa + '</span>';
+  }
+  function kasiHTML(kasi, piilotaToinen){
+    var h = '<div class="kasinoKortit">';
+    for(var i=0;i<kasi.length;i++) h += korttiHTML(kasi[i], !!(piilotaToinen && i === 1));
+    return h + '</div>';
+  }
+
+  // ---- panosrivi ----
+  function kasinoPanosHTML(){
+    var p = kasinoNykyPeli();
+    return '<div class="kasinoPanos">' +
+      '<button type="button" data-panos="-100">-100</button>' +
+      '<button type="button" data-panos="-10">-10</button>' +
+      '<span class="nayt">' + kasinoPanos + ' €</span>' +
+      '<button type="button" data-panos="10">+10</button>' +
+      '<button type="button" data-panos="100">+100</button>' +
+      '<button type="button" data-panos="max">MAX</button>' +
+      '</div>' +
+      '<div class="photoNote">Talon panosrajat: ' + p.min + '–' + p.max + ' €.</div>';
+  }
+  function kasinoPanosMuutos(arvo){
+    var p = kasinoNykyPeli();
+    if(arvo === 'max') kasinoPanos = Math.min(p.max, Math.max(p.min, Math.floor(money)));
+    else kasinoPanos += parseInt(arvo, 10);
+    kasinoRajaaPanos();
+    kasinoRender();
+  }
+
+  // =========================== BLACKJACK ===========================
+  var bj = {pelaaja:[], jakaja:[], vaihe:'valmis', panos:0, viesti:'', tupla:false};
+  function bjArvo(kasi){
+    var summa = 0, assoja = 0;
+    for(var i=0;i<kasi.length;i++){
+      var a = kasi[i].arvo;
+      if(a === 'A'){ summa += 11; assoja++; }
+      else if(a === 'J' || a === 'Q' || a === 'K' || a === '10') summa += 10;
+      else summa += parseInt(a, 10);
+    }
+    while(summa > 21 && assoja > 0){ summa -= 10; assoja--; }
+    return summa;
+  }
+  function bjBlackjack(kasi){ return kasi.length === 2 && bjArvo(kasi) === 21; }
+  function bjJaa(){
+    if(bj.vaihe === 'pelissa') return;
+    if(!kasinoVaraaPanos()){
+      bj.viesti = 'Rahat eivät riitä panokseen ' + kasinoPanos + ' €.';
+      kasinoRender(); return;
+    }
+    bj.panos = kasinoPanos;
+    bj.tupla = false;
+    bj.pelaaja = [nostaKortti(), nostaKortti()];
+    bj.jakaja  = [nostaKortti(), nostaKortti()];
+    bj.vaihe = 'pelissa';
+    bj.viesti = 'Kortit jaettu.';
+    if(bjBlackjack(bj.pelaaja)){
+      if(bjBlackjack(bj.jakaja)) bjRatkaise('tasan', 'Molemmilla blackjack. Panos takaisin.');
+      else bjRatkaise('bj', 'BLACKJACK! Maksaa 3:2.');
+    } else {
+      kasinoRender();
+    }
+  }
+  function bjLisaa(){
+    if(bj.vaihe !== 'pelissa') return;
+    bj.pelaaja.push(nostaKortti());
+    if(bjArvo(bj.pelaaja) > 21){ bjRatkaise('havio', 'Yli meni (' + bjArvo(bj.pelaaja) + '). Panos talolle.'); return; }
+    bj.viesti = 'Kädessä ' + bjArvo(bj.pelaaja) + '.';
+    kasinoRender();
+  }
+  function bjTuplaa(){
+    if(bj.vaihe !== 'pelissa' || bj.pelaaja.length !== 2) return;
+    if(money < bj.panos){ bj.viesti = 'Tuplaukseen ei ole rahaa.'; kasinoRender(); return; }
+    kasinoTilitys(-bj.panos);
+    bj.panos *= 2;
+    bj.tupla = true;
+    bj.pelaaja.push(nostaKortti());
+    if(bjArvo(bj.pelaaja) > 21){ bjRatkaise('havio', 'Tuplasit ja yli meni (' + bjArvo(bj.pelaaja) + ').'); return; }
+    bjJaa_seis();
+  }
+  function bjJaa_seis(){
+    if(bj.vaihe !== 'pelissa') return;
+    while(bjArvo(bj.jakaja) < 17) bj.jakaja.push(nostaKortti());
+    var oma = bjArvo(bj.pelaaja), jak = bjArvo(bj.jakaja);
+    if(jak > 21) bjRatkaise('voitto', 'Jakaja yli (' + jak + '). Voitit ' + bj.panos + ' €.');
+    else if(jak > oma) bjRatkaise('havio', 'Jakajalla ' + jak + ', sinulla ' + oma + '. Talo vei.');
+    else if(jak < oma) bjRatkaise('voitto', 'Sinulla ' + oma + ', jakajalla ' + jak + '. Voitit ' + bj.panos + ' €.');
+    else bjRatkaise('tasan', 'Tasan ' + oma + '. Panos takaisin.');
+  }
+  function bjRatkaise(tulos, viesti){
+    bj.vaihe = 'ohi';
+    if(tulos === 'voitto')      kasinoTilitys(bj.panos*2);
+    else if(tulos === 'bj')     kasinoTilitys(Math.round(bj.panos*2.5));
+    else if(tulos === 'tasan')  kasinoTilitys(bj.panos);
+    bj.viesti = viesti;
+    kasinoRender();
+  }
+  function bjHTML(){
+    var h = kasinoPanosHTML();
+    var piilossa = (bj.vaihe === 'pelissa');
+    h += '<div class="kasinoRivi"><span>Jakaja</span><b>' +
+         (bj.jakaja.length ? (piilossa ? '?' : bjArvo(bj.jakaja)) : '–') + '</b></div>';
+    h += kasiHTML(bj.jakaja, piilossa);
+    h += '<div class="kasinoRivi"><span>Sinä</span><b>' +
+         (bj.pelaaja.length ? bjArvo(bj.pelaaja) : '–') + '</b></div>';
+    h += kasiHTML(bj.pelaaja, false);
+    h += '<div class="kasinoViesti">' + (bj.viesti || 'Aseta panos ja jaa kortit.') + '</div>';
+    h += '<div class="kasinoNapit">';
+    if(bj.vaihe === 'pelissa'){
+      h += '<button type="button" data-bj="lisaa">Lisää kortti</button>';
+      h += '<button type="button" data-bj="seis">Jään</button>';
+      h += '<button type="button" data-bj="tupla"' + (bj.pelaaja.length === 2 ? '' : ' disabled') + '>Tuplaa</button>';
+    } else {
+      h += '<button type="button" data-bj="jaa">Jaa kortit (' + kasinoPanos + ' €)</button>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  // =========================== RULETTI ===========================
+  var RULETTI_PUNAISET = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+  function ruletinPunainen(n){ return RULETTI_PUNAISET.indexOf(n) >= 0; }
+  var rul = {tyyppi:'punainen', numero:7, viimeisin:null, viesti:'', historia:[]};
+  var RULETTI_PANOKSET = [
+    {id:'punainen', nimi:'Punainen', kerroin:2},
+    {id:'musta',    nimi:'Musta',    kerroin:2},
+    {id:'parillinen', nimi:'Parillinen', kerroin:2},
+    {id:'pariton',  nimi:'Pariton',  kerroin:2},
+    {id:'matala',   nimi:'1–18', kerroin:2},
+    {id:'korkea',   nimi:'19–36', kerroin:2},
+    {id:'tusina1',  nimi:'1. tusina', kerroin:3},
+    {id:'tusina2',  nimi:'2. tusina', kerroin:3},
+    {id:'tusina3',  nimi:'3. tusina', kerroin:3},
+    {id:'numero',   nimi:'Yksi numero', kerroin:36}
+  ];
+  function ruletinOsuu(tyyppi, n, valittuNumero){
+    if(n === 0) return tyyppi === 'numero' && valittuNumero === 0;
+    switch(tyyppi){
+      case 'punainen':   return ruletinPunainen(n);
+      case 'musta':      return !ruletinPunainen(n);
+      case 'parillinen': return n % 2 === 0;
+      case 'pariton':    return n % 2 === 1;
+      case 'matala':     return n >= 1 && n <= 18;
+      case 'korkea':     return n >= 19 && n <= 36;
+      case 'tusina1':    return n >= 1 && n <= 12;
+      case 'tusina2':    return n >= 13 && n <= 24;
+      case 'tusina3':    return n >= 25 && n <= 36;
+      case 'numero':     return n === valittuNumero;
+    }
+    return false;
+  }
+  function rulPyorayta(){
+    if(!kasinoVaraaPanos()){
+      rul.viesti = 'Rahat eivät riitä panokseen ' + kasinoPanos + ' €.';
+      kasinoRender(); return;
+    }
+    var panos = kasinoPanos;
+    var n = Math.floor(Math.random()*37);
+    rul.viimeisin = n;
+    rul.historia.unshift(n);
+    if(rul.historia.length > 8) rul.historia.pop();
+    var tyyppi = rul.tyyppi;
+    var def = null;
+    for(var i=0;i<RULETTI_PANOKSET.length;i++) if(RULETTI_PANOKSET[i].id === tyyppi) def = RULETTI_PANOKSET[i];
+    var vari = n === 0 ? 'vihreä' : (ruletinPunainen(n) ? 'punainen' : 'musta');
+    if(ruletinOsuu(tyyppi, n, rul.numero)){
+      var voitto = panos * def.kerroin;
+      kasinoTilitys(voitto);
+      rul.viesti = 'Kuula pysähtyi numeroon ' + n + ' (' + vari + '). Osui! Maksetaan ' + voitto + ' €.';
+    } else {
+      rul.viesti = 'Kuula pysähtyi numeroon ' + n + ' (' + vari + '). Ei osunut.';
+    }
+    kasinoRender();
+  }
+  function rulHTML(){
+    var h = kasinoPanosHTML();
+    h += '<div class="kasinoValikko">';
+    for(var i=0;i<RULETTI_PANOKSET.length;i++){
+      var d = RULETTI_PANOKSET[i];
+      h += '<button type="button" data-rul="' + d.id + '"' +
+           (rul.tyyppi === d.id ? ' class="active"' : '') + '>' + d.nimi + '</button>';
+    }
+    h += '</div>';
+    if(rul.tyyppi === 'numero'){
+      h += '<div class="kasinoNumerot">';
+      for(var n=0;n<=36;n++){
+        var lk = n === 0 ? 'vihrea' : (ruletinPunainen(n) ? 'puna' : '');
+        if(rul.numero === n) lk += ' active';
+        h += '<button type="button" data-rulnum="' + n + '"' + (lk ? ' class="' + lk + '"' : '') + '>' + n + '</button>';
+      }
+      h += '</div>';
+    }
+    if(rul.historia.length){
+      h += '<div class="kasinoRivi"><span>Viime kierrokset</span><b>' + rul.historia.join(' · ') + '</b></div>';
+    }
+    h += '<div class="kasinoViesti">' + (rul.viesti || 'Valitse panostyyppi ja pyöräytä. Nolla on talon numero.') + '</div>';
+    h += '<div class="kasinoNapit"><button type="button" data-rul="pyorayta">Pyöräytä (' + kasinoPanos + ' €)</button></div>';
+    return h;
+  }
+
+  // =========================== BACCARAT ===========================
+  var bac = {valinta:'pelaaja', pelaaja:[], pankki:[], viesti:'', jaettu:false};
+  function bacKortinArvo(k){
+    if(k.arvo === 'A') return 1;
+    if(k.arvo === '10' || k.arvo === 'J' || k.arvo === 'Q' || k.arvo === 'K') return 0;
+    return parseInt(k.arvo, 10);
+  }
+  function bacSumma(kasi){
+    var s = 0;
+    for(var i=0;i<kasi.length;i++) s += bacKortinArvo(kasi[i]);
+    return s % 10;
+  }
+  // Punto bancon kolmannen kortin saannot: pelaaja nostaa 0-5:lla, ja pankin nosto
+  // riippuu sen omasta summasta JA pelaajan kolmannen kortin arvosta.
+  function bacPankkiNostaa(pankkiSumma, pelaajanKolmas){
+    if(pelaajanKolmas === null) return pankkiSumma <= 5;
+    var v = pelaajanKolmas;
+    if(pankkiSumma <= 2) return true;
+    if(pankkiSumma === 3) return v !== 8;
+    if(pankkiSumma === 4) return v >= 2 && v <= 7;
+    if(pankkiSumma === 5) return v >= 4 && v <= 7;
+    if(pankkiSumma === 6) return v === 6 || v === 7;
+    return false;   // 7 jää, 8-9 on luonnollinen
+  }
+  function bacJaa(){
+    if(!kasinoVaraaPanos()){
+      bac.viesti = 'Rahat eivät riitä panokseen ' + kasinoPanos + ' €.';
+      kasinoRender(); return;
+    }
+    var panos = kasinoPanos;
+    bac.pelaaja = [nostaKortti(), nostaKortti()];
+    bac.pankki  = [nostaKortti(), nostaKortti()];
+    bac.jaettu = true;
+    var ps = bacSumma(bac.pelaaja), bs = bacSumma(bac.pankki);
+    var kolmas = null;
+    if(ps <= 7 && bs <= 7){                       // ei luonnollista
+      if(ps <= 5){
+        var k = nostaKortti();
+        bac.pelaaja.push(k);
+        kolmas = bacKortinArvo(k);
+      }
+      bs = bacSumma(bac.pankki);
+      if(bacPankkiNostaa(bs, kolmas)) bac.pankki.push(nostaKortti());
+    }
+    ps = bacSumma(bac.pelaaja); bs = bacSumma(bac.pankki);
+    var voittaja = ps > bs ? 'pelaaja' : (bs > ps ? 'pankki' : 'tasapeli');
+    var txt = 'Pelaaja ' + ps + ' – pankki ' + bs + '. ';
+    if(voittaja === 'tasapeli'){
+      if(bac.valinta === 'tasapeli'){
+        kasinoTilitys(panos*9);
+        txt += 'TASAPELI! Maksetaan 8:1, ' + (panos*8) + ' €.';
+      } else {
+        kasinoTilitys(panos);   // tasapelissä pelaaja- ja pankkipanos palautuvat
+        txt += 'Tasapeli – panos takaisin.';
+      }
+    } else if(voittaja === bac.valinta){
+      if(voittaja === 'pankki'){
+        // Komissiota EI pyöristetä: 10 euron panoksella Math.round(9,5) olisi 10,
+        // eli koko 5 prosentin komissio katoaisi ja pankkiveto maksaisi yli sadan
+        // prosentin palautuksella. Sentit jäävät saldoon, näytöllä ne pyöristetään.
+        var netto = panos*0.95;
+        kasinoTilitys(panos + netto);
+        txt += 'Pankki voitti. Maksetaan ' + (Math.round(netto*100)/100) + ' € (5 % komissio talolle).';
+      } else {
+        kasinoTilitys(panos*2);
+        txt += 'Pelaaja voitti. Maksetaan ' + panos + ' €.';
+      }
+    } else {
+      txt += (voittaja === 'pankki' ? 'Pankki' : 'Pelaaja') + ' voitti – panos talolle.';
+    }
+    bac.viesti = txt;
+    kasinoRender();
+  }
+  function bacHTML(){
+    var h = kasinoPanosHTML();
+    h += '<div class="kasinoValikko">' +
+      '<button type="button" data-bac="pelaaja"' + (bac.valinta === 'pelaaja' ? ' class="active"' : '') + '>Pelaaja (1:1)</button>' +
+      '<button type="button" data-bac="pankki"' + (bac.valinta === 'pankki' ? ' class="active"' : '') + '>Pankki (0,95:1)</button>' +
+      '<button type="button" data-bac="tasapeli"' + (bac.valinta === 'tasapeli' ? ' class="active"' : '') + '>Tasapeli (8:1)</button>' +
+      '</div>';
+    if(bac.jaettu){
+      h += '<div class="kasinoRivi"><span>Pelaaja</span><b>' + bacSumma(bac.pelaaja) + '</b></div>' + kasiHTML(bac.pelaaja, false);
+      h += '<div class="kasinoRivi"><span>Pankki</span><b>' + bacSumma(bac.pankki) + '</b></div>' + kasiHTML(bac.pankki, false);
+    }
+    h += '<div class="kasinoViesti">' + (bac.viesti ||
+      'Lyö vetoa kumpi käsi on lähempänä yhdeksää. Kortit jaetaan säännöillä, pelaaja ei päätä mitään.') + '</div>';
+    h += '<div class="kasinoNapit"><button type="button" data-bac="jaa">Jaa (' + kasinoPanos + ' €)</button></div>';
+    return h;
+  }
+
+  // =========================== SLOTTI ===========================
+  // Painotettu nauha: harvinaisempi symboli maksaa enemman. Palautusprosentti n. 90.
+  var SLOTTI_SYMBOLIT = [
+    {s:'🍒', paino:5, maksu:8},    // kirsikka
+    {s:'🍋', paino:5, maksu:8},    // sitruuna
+    {s:'🔔', paino:4, maksu:25},   // kello
+    {s:'🍉', paino:3, maksu:40},   // vesimeloni
+    {s:'⭐',       paino:2, maksu:90},   // tahti
+    {s:'7️⃣', paino:1, maksu:400}  // seiska
+  ];
+  var SLOTTI_NAUHA = (function(){
+    var n = [];
+    for(var i=0;i<SLOTTI_SYMBOLIT.length;i++){
+      for(var j=0;j<SLOTTI_SYMBOLIT[i].paino;j++) n.push(SLOTTI_SYMBOLIT[i].s);
+    }
+    return n;
+  })();
+  function slottiMaksu(s){
+    for(var i=0;i<SLOTTI_SYMBOLIT.length;i++) if(SLOTTI_SYMBOLIT[i].s === s) return SLOTTI_SYMBOLIT[i].maksu;
+    return 0;
+  }
+  var slotti = {rullat:['🍒','🍋','🔔'], pyorii:false, viesti:'', panos:0, jaljella:0, viive:0};
+  function slottiArvoSymboli(){ return SLOTTI_NAUHA[Math.floor(Math.random()*SLOTTI_NAUHA.length)]; }
+  // Rullien pyöritys ajetaan pelisilmukasta eikä setIntervalilla. Syy on sama kuin
+  // kaikessa muussakin pelin ajastuksessa: jos selain kuristaa ajastimia (taustavälilehti,
+  // raskas ruutu), setInterval jää jumiin ja rullat jäisivät pyörimään ikuisesti.
+  function slottiPyorayta(){
+    if(slotti.pyorii) return;
+    if(!kasinoVaraaPanos()){
+      slotti.viesti = 'Rahat eivät riitä panokseen ' + kasinoPanos + ' €.';
+      kasinoRender(); return;
+    }
+    slotti.panos = kasinoPanos;
+    slotti.pyorii = true;
+    slotti.viesti = 'Pyörii...';
+    slotti.jaljella = 12;
+    slotti.viive = 0;
+    kasinoRender();
+  }
+  // Kello neljältä talo sulkee ovet. Jos pelaaja istuu vielä pöydässä, kesken oleva
+  // käsi ratkaistaan ja paneeli suljetaan - muuten kasinolla voisi pelata koko päivän.
+  function kasinoSulkemisaika(){
+    if(!kasinoOpen || kasinoAuki()) return;
+    closeKasino();
+    showToast(false, '🎰 Kasino sulkee', 'Kello on neljä. Ovimies saattaa sinut ulos.', 4200);
+  }
+  function slottiTick(dt){
+    if(!slotti.pyorii) return;
+    slotti.viive -= dt;
+    if(slotti.viive > 0) return;
+    slotti.viive = 0.08;
+    slotti.rullat = [slottiArvoSymboli(), slottiArvoSymboli(), slottiArvoSymboli()];
+    var el = document.getElementById('slottiRullat');
+    if(el) el.textContent = slotti.rullat.join(' ');
+    slotti.jaljella--;
+    if(slotti.jaljella <= 0) slottiRatkaise();
+  }
+  function slottiRatkaise(){
+    slotti.pyorii = false;
+    var r = slotti.rullat, panos = slotti.panos, voitto = 0, txt;
+    var seiska = '7️⃣', kirsikka = '🍒';
+    var seiskoja = 0, kirsikoita = 0, i;
+    for(i=0;i<3;i++){ if(r[i] === seiska) seiskoja++; if(r[i] === kirsikka) kirsikoita++; }
+    if(r[0] === r[1] && r[1] === r[2]){
+      voitto = panos * slottiMaksu(r[0]);
+      txt = 'Kolme samaa! ' + slottiMaksu(r[0]) + 'x panos = ' + voitto + ' €.';
+    } else if(seiskoja === 2){
+      voitto = panos * 5;
+      txt = 'Kaksi seiskaa – 5x panos = ' + voitto + ' €.';
+    } else if(kirsikoita === 2){
+      voitto = panos;
+      txt = 'Kaksi kirsikkaa – panos takaisin.';
+    } else {
+      txt = 'Ei mitään. Rullat pyörivät uudestaan.';
+    }
+    if(voitto > 0) kasinoTilitys(voitto);
+    slotti.viesti = txt;
+    kasinoRender();
+  }
+  function slottiHTML(){
+    var h = kasinoPanosHTML();
+    h += '<div class="slottiRullat" id="slottiRullat">' + slotti.rullat.join(' ') + '</div>';
+    h += '<div class="kasinoRivi"><span>Kolme seiskaa</span><b>400x</b></div>' +
+         '<div class="kasinoRivi"><span>Kolme tähteä</span><b>90x</b></div>' +
+         '<div class="kasinoRivi"><span>Kolme melonia</span><b>40x</b></div>' +
+         '<div class="kasinoRivi"><span>Kolme kelloa</span><b>25x</b></div>' +
+         '<div class="kasinoRivi"><span>Kolme kirsikkaa tai sitruunaa</span><b>8x</b></div>' +
+         '<div class="kasinoRivi"><span>Kaksi seiskaa</span><b>5x</b></div>' +
+         '<div class="kasinoRivi"><span>Kaksi kirsikkaa</span><b>panos takaisin</b></div>';
+    h += '<div class="kasinoViesti">' + (slotti.viesti || 'Pienin panos, suurin kerroin. Talon katto 100 €.') + '</div>';
+    h += '<div class="kasinoNapit"><button type="button" data-slotti="pyorayta"' +
+         (slotti.pyorii ? ' disabled' : '') + '>PYÖRÄYTÄ (' + kasinoPanos + ' €)</button></div>';
+    return h;
+  }
+
+  // =========================== PANEELI ===========================
+  function kasinoRender(){
+    if(!kasinoPanelEl) return;
+    kasinoRajaaPanos();
+    var vh = '';
+    for(var i=0;i<KASINO_PELIT.length;i++){
+      vh += '<button type="button" data-kasinopeli="' + KASINO_PELIT[i].id + '"' +
+            (kasinoPeli === KASINO_PELIT[i].id ? ' class="active"' : '') + '>' + KASINO_PELIT[i].nimi + '</button>';
+    }
+    kasinoValikkoEl.innerHTML = vh;
+    if(kasinoPeli === 'blackjack')      kasinoSisaltoEl.innerHTML = bjHTML();
+    else if(kasinoPeli === 'ruletti')   kasinoSisaltoEl.innerHTML = rulHTML();
+    else if(kasinoPeli === 'baccarat')  kasinoSisaltoEl.innerHTML = bacHTML();
+    else                                kasinoSisaltoEl.innerHTML = slottiHTML();
+    kasinoMoneyEl.textContent = Math.round(money);
+    kasinoSaldoEl.textContent = (kasinoNetto > 0 ? '+' : '') + Math.round(kasinoNetto);
+    kasinoSido();
+  }
+  function kasinoSido(){
+    Array.prototype.forEach.call(kasinoValikkoEl.querySelectorAll('button[data-kasinopeli]'), function(b){
+      b.addEventListener('click', function(){
+        if(slotti.pyorii) return;
+        kasinoPeli = b.getAttribute('data-kasinopeli');
+        kasinoRajaaPanos();
+        kasinoRender();
+      });
+    });
+    Array.prototype.forEach.call(kasinoSisaltoEl.querySelectorAll('button'), function(b){
+      var panos = b.getAttribute('data-panos');
+      if(panos !== null){ b.addEventListener('click', function(){ kasinoPanosMuutos(panos); }); return; }
+      var bjAct = b.getAttribute('data-bj');
+      if(bjAct !== null){
+        b.addEventListener('click', function(){
+          if(bjAct === 'jaa') bjJaa();
+          else if(bjAct === 'lisaa') bjLisaa();
+          else if(bjAct === 'seis') bjJaa_seis();
+          else if(bjAct === 'tupla') bjTuplaa();
+        });
+        return;
+      }
+      var rulAct = b.getAttribute('data-rul');
+      if(rulAct !== null){
+        b.addEventListener('click', function(){
+          if(rulAct === 'pyorayta') rulPyorayta();
+          else { rul.tyyppi = rulAct; kasinoRender(); }
+        });
+        return;
+      }
+      var rulNum = b.getAttribute('data-rulnum');
+      if(rulNum !== null){
+        b.addEventListener('click', function(){ rul.numero = parseInt(rulNum, 10); kasinoRender(); });
+        return;
+      }
+      var bacAct = b.getAttribute('data-bac');
+      if(bacAct !== null){
+        b.addEventListener('click', function(){
+          if(bacAct === 'jaa') bacJaa();
+          else { bac.valinta = bacAct; kasinoRender(); }
+        });
+        return;
+      }
+      var slotAct = b.getAttribute('data-slotti');
+      if(slotAct !== null){ b.addEventListener('click', slottiPyorayta); return; }
+    });
+  }
+  function openKasino(){
+    kasinoOpen = true;
+    kasinoPanelEl.hidden = false;
+    missionPanel.hidden = true;
+    tunePanel.hidden = true;
+    closeRepair(); closeMopedShop(); closeGarage(); closeReppu(); closeDiili();
+    kasinoRender();
+  }
+  function closeKasino(){
+    kasinoOpen = false;
+    if(kasinoPanelEl) kasinoPanelEl.hidden = true;
+    // kesken jäänyt pyöräytys ratkaistaan loppuun, ettei panos jää talolle vahingossa
+    if(slotti.pyorii){
+      slotti.rullat = [slottiArvoSymboli(), slottiArvoSymboli(), slottiArvoSymboli()];
+      slottiRatkaise();
+    }
+    slotti.pyorii = false;
+    if(bj.vaihe === 'pelissa'){      // kesken jäänyt käsi on hävitty käsi
+      bj.vaihe = 'ohi';
+      bj.viesti = 'Lähdit kesken käden. Panos jäi talolle.';
+    }
+    saveGame();
+  }
+  // Ovitarkistus: aukioloaika ensin, sitten ika. Molemmista kerrotaan selvasti,
+  // jotta pelaaja tietaa kumpi puuttuu.
+  function kasinoOviInteract(){
+    if(kasinoOpen){ closeKasino(); return; }
+    if(!kasinoAuki()){
+      showToast(true, '🎰 Kasino on kiinni',
+        'Ovi aukeaa klo 18 ja menee kiinni klo 04. Nyt kello on ' + phoneKelloStr() + '.', 4200);
+      return;
+    }
+    if(!feikkiIdOwned){
+      showToast(true, 'Ovimies pysäytti sinut',
+        '"Henkilökortti." Sinulla ei ole mitään näytettävää. Joku kyläkaupan takana kuulemma myy sellaisia öisin.', 5600);
+      return;
+    }
+    openKasino();
+  }
+
   // hahmot kääntyvät katsomaan pelaajaa kun tämä tulee lähelle, ja palaavat omaan asentoonsa kun
   // pelaaja poistuu - pieni yksityiskohta mutta tekee kylästä heti elävämmän tuntuisen
   function updateNpcFacing(dt, refPos){
@@ -17227,6 +19203,13 @@
     {text:'KOTI', target:homePos},
     {text:'MIITTI', target:meetSpot}
   ]);
+  // maalaamon pihaan oma viitta rengastien varresta
+  var maalaamoSignSpot = pushOffRoad(maalaamoPos.x - 18, maalaamoPos.z + 16, 2.2);
+  if(maalaamoSignSpot){
+    makeRoadSign(maalaamoSignSpot.x, maalaamoSignSpot.z, [
+      {text:'MAALAAMO', target:maalaamoPos}
+    ]);
+  }
   // romuttamon päässä opastus takaisin kylälle
   makeRoadSign(romuPos.x + 9, romuPos.z + 10, [
     {text:'TALLI', target:kauppaPos},
@@ -17254,9 +19237,11 @@
     {name:'Miitti',       pos:meetSpot,         color:'#ffa24b'},
     {name:'Mac Donalds',  pos:macdonaldsPos,    color:'#ffe066'},
     {name:'Romuttamo',    pos:romuPos,          color:'#c9a27f'},
+    {name:'Maalaamo',     pos:maalaamoPos,      color:'#9fd4e8'},
     {name:'Kyläkauppa',   pos:kauppaIsoPos,     color:'#9be86b'},
     {name:'Uimaranta',    pos:rantaPos,         color:'#6fe3d0'},
     {name:'Naapurikylä',  pos:kylaPos,          color:'#d9c1ff'},
+    {name:'Kasino',       pos:kasinoPos,        color:'#ff5aa8'},
     {name:'Crossirata',   pos:crossiPos,        color:'#ff7a5c'},
     {name:'Järvimökki',   pos:jarviPos,         color:'#7fe0a0'},
     {name:'Hyppyri',      pos:rampPos,          color:'#ffb347'}
@@ -19896,9 +21881,30 @@
   // ilmoittaa sen verkkotilassa, joten maaliintulo ei ole kiinni siitä ehtiikö paketti perille.
   // ============================================================================
   var RACE_CP_RADIUS = 11;
-  var RACE_MAX_TIME = 420;      // kisa katkaistaan viimeistään tässä ajassa
+  var RACE_MAX_TIME = 620;      // kisa katkaistaan viimeistään tässä ajassa
+                                // (Pitäjän ympäriajo on yli 4 km, joten 420 s oli liian lyhyt)
   var RACE_RESULT_TIME = 12;    // tulosruutu näkyy näin monta sekuntia
   var RACE_ROUTES = [
+    // Pitajan ymparajo: koko rengastie Isojarven ympari. Pisin reitti ja isoin
+    // palkkio, ja lahto on kylan kohdalta - kisaan paasee siis kotiovelta.
+    // Pisteet ovat valmiiksi tien keskilinjalla, joten noSnap.
+    {id:'rengas', name:'Pitäjän ympäriajo', reward:300, noSnap:true,
+     cps:(function(){
+       var out = [], N = 12, i;
+       if(typeof rengasPisteet === 'undefined' || rengasPisteet.length < 8) return out;
+       var kehä = rengasPisteet.length - 1;          // viimeinen piste = ensimmainen
+       var aloitus = 0, paras = 1e9;
+       for(i = 0; i < kehä; i++){
+         var dx = rengasPisteet[i].x - hubJunction.x, dz = rengasPisteet[i].z - hubJunction.z;
+         var d = dx*dx + dz*dz;
+         if(d < paras){ paras = d; aloitus = i; }
+       }
+       for(i = 0; i <= N; i++){
+         var p = rengasPisteet[(aloitus + Math.round(i*kehä/N)) % kehä];
+         out.push(new THREE.Vector3(p.x, 0, p.z));
+       }
+       return out;
+     })()},
     {id:'kyla',   name:'Kyläkierros', reward:120,
      cps:[mopedShopPos, kauppaIsoPos, policeStationPos, macdonaldsPos, homePos]},
     {id:'jarvi',  name:'Järvilenkki', reward:180,
@@ -19918,6 +21924,97 @@
      })()}
   ];
   var race = {active:false, routeId:'', phase:'', timer:0, myCp:0, myFinish:0, standings:[], awarded:false};
+
+  // ==========================================================================
+  // ---- NAKYVAT KILPAKUMPPANIT ----
+  // Kisat olivat tahan asti yksinajoa: kaverien ajat laskettiin kaavalla, radalla
+  // ei nakynyt ketaan, ja lopputulos tipahti ruutuun vasta maalissa. Nyt jokaiseen
+  // kisaan lahtee mukaan kolme kylan kuskia, jotka ajavat saman reitin omalla
+  // tahdillaan. Vauhti johdetaan samasta laskennasta kuin lopputulos, joten se
+  // jonka ohitat radalla on myos se jonka voitat tulostaulukossa.
+  //
+  // Kuskit ovat tahallaan aineettomia: ne eivat ole tormayslistassa, joten ne
+  // eivat voi kaataa pelaajaa ohituksessa. Kisassa haviaminen saa johtua omasta
+  // ajamisesta, ei siita etta vastustaja ajoi paalle.
+  // ==========================================================================
+  var raceRivals = [];
+  var RACE_RIVAL_VARIT = [0x2f7a78, 0xc99a2f, 0x8a3b2b, 0x51606b, 0xe2572b];
+  function raceReittiPituus(route){
+    var sum = 0;
+    for(var i = 0; i < route.cps.length - 1; i++){
+      var dx = route.cps[i+1].x - route.cps[i].x, dz = route.cps[i+1].z - route.cps[i].z;
+      sum += Math.sqrt(dx*dx + dz*dz);
+    }
+    return sum;
+  }
+  function raceClearRivals(){
+    for(var i = 0; i < raceRivals.length; i++){
+      var m = raceRivals[i].mesh;
+      if(m && m.parent) m.parent.remove(m);
+    }
+    raceRivals = [];
+  }
+  function raceSpawnRivals(route){
+    raceClearRivals();
+    if(!route || route.cps.length < 2) return;
+    var pit = raceReittiPituus(route);
+    if(pit < 50) return;
+    // kolme kuskia: yksi hitaampi, yksi tasavakainen ja yksi nopea
+    var valitut = [SERIES_RIVALS[1], SERIES_RIVALS[3], SERIES_RIVALS[4]];
+    var suunta = Math.atan2(route.cps[1].x - route.cps[0].x, route.cps[1].z - route.cps[0].z);
+    for(var i = 0; i < valitut.length; i++){
+      var aika = seriesRivalTime(valitut[i], route.id);
+      var mesh = makeNpcMoped(RACE_RIVAL_VARIT[i % RACE_RIVAL_VARIT.length]);
+      var sx = route.cps[0].x + Math.cos(suunta)*(i - 1)*2.6;
+      var sz = route.cps[0].z - Math.sin(suunta)*(i - 1)*2.6;
+      mesh.position.set(sx, terrainHeight(sx, sz), sz);
+      mesh.rotation.y = suunta;
+      scene.add(mesh);
+      raceRivals.push({name: valitut[i].name, aika: aika, nopeus: pit/Math.max(1, aika),
+                       matka: 0, cp: 0, maali: 0, mesh: mesh});
+    }
+  }
+  // Pelaajan maaliintulo ratkaisee kisan: kuskien ajat ovat ennalta tiedossa, joten
+  // sijoitukset tiedetaan heti. Ilman tata maalissa jouduttaisiin odottamaan viisi
+  // minuuttia sita, etta hitainkin kuski saapuu omaa tahtiaan perille.
+  function raceResolveRivals(){
+    for(var i = 0; i < raceRivals.length; i++){
+      if(raceRivals[i].maali) continue;
+      raceRivals[i].maali = raceRivals[i].aika;
+      if(raceRivals[i].mesh) raceRivals[i].mesh.visible = false;
+    }
+  }
+  function raceUpdateRivals(dt, route){
+    if(!raceRivals.length || !route || route.cps.length < 2) return;
+    for(var i = 0; i < raceRivals.length; i++){
+      var r = raceRivals[i];
+      if(race.phase !== 'run' || r.maali) continue;
+      r.matka += r.nopeus*dt;
+      var jaljella = r.matka, k, paikka = null;
+      for(k = 0; k < route.cps.length - 1; k++){
+        var a = route.cps[k], b = route.cps[k+1];
+        var seg = Math.sqrt((b.x-a.x)*(b.x-a.x) + (b.z-a.z)*(b.z-a.z));
+        if(jaljella <= seg || k === route.cps.length - 2){
+          var t = Math.max(0, Math.min(1, seg > 0.01 ? jaljella/seg : 0));
+          paikka = {x: a.x + (b.x-a.x)*t, z: a.z + (b.z-a.z)*t,
+                    suunta: Math.atan2(b.x-a.x, b.z-a.z)};
+          break;
+        }
+        jaljella -= seg;
+      }
+      r.cp = Math.min(route.cps.length, k + 1);
+      if(paikka && r.mesh){
+        r.mesh.position.set(paikka.x, terrainHeight(paikka.x, paikka.z), paikka.z);
+        r.mesh.rotation.y = paikka.suunta;
+      }
+      if(race.timer >= r.aika){
+        r.maali = r.aika;
+        r.cp = route.cps.length;
+        if(r.mesh) r.mesh.visible = false;
+      }
+    }
+  }
+
   var raceBest = {};            // omat parhaat ajat reiteittäin (tallentuu peliin)
   var raceRingMesh = null;
   var racePanelEl = document.getElementById('racePanel');
@@ -20029,7 +22126,7 @@
     {day: 11, routeId: 'kyla'},
     {day: 17, routeId: 'rata'},     // moottorirata kartan laidalla
     {day: 23, routeId: 'jarvi'},
-    {day: 29, routeId: 'rata'}
+    {day: 29, routeId: 'rengas'}   // kesan paatos: koko jarvi ympari
   ];
   // Kilpakumppanit ovat samat kaverit joita vastaan kiihdytyskisat ajetaan, plus kaksi muuta
   // kylän kuskia. Luku on mopon huippunopeus km/h.
@@ -20110,7 +22207,13 @@
     seriesDone[idx] = true;
     var rows = [{name: seriesMyName(), time: myTime, me: true}];
     for(var i=0; i<SERIES_RIVALS.length; i++){
-      rows.push({name: SERIES_RIVALS[i].name, time: seriesRivalTime(SERIES_RIVALS[i], routeId), me: false});
+      // Jos kuski ajoi kisan oikeasti radalla, kaytetaan SITA aikaa. Muuten
+      // tulostaulukko kertoisi eri tarinan kuin se mita pelaaja juuri naki.
+      var nimi = SERIES_RIVALS[i].name, aika = 0;
+      for(var rr = 0; rr < raceRivals.length; rr++){
+        if(raceRivals[rr].name === nimi){ aika = raceRivals[rr].aika; break; }
+      }
+      rows.push({name: nimi, time: aika || seriesRivalTime(SERIES_RIVALS[i], routeId), me: false});
     }
     // keskeytys (ei maaliaikaa) = viimeinen sija ilman pisteitä
     rows.sort(function(a, b){
@@ -20203,6 +22306,7 @@
     race.myCp = 0; race.myFinish = 0; race.standings = []; race.awarded = false;
     if(raceRingMesh) raceRingMesh.visible = false;
     if(racePanelEl) racePanelEl.hidden = true;
+    raceClearRivals();
     renderRaceRoutes();
   }
   // Käynnistys. Liittyjä ei voi aloittaa itse vaan pyytää hostia, joka aloittaa kaikille.
@@ -20237,6 +22341,7 @@
     race.active = true; race.routeId = routeId; race.phase = 'count'; race.timer = 5;
     race.myCp = 0; race.myFinish = 0; race.standings = []; race.awarded = false;
     if(racePanelEl) racePanelEl.hidden = false;
+    raceSpawnRivals(route);
     showToast(false, route.name, (race.series !== null && race.series !== undefined)
       ? ('🏆 Osakilpailu ' + (race.series+1) + '/' + SERIES_ROUNDS.length + ' alkaa! Aja tarkistuspisteiden läpi järjestyksessä.')
       : 'Kisa alkaa! Aja tarkistuspisteiden läpi järjestyksessä.', 3800);
@@ -20250,6 +22355,9 @@
   }
   function raceBuildStandings(){
     var list = [{n:playerName, c:race.myCp, f:race.myFinish, me:true}];
+    for(var ri = 0; ri < raceRivals.length; ri++){
+      list.push({n:raceRivals[ri].name, c:raceRivals[ri].cp, f:raceRivals[ri].maali});
+    }
     if(typeof netRemotes !== 'undefined' && netRemotes){
       for(var id in netRemotes){
         if(!Object.prototype.hasOwnProperty.call(netRemotes, id)) continue;
@@ -20396,6 +22504,7 @@
           race.myCp++;
           if(race.myCp >= route.cps.length){
             race.myFinish = Math.max(0.1, race.timer);
+            raceResolveRivals();
             showToast(false, 'Maalissa!', 'Aikasi ' + raceTime(race.myFinish), 3200);
           } else {
             showToast(false, 'Tarkistuspiste ' + race.myCp + '/' + route.cps.length,
@@ -20404,6 +22513,7 @@
         }
       }
     }
+    raceUpdateRivals(dt, route);
     if(race.phase === 'done') raceAwardSelf(route);
     raceUpdateRing();
     raceRenderHud(route);
@@ -20473,6 +22583,10 @@
   var damageByMoped = {};  // mopoId -> lista kolhuja
   var damageLevelBy = {};  // mopoId -> 0..1 kokonaisvaurio
   var damagePullBy  = {};  // mopoId -> ohjauksen veto (-1..1)
+  var maaliLaatuBy  = {};  // mopoId -> 0..1 maalipinnan laatu (puuttuva = tehdasmaali)
+  var feikkiIdOwned = false; // ostettu vaarennetty henkilokortti (paasylippu kasinolle)
+  var kasinoNetto   = 0;     // kasinon kokonaissaldo: voitot miinus haviot
+  var MAALI_TEHDAS  = 0.58;// tehdasmaalin laatu: talla materiaali jaa ennalleen
   var questStage = {};     // npc-nimi -> seuraavan vaiheen indeksi
   var pendingFines = [];   // postissa tulevat ylinopeussakot
   var DAMAGE_MAX_IMPACTS = 26;  // montako kolhua mallissa pidetaan muistissa
@@ -20519,7 +22633,7 @@
     {id:'vilkkuV',     nimi:'Vilkku vasen',     lyhyt:'Vilkku V', oletus:',',       ryhma:'Toiminnot'},
     {id:'vilkkuO',     nimi:'Vilkku oikea',     lyhyt:'Vilkku O', oletus:'.',       ryhma:'Toiminnot'},
     {id:'kartta',      nimi:'Kartta',           oletus:'m',       ryhma:'Näkymät'},
-    {id:'puhelin',     nimi:'Puhelin',          oletus:'tab',     ryhma:'Näkymät'},
+    {id:'puhelin',     nimi:'Reppu ja puhelin', oletus:'tab',     ryhma:'Näkymät'},
     {id:'valokuva',    nimi:'Valokuvaustila',   lyhyt:'Valokuva', oletus:'p',       ryhma:'Näkymät'},
     {id:'kypara',      nimi:'Kypäränäkymä',     lyhyt:'Kypärä',   oletus:'v',       ryhma:'Näkymät'},
     {id:'radio',       nimi:'Radiokanava',      lyhyt:'Radio',    oletus:'n',       ryhma:'Näkymät'}
@@ -20621,6 +22735,7 @@
       });
       var mopedData = {};
       mopedModels.forEach(function(m){ mopedData[m.id] = m.owned; });
+      var romuData = {day: romuStockDay, stock: romuStock};
       var storeData = {};
       storeItems.forEach(function(it){ storeData[it.id] = it.consumable ? (it.count||0) : it.owned; });
       var missionData = {};
@@ -20648,6 +22763,9 @@
         damage: damageByMoped,
         damageLevel: damageLevelBy,
         damagePull: damagePullBy,
+        maaliLaatu: maaliLaatuBy,
+        feikkiId: feikkiIdOwned,
+        kasinoNetto: kasinoNetto,
         plateOn: plateOn,
         arrestPending: arrestPending,
         arrestDue: arrestDue,
@@ -20743,7 +22861,8 @@
         examPassed: examPassed,
         examScore: examScore,
         finesCount: finesCount,
-        shelfItems: garageShelf.map(function(si){ return {partId:si.partId, kind:si.kind, tierIndex:si.tierIndex}; })
+        romu: romuData,
+        shelfItems: garageShelf.map(function(si){ return {partId:si.partId, kind:si.kind, tierIndex:si.tierIndex, cond:si.cond}; })
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     }catch(e){ /* tallennus ei onnistunut (esim. yksityinen selaus) - jatketaan silti normaalisti */ }
@@ -20821,9 +22940,15 @@
         garageShelf.length = 0;
         save.shelfItems.forEach(function(si){
           var sp2 = partById(si && si.partId);
-          var kd = (si.kind === 'tier' || si.kind === 'orig') ? si.kind : 'repair';
-          if(sp2) garageShelf.push({partId:sp2.id, kind:kd, tierIndex:si.tierIndex|0});
+          var kd = (si.kind === 'tier' || si.kind === 'orig' || si.kind === 'kaytetty') ? si.kind : 'repair';
+          if(sp2) garageShelf.push({partId:sp2.id, kind:kd, tierIndex:si.tierIndex|0,
+                                    cond:(typeof si.cond === 'number') ? si.cond : undefined});
         });
+      }
+      // romuttamon paivan valikoima: sama tavara on tarjolla kunnes aamu vaihtuu
+      if(save.romu && Array.isArray(save.romu.stock)){
+        romuStockDay = (typeof save.romu.day === 'number') ? save.romu.day : -1;
+        romuStock = save.romu.stock.filter(function(it){ return it && partById(it.partId); });
       }
       if(save.parts){
         parts.forEach(function(p){
@@ -20864,6 +22989,9 @@
       }
       if(save.damageLevel && typeof save.damageLevel === 'object') damageLevelBy = save.damageLevel;
       if(save.damagePull && typeof save.damagePull === 'object') damagePullBy = save.damagePull;
+      if(save.maaliLaatu && typeof save.maaliLaatu === 'object') maaliLaatuBy = save.maaliLaatu;
+      if(typeof save.feikkiId === 'boolean') feikkiIdOwned = save.feikkiId;
+      if(typeof save.kasinoNetto === 'number') kasinoNetto = save.kasinoNetto;
       if(Array.isArray(save.pendingFines)){
         pendingFines.length = 0;
         for(var pf=0; pf<save.pendingFines.length && pf<20; pf++){
@@ -21146,7 +23274,8 @@
     summerDay = 1; summerNumber = 1; examDone = false; examPassed = false; examScore = 0; finesCount = 0;
     repVillage = 0; repPolice = 0;
     updateSummerDisplay();
-    damageByMoped = {}; damageLevelBy = {}; damagePullBy = {};
+    damageByMoped = {}; damageLevelBy = {}; damagePullBy = {}; maaliLaatuBy = {};
+    feikkiIdOwned = false; kasinoNetto = 0; diiliVihjeAnnettu = false;
     damageRebuild();
     plateOn = true;
     plateMesh.visible = true;
@@ -21250,6 +23379,7 @@
     wheeliePayoutCooldownLeft = 0;
 
     // mopokauppa: omistukset ja käytössä oleva malli nollautuvat takaisin alkutilaan
+    romuStock = []; romuStockDay = -1;
     mopedModels.forEach(function(m, idx){ m.owned = initialMopedOwnership[idx]; });
     equipMoped('scoba');
     if(mopedShopOpen) renderMopeds();
@@ -23914,6 +26044,9 @@
     updateLesson(dt);        // ajotunti käynnissä: opettajan neuvot ja huomautukset
     updateNpcRoutines(dt);   // kyläläiset kävelevät päiväjärjestyksensä mukaan
     updateNpcFacing(dt, mode === 'riding' ? moped.position : player.position);
+    updateDiileri();
+    slottiTick(dt);
+    kasinoSulkemisaika();
     updateFishing(dt);
     updateBoosts(dt);
     updateVitals(dt);
@@ -28016,10 +30149,18 @@
   // ---- himmennyt maali ----
   // Naarmuinen pelti ei kiillä. Vain karheutta muutetaan - väri on pelaajan valitsema eikä
   // sitä saa kirjoittaa yli, koska tuunauspaneeli asettaa sen suoraan samaan materiaaliin.
+  // V135: maalipinnan LAATU vaikuttaa samaan karheuteen. Tehdasmaali (MAALI_TEHDAS)
+  // jattaa materiaalin tasan siihen karheuteen jossa se on nyt, joten vanhat tallenteet
+  // nayttavat samalta kuin ennen; hyva ruiskutus kiillottaa ja surkea himmentaa.
   function damagePaintApply(){
     if(!bodyMat) return;
     if(bodyMat.userData.dmgRough === undefined) bodyMat.userData.dmgRough = bodyMat.roughness;
-    bodyMat.roughness = Math.min(1, bodyMat.userData.dmgRough + (1 - bodyMat.userData.dmgRough)*damageLevel()*0.8);
+    if(bodyMat.userData.dmgMetal === undefined) bodyMat.userData.dmgMetal = bodyMat.metalness || 0;
+    var laatu = (typeof maaliLaatu === 'function') ? maaliLaatu() : MAALI_TEHDAS;
+    var pohja = Math.max(0.10, Math.min(0.98, bodyMat.userData.dmgRough + (MAALI_TEHDAS - laatu)*0.70));
+    bodyMat.roughness = Math.min(1, pohja + (1 - pohja)*damageLevel()*0.8);
+    bodyMat.metalness = Math.max(0, Math.min(0.6,
+      bodyMat.userData.dmgMetal + (laatu - MAALI_TEHDAS)*0.45 - damageLevel()*0.12));
     bodyMat.needsUpdate = true;
   }
 
