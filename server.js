@@ -16,6 +16,9 @@
 
 var http = require('http');
 var crypto = require('crypto');
+// Kayttajatilit, kirjautuminen ja pilvitallennus omassa tiedostossaan.
+// Ei lisaa riippuvuuksia: tili.js kayttaa vain Noden omia moduuleja.
+var tili = require('./tili');
 
 var PORT = process.env.PORT || 8080;
 var ROOM_TIMEOUT_MS = 45000;    // ryhma katoaa jos hostilta ei kuulu mitaan
@@ -81,6 +84,17 @@ var server = http.createServer(function(req, res){
       'Access-Control-Max-Age': '86400'
     });
     res.end();
+    return;
+  }
+
+  // --- tilit: /api/tili/* menee kokonaan tili.js:lle ---
+  // Tama on ENNEN readBodya, koska tili.js lukee pyynnon rungon itse.
+  if(path.indexOf('/api/tili/') === 0){
+    tili.kasittele(req, res).then(function(hoidettu){
+      if(!hoidettu) send(res, 404, {ok:false, error:'tuntematon osoite'});
+    }).catch(function(){
+      send(res, 500, {ok:false, error:'palvelinvirhe'});
+    });
     return;
   }
 
