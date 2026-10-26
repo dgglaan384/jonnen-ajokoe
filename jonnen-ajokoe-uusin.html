@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:136-->
-<!--JONNE-NAME:Jonnen ajokoe 136-->
-<!--JONNE-DATE:2026-10-25-->
-<!--JONNE-NOTES:Reppu omaan paneeliin: TAB avaa tavarat, tupakat, megikset ja mopon tilan|Kasino Kultainen Mopo naapurikylään: blackjack, ruletti, baccarat ja slotti|Kasinolle ei pääse ilman väärennettyä henkilökorttia - diileri kyläkaupan takana klo 00-04|Panoskatot: blackjack, ruletti ja baccarat 1000 euroa, slotti 100 euroa|Kasino auki klo 18-04, kello neljältä ovimies saattaa ulos-->
+<!--JONNE-VERSION:137-->
+<!--JONNE-NAME:Jonnen ajokoe 137-->
+<!--JONNE-DATE:2026-10-26-->
+<!--JONNE-NOTES:Etsintäkuulutustaso 0-5: tähdet HUDiin, taso nousee rikkeistä ja pitkästä jahdista|Taso ratkaisee: montako partiota perässä, kuinka kovaa ne ajavat ja kuinka kauas pitää päästä|Tiesulut nelostasolta ylöspäin - ohi pääsee vain pellon kautta|Kiinni kolmostasolla tai yli: mopo takavarikkoon ja lunastus poliisiasemalta|Taso laskee itsestään kun poliisi ei näe - sisällä kolme kertaa nopeammin-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -352,6 +352,20 @@
   .reppuSlot .maara{font:700 13px/1.2 'Teko',sans-serif;color:var(--accent);display:block;margin-top:2px;}
   .reppuSlot.tyhja{opacity:.35;}
   .reppuSlot.kaytossa{border-color:rgba(122,196,96,0.6);background:rgba(122,196,96,0.16);}
+  /* etsintakuulutus: tahdet nakyviin vain kun taso on yli nollan */
+  .wantedBox{
+    background:linear-gradient(180deg,rgba(40,10,12,0.92),rgba(24,6,8,0.94));
+    border:1px solid rgba(216,64,44,0.55);border-radius:10px;
+    padding:8px 11px;margin-bottom:8px;min-width:168px;
+    box-shadow:0 0 22px rgba(216,64,44,0.25);
+  }
+  .wantedBox[hidden]{display:none;}
+  .wantedHead{font:700 10.5px/1 'Karla',sans-serif;letter-spacing:.14em;color:#ff9d8a;text-transform:uppercase;}
+  .wantedStars{font-size:19px;letter-spacing:3px;line-height:1.25;margin-top:3px;}
+  .wantedStars .pois{opacity:.22;}
+  .wantedSub{font:600 10.5px/1.35 'Karla',sans-serif;color:#ffd9d2;opacity:.9;margin-top:2px;}
+  .wantedBox.vilku{animation:wantedVilku .55s steps(2,end) infinite;}
+  @keyframes wantedVilku{0%{border-color:rgba(216,64,44,0.55);}50%{border-color:rgba(255,220,120,0.95);}}
   /* kasino */
   .kasinoPanel{
     position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
@@ -1200,6 +1214,11 @@
     <button class="missionToggle" id="missionBtn" type="button">📱 Puhelin</button>
     <div class="moneyChip" id="moneyChip"><span class="lbl">Raha</span><span class="val" id="moneyChipVal">40<small>€</small></span></div>
     <div class="leftStack" id="leftStack">
+      <div class="wantedBox" id="wantedBox" hidden>
+        <div class="wantedHead">Etsintäkuulutus</div>
+        <div class="wantedStars" id="wantedStars"></div>
+        <div class="wantedSub" id="wantedSub"></div>
+      </div>
       <div class="mpList" id="mpList" hidden></div>
       <div class="racePanel" id="racePanel" hidden>
         <div class="raceHead" id="raceHead">Kisa</div>
@@ -7755,8 +7774,9 @@
   }
   // vakiomopolla pitää päästä 95 yksikön päähän ja pysyä siellä 9 sekuntia; täysin viritetyllä
   // riittää 58 yksikköä ja 4 sekuntia
-  function policeEscapeDist(){ return 95 - 37*mopedTuneLevel(); }
-  function policeEscapeTime(){ return 9 - 5*mopedTuneLevel(); }
+  // Mita korkeampi etsintakuulutus, sita kauemmas ja pidemmaksi aikaa pitaa paasta.
+  function policeEscapeDist(){ return (95 - 37*mopedTuneLevel()) * (1 + (typeof wanted === 'number' ? wanted : 0)*0.13); }
+  function policeEscapeTime(){ return (9 - 5*mopedTuneLevel()) * (1 + (typeof wanted === 'number' ? wanted : 0)*0.16); }
   // toinen, lyhyempi partiointireitti keskustan (kodin/kaupan/poliisiaseman/miitin) läpi - ohjaa
   // poliisiautoja sinne missä pelaaja oikeasti useimmiten ajaa, ei pelkästään ison kehätien varrelle
   // Reitin pisteiden väliin lisätään sama mutkakaava kuin oikealla tiellä (makeCurvedSpurRoad), jottei
@@ -7913,6 +7933,350 @@
   [0, 9].forEach(function(startWp){ spawnPoliceCar(hubLoopLane, startWp); });
   // koirayksikkö partioi keskustan lenkkiä muiden seassa ja lähtee perään samalla logiikalla
   spawnPoliceCar(hubLoopLane, 5, makePoliceDogUnit);
+  // ---- kiinniotto ----
+  // Matalalla tasolla selviaa sakolla kuten ennenkin. Kolmostasolta ylospain mopo
+  // haetaan poliisiaseman pihaan ja se pitaa lunastaa takaisin rahalla - se on se
+  // hinta siita etta jatkoi pakoa sen sijaan etta olisi pysahtynyt heti.
+  var takavarikkoHinta = 0;   // lukitaan kiinnioton hetkella
+  function takavarikkoMaksu(){
+    // Hinta maaraytyy siita kuinka kuumana jaa kiinni, EI siita mika taso on
+    // lunastushetkella - wanted nollataan kiinniotossa, joten ilman tata
+    // ilmoitettu summa ja kassalla perittava summa eroaisivat toisistaan.
+    if(takavarikkoHinta > 0) return takavarikkoHinta;
+    return 80 + wanted*45;
+  }
+  function poliisiOttiKiinni(){
+    speed *= 0.2;
+    policeCatchCount++;
+    pursuitCaught = true;
+    var taso = wanted;
+    var fine = Math.min(Math.round(money), 15 + Math.round(Math.random()*15) + Math.min(policeCatchCount,4)*5 + taso*12);
+    money -= fine;
+    updateMoneyDisplay();
+    if(reppuOpen) reppuPiirra();
+    if(inventoryOpen) renderInventory();
+    if(taso >= 3){
+      // mopo takavarikkoon: siirretaan poliisiaseman pihaan ja pelaaja kavelemaan
+      mopoTakavarikossa = true;
+      takavarikkoHinta = 80 + taso*45;
+      mode = 'walking';
+      player.visible = true;
+      player.position.set(moped.position.x, terrainHeight(moped.position.x, moped.position.z), moped.position.z);
+      var pp = poliisiPihaPaikka();
+      moped.position.set(pp.x, terrainHeight(pp.x, pp.z), pp.z);
+      wantedAseta(0, '');
+      pursuitActive = false;
+      showToast(true, '🚨 Mopo takavarikkoon',
+        'Sakko -' + fine + ' €. Mopo vietiin poliisiaseman pihaan. Lunastus maksaa ' +
+        takavarikkoMaksu() + ' € - mene asemalle ja paina E.', 7000);
+      arrestPending = true;
+    } else if(plateOn){
+      arrestPending = true;
+      wantedAseta(0, '');
+      showToast(true, '🚨 Kiinni jäit!', 'Sakko -'+fine+' €. Poliisi kirjasi rekisterinumerosi - odota aamulla vieraita.', 4500);
+    } else {
+      wantedAseta(0, '');
+      showToast(true, '🚨 Kiinni jäit!', 'Sakko -'+fine+' €. Kilpiä ei ollut, joten sinua ei tunnistettu.', 3800);
+    }
+    saveGame();
+  }
+  function poliisiPihaPaikka(){
+    return {x: policeStationPos.x + 7.5, z: policeStationPos.z + 6.0};
+  }
+  function lunastaMopo(){
+    if(!mopoTakavarikossa) return false;
+    var hinta = takavarikkoMaksu();
+    if(money < hinta){
+      showToast(true, 'Rahat eivät riitä', 'Mopon lunastus maksaa ' + hinta + ' €. Hae rahat ja tule takaisin.', 4600);
+      return true;
+    }
+    money -= hinta;
+    mopoTakavarikossa = false;
+    takavarikkoHinta = 0;
+    updateMoneyDisplay();
+    if(reppuOpen) reppuPiirra();
+    showToast(false, '🛵 Mopo lunastettu', 'Maksoit ' + hinta + ' €. Mopo seisoo pihassa - aja varovasti.', 5000);
+    saveGame();
+    return true;
+  }
+  // Montako autoa on juuri nyt jahdissa. Tata kaytetaan rajaamaan montako
+  // partiota liittyy perään: taso kertoo maaran.
+  function jahtaaviaAutoja(){
+    var n = 0;
+    for(var i=0; i<policeCars.length; i++) if(policeCars[i].userData.state === 'chase') n++;
+    return n;
+  }
+
+  // ==========================================================================
+  // ---- TIESULUT ----
+  // Nelostasolta ylospain partiot eivat enaa pelkastaan aja perassa vaan menevat
+  // eteen. Tiesulku pystytetaan sille tielle jota pelaaja juuri ajaa, noin 130
+  // metria edelle - eli sen nakee ajoissa, mutta vain jos katsoo eteenpain.
+  // Sulku EI ole tormaysympyra vaan tarkistuspiste: siihen ajaminen on kiinnijaamista.
+  // Ohi paasee pellon kautta, mika on koko pointti.
+  // ==========================================================================
+  var tiesulut = [];
+  var tiesulkuViive = 0;
+  var TIESULKU_OSUMA_R = 6.0;
+
+  // Lahin tiekaytavan piste: sama laskenta kuin keepCarOnRoadissa, mutta palauttaa
+  // pisteen sen sijaan etta siirtaisi jotain.
+  function laheisinTiePiste(x, z){
+    var bestD = 1e9, bx = x, bz = z, bhw = 4, loytyi = false;
+    for(var i=0; i<roadCorridors.length; i++){
+      var c = roadCorridors[i];
+      var dx = c.x2-c.x1, dz = c.z2-c.z1;
+      var lenSq = dx*dx + dz*dz;
+      var t = lenSq > 0.0001 ? ((x-c.x1)*dx + (z-c.z1)*dz) / lenSq : 0;
+      t = Math.max(0, Math.min(1, t));
+      var qx = c.x1 + t*dx, qz = c.z1 + t*dz;
+      var d = Math.sqrt((x-qx)*(x-qx) + (z-qz)*(z-qz));
+      if(d < bestD){ bestD = d; bx = qx; bz = qz; bhw = c.hw; loytyi = true; }
+    }
+    return loytyi ? {x:bx, z:bz, hw:bhw, etaisyys:bestD} : null;
+  }
+
+  function makeTiesulku(leveys){
+    var g = new THREE.Group();
+    var koriMat  = new THREE.MeshStandardMaterial({color:0x1c2a4a, roughness:0.55, metalness:0.2});
+    var valkoMat = new THREE.MeshStandardMaterial({color:0xe8e6df, roughness:0.6});
+    var lasiMat  = new THREE.MeshStandardMaterial({color:0x16202c, roughness:0.25, metalness:0.5});
+    // kaksi autoa nokat vastakkain tien poikki
+    [-1, 1].forEach(function(puoli){
+      var auto = new THREE.Group();
+      var kori = new THREE.Mesh(new THREE.BoxGeometry(4.3, 1.0, 1.85), koriMat);
+      kori.position.y = 0.72; kori.castShadow = true;
+      var katto = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.72, 1.7), lasiMat);
+      katto.position.set(-0.2, 1.52, 0); katto.castShadow = true;
+      var raita = new THREE.Mesh(new THREE.BoxGeometry(4.34, 0.34, 1.89), valkoMat);
+      raita.position.y = 0.66;
+      auto.add(kori, katto, raita);
+      [[1.45, 0.98],[1.45,-0.98],[-1.45,0.98],[-1.45,-0.98]].forEach(function(w){
+        var pyora = new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.26,10),
+          new THREE.MeshStandardMaterial({color:0x14140f}));
+        pyora.rotation.x = Math.PI/2;
+        pyora.position.set(w[0], 0.33, w[1]);
+        auto.add(pyora);
+      });
+      // vilkut
+      var vilkku = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.16, 0.3),
+        new THREE.MeshStandardMaterial({color:0xd8402c, emissive:0xd8402c, emissiveIntensity:1.6}));
+      vilkku.position.set(-0.2, 1.95, 0);
+      auto.add(vilkku);
+      g.userData['vilkku' + (puoli > 0 ? 'A' : 'B')] = vilkku;
+      auto.position.set(puoli * (leveys*0.25), 0, 0);
+      auto.rotation.y = puoli * 0.14;   // pieni V-kulma, nayttaa pystytetylta
+      g.add(auto);
+    });
+    // kartiot keskelle
+    var kartioMat = new THREE.MeshStandardMaterial({color:0xe2572b, roughness:0.85});
+    for(var k = -2; k <= 2; k++){
+      // kartiot riviin autojen eteen, tien poikki
+      var kartio = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.62, 8), kartioMat);
+      kartio.position.set(k * (leveys*0.20), 0.31, 2.8);
+      kartio.castShadow = true;
+      g.add(kartio);
+      var rengas = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.07, 10),
+        new THREE.MeshStandardMaterial({color:0xf0ece0}));
+      rengas.position.set(k * (leveys*0.20), 0.36, 2.8);
+      g.add(rengas);
+    }
+    return g;
+  }
+
+  function tiesulkuLuo(){
+    if(tiesulut.length >= 2) return;
+    var suuntaX = 0, suuntaZ = 1;
+    var nopeus = Math.abs(speed);
+    if(nopeus > 0.5){
+      suuntaX = Math.sin(moped.rotation.y) * (speed < 0 ? -1 : 1);
+      suuntaZ = Math.cos(moped.rotation.y) * (speed < 0 ? -1 : 1);
+    }
+    var ex = moped.position.x + suuntaX*130, ez = moped.position.z + suuntaZ*130;
+    var piste = laheisinTiePiste(ex, ez);
+    if(!piste || piste.etaisyys > 45) return;   // edessa ei ole tieta - ei sulkua
+    // ei kahta sulkua samaan paikkaan
+    for(var i=0; i<tiesulut.length; i++){
+      var ts = tiesulut[i];
+      var ddx = ts.x - piste.x, ddz = ts.z - piste.z;
+      if(ddx*ddx + ddz*ddz < 90*90) return;
+    }
+    var grp = makeTiesulku(Math.max(9, piste.hw*2.2));
+    grp.position.set(piste.x, terrainHeight(piste.x, piste.z), piste.z);
+    // kaannetaan sulku tien suuntaiseksi: tienpiste + pieni askel tien suuntaan
+    var eteen = laheisinTiePiste(piste.x + suuntaX*8, piste.z + suuntaZ*8);
+    if(eteen){
+      grp.rotation.y = Math.atan2(eteen.x - piste.x, eteen.z - piste.z);
+    }
+    scene.add(grp);
+    tiesulut.push({grp:grp, x:piste.x, z:piste.z});
+    showToast(true, '🚧 Tiesulku edessä', 'Partiot menivät eteen. Kierrä pellon kautta tai käänny.', 5200);
+  }
+
+  function tiesulkuPoistaKaikki(){
+    for(var i=0; i<tiesulut.length; i++){
+      scene.remove(tiesulut[i].grp);
+    }
+    tiesulut.length = 0;
+  }
+
+  function updateTiesulut(dt){
+    // Pystytetaan vain nelostasolta ylospain ja vain kun jahti on paalla.
+    if(wanted >= 4 && pursuitActive && mode === 'riding' && !crashed){
+      tiesulkuViive -= dt;
+      if(tiesulkuViive <= 0){
+        tiesulkuViive = 14;
+        tiesulkuLuo();
+      }
+    } else {
+      tiesulkuViive = 2;
+    }
+    if(!tiesulut.length) return;
+    // puretaan kun etsintakuulutus laskee tai sulku jaa kauas taakse
+    if(wanted < 3){ tiesulkuPoistaKaikki(); return; }
+    var kohde = (mode === 'riding') ? moped.position : player.position;
+    for(var i = tiesulut.length - 1; i >= 0; i--){
+      var ts = tiesulut[i];
+      var dx = ts.x - kohde.x, dz = ts.z - kohde.z;
+      var d2 = dx*dx + dz*dz;
+      if(d2 > 420*420){
+        scene.remove(ts.grp);
+        tiesulut.splice(i, 1);
+        continue;
+      }
+      // vilkut
+      var vilku = Math.sin(performance.now()*0.012) > 0;
+      if(ts.grp.userData.vilkkuA) ts.grp.userData.vilkkuA.material.emissiveIntensity = vilku ? 2.4 : 0.1;
+      if(ts.grp.userData.vilkkuB) ts.grp.userData.vilkkuB.material.emissiveIntensity = vilku ? 0.1 : 2.4;
+      // sulkuun ajaminen = kiinnijaaminen
+      if(mode === 'riding' && !crashed && d2 < TIESULKU_OSUMA_R*TIESULKU_OSUMA_R && Math.abs(speed) > 3){
+        showToast(true, '🚧 Ajoit tiesulkuun', 'Siihen se matka loppui.', 4200);
+        poliisiOttiKiinni();
+        tiesulkuPoistaKaikki();
+        return;
+      }
+    }
+  }
+
+  // ==========================================================================
+  // ---- ETSINTAKUULUTUSTASO ----
+  // Poliisi oli tahan asti paalla tai pois: joko joku jahtasi tai ei. Nyt jahdilla
+  // on lampotila. Taso 0-5 nousee rikkeista ja pitkasta jahdista, ja se maaraa
+  // montako partiota lahtee perään, kuinka kovaa ne ajavat, pystytetaanko tiesulkuja
+  // ja mita kiinnijaamisesta seuraa. Taso laskee itsestaan kun poliisi ei nae sinua -
+  // ja laskee nopeammin jos olet jossain sisalla.
+  // ==========================================================================
+  var WANTED_MAX = 5;
+  var wantedBoxEl   = document.getElementById('wantedBox');
+  var wantedStarsEl = document.getElementById('wantedStars');
+  var wantedSubEl   = document.getElementById('wantedSub');
+  var wantedJaahty  = 0;      // sekunteja ilman havaintoa
+  var wantedKasvu   = 0;      // kuinka kauan nykyinen jahti on jatkunut
+  var wantedViesti  = '';
+
+  // Havaintosade kasvaa tason mukana: korkealla tasolla koko pitaja etsii sinua.
+  function wantedNakoSade(){ return 44 + wanted*13; }
+  // Kuinka kauan pitaa pysya nakymattomissa ennen kuin taso putoaa yhdella.
+  function wantedJaahtyAika(){ return 11 + wanted*4; }
+
+  // Piilossa: sisatiloissa tai autotallin/romuttamon suojassa jalan. Taalla taso
+  // laskee kolme kertaa nopeammin - pakeneminen ei ole pelkkaa kaasun pitamista.
+  function wantedPiilossa(){
+    if(typeof inStore !== 'undefined' && inStore) return true;
+    if(mode === 'riding') return false;
+    var dx = autotalliPos.x - player.position.x, dz = autotalliPos.z - player.position.z;
+    if(dx*dx + dz*dz < 16*16) return true;
+    if(typeof romuPos !== 'undefined'){
+      var rx = romuPos.x - player.position.x, rz = romuPos.z - player.position.z;
+      if(rx*rx + rz*rz < 14*14) return true;
+    }
+    return false;
+  }
+
+  var WANTED_SELITE = [
+    '',
+    'Yksi partio etsii sinua.',
+    'Kaksi partiota perässä.',
+    'Koko pitäjän partiot hälytetty.',
+    'Tiesulut pystyssä. Älä aja päin.',
+    'Kaikki ulos. Tästä ei kävellä pois.'
+  ];
+  function wantedPiirra(){
+    if(!wantedBoxEl) return;
+    if(wanted <= 0){
+      wantedBoxEl.hidden = true;
+      wantedStarsEl.innerHTML = '';
+      wantedSubEl.textContent = '';
+      return;
+    }
+    wantedBoxEl.hidden = false;
+    var h = '';
+    for(var i=1; i<=WANTED_MAX; i++){
+      h += '<span class="' + (i <= wanted ? 'on' : 'pois') + '">★</span>';
+    }
+    wantedStarsEl.innerHTML = h;
+    wantedSubEl.textContent = wantedViesti || WANTED_SELITE[Math.min(wanted, 5)] || '';
+    if(pursuitActive) wantedBoxEl.classList.add('vilku');
+    else wantedBoxEl.classList.remove('vilku');
+  }
+  function wantedAseta(n, viesti){
+    var ennen = wanted;
+    wanted = Math.max(0, Math.min(WANTED_MAX, Math.round(n)));
+    if(viesti !== undefined) wantedViesti = viesti;
+    if(wanted !== ennen){
+      wantedJaahty = 0;
+      if(wanted > ennen){
+        playRadarBeep(false);
+        showToast(true, '🚨 Etsintäkuulutus ' + wanted + '/' + WANTED_MAX,
+          WANTED_SELITE[Math.min(wanted, 5)], 3200);
+      } else if(wanted === 0){
+        showToast(false, '🚓 Etsintäkuulutus rauennut', 'Poliisi ei enää etsi sinua.', 3600);
+      }
+    }
+    wantedPiirra();
+  }
+  function wantedLisaa(n, viesti){ wantedAseta(wanted + n, viesti); }
+
+  // Nakeeko jokin partio sinut juuri nyt. Tata kaytetaan seka jaahtymiseen etta
+  // siihen pitaako uusien partioiden liittya jahtiin.
+  function wantedNakyvissa(){
+    if(wantedPiilossa()) return false;
+    var kohde = (mode === 'riding') ? moped.position : player.position;
+    var r = wantedNakoSade();
+    for(var i=0; i<policeCars.length; i++){
+      var pc = policeCars[i];
+      if(pc.userData.state === 'stunned') continue;
+      var dx = pc.position.x - kohde.x, dz = pc.position.z - kohde.z;
+      if(dx*dx + dz*dz < r*r) return true;
+    }
+    return false;
+  }
+
+  function updateWanted(dt){
+    if(wanted <= 0){ wantedKasvu = 0; wantedPiirra(); return; }
+    // Pitka jahti nostaa tasoa itsestaan: mita kauemmin pakenet, sita isompi kohu.
+    if(pursuitActive){
+      wantedKasvu += dt;
+      if(wantedKasvu >= 25 && wanted < WANTED_MAX){
+        wantedKasvu = 0;
+        wantedLisaa(1, 'Jahti pitkittyy - lisää partioita.');
+      }
+    } else {
+      wantedKasvu = 0;
+    }
+    // Jaahtyminen: vain jos kukaan ei nae. Piilossa kolminkertainen nopeus.
+    if(wantedNakyvissa()){
+      wantedJaahty = 0;
+    } else {
+      wantedJaahty += dt * (wantedPiilossa() ? 3 : 1);
+      if(wantedJaahty >= wantedJaahtyAika()){
+        wantedJaahty = 0;
+        wantedLisaa(-1, '');
+      }
+    }
+    wantedPiirra();
+  }
+
   function updatePolice(dt){
     var anyChasing = false;
     for(var pi=0; pi<policeCars.length; pi++){
@@ -7932,19 +8296,25 @@
         continue;
       }
 
-      // Poliisi puuttuu enää keulintaan - pelkkä kova vauhti ei riitä. Lisäksi kilvetön mopo
-      // herättää huomiota ilman keulintaakin: se on se hinta, jonka kilpien irrottamisesta maksaa.
+      // Poliisi puuttuu keulintaan ja kilvettomaan mopoon. Sen lisaksi KAIKKI partiot
+      // liittyvat jahtiin kun etsintakuulutus on paalla: taso kertoo montako autoa
+      // on perassa yhta aikaa, joten kolmostasolla pakoa ei enaa kavella ohi.
       if(mode === 'riding' && !crashed && ud.state === 'patrol'){
         var adx = pc.position.x - moped.position.x, adz = pc.position.z - moped.position.z;
         var adist = Math.sqrt(adx*adx+adz*adz);
-        if(adist > 0.001 && adist < policeWheelieAlertRadius){
+        if(wanted > 0 && !wantedPiilossa() && adist < wantedNakoSade() && jahtaaviaAutoja() < wanted){
+          ud.state = 'chase'; ud.chaseTimer = 0; ud.escapeTimer = 0;
+          if(!pursuitActive){ pursuitActive = true; pursuitEscaped = false; pursuitCaught = false; }
+        } else if(adist > 0.001 && adist < policeWheelieAlertRadius){
           if(wheelieAngle > 0.35){
             ud.state = 'chase'; ud.chaseTimer = 0; ud.escapeTimer = 0;
             if(!pursuitActive){ pursuitActive = true; pursuitEscaped = false; pursuitCaught = false; }
+            wantedLisaa(1, 'Keulintaa partion nähden.');
             showToast(true, '🚓 Poliisi näki!', 'Keulintaa poliisin nähden - nyt jahdataan!', 2200);
           } else if(!plateOn && adist < policePlateAlertRadius){
             ud.state = 'chase'; ud.chaseTimer = 0; ud.escapeTimer = 0;
             if(!pursuitActive){ pursuitActive = true; pursuitEscaped = false; pursuitCaught = false; }
+            wantedLisaa(1, 'Kilvetön mopo huomattu.');
             showToast(true, '🚓 Poliisi näki!', 'Mopossa ei ole kilpiä - poliisi lähti perään!', 2600);
           }
         }
@@ -7954,7 +8324,8 @@
       if(ud.state === 'chase'){
         ud.chaseTimer += dt;
         targetPos = moped.position;
-        moveSpeed = policeSpeed*1.5;
+        // Taso nostaa vauhtia: ykkostasolla partio lahinna seuraa, vitosella se ajaa taysilla.
+        moveSpeed = policeSpeed*(1.5 + 0.17*Math.max(0, wanted - 1));
         var cdx = moped.position.x-pc.position.x, cdz = moped.position.z-pc.position.z;
         var cdist = Math.sqrt(cdx*cdx+cdz*cdz);
         // pakoon pääsy: tarpeeksi kaukana tarpeeksi kauan. Viritetty mopo pääsee selvästi helpommalla.
@@ -7978,20 +8349,7 @@
           ud.stunTimer = 2.5;
           ud.escapeTimer = 0;
           pursuitCaught = true;
-          var fine = Math.min(Math.round(money), 15 + Math.round(Math.random()*15) + Math.min(policeCatchCount,4)*5);
-          money -= fine;
-          speed *= 0.2;
-          policeCatchCount++;
-          updateMoneyDisplay();
-          if(inventoryOpen) renderInventory();
-          if(plateOn){
-            // rekisterinumero kirjattiin - poliisi tulee kotiovelle seuraavana aamuna
-            arrestPending = true;
-            showToast(true, '🚨 Kiinni jäit!', 'Sakko -'+fine+' €. Poliisi kirjasi rekisterinumerosi - odota aamulla vieraita.', 4500);
-          } else {
-            showToast(true, '🚨 Kiinni jäit!', 'Sakko -'+fine+' €. Kilpiä ei ollut, joten sinua ei tunnistettu.', 3800);
-          }
-          saveGame();
+          poliisiOttiKiinni();
         }
       } else {
         var loopPts = ud.loopPoints || policeLoopPoints;
@@ -10065,6 +10423,7 @@
     if(!pysahtyi){
       showToast(true, '🚓 Et pysähtynyt', 'Partio lähti perään.', 4200);
       repPoliceAdd(22);
+      wantedLisaa(2, 'Et pysähtynyt pysähtymismerkistä.');
       if(car && car.userData){
         car.userData.state = 'chase';
         car.userData.chaseTimer = 0;
@@ -13626,6 +13985,11 @@
     }
     if(Math.sqrt(dxm*dxm+dzm*dzm) <= mountRadius){
       // leikannutta tai ketjutonta mopoa ei voi ajaa: E vaihtaa työntämisen päälle ja pois
+      if(mopoTakavarikossa){
+        showToast(true, '🔒 Mopo on takavarikossa',
+          'Poliisi haki mopon asemalle. Lunastus maksaa ' + takavarikkoMaksu() + ' € - mene asemalle ja paina E.', 5200);
+        return;
+      }
       if(mopedDead() || pushingMoped){ togglePushMoped(); return; }
       if(!mopedAssembled()){
         showToast(false, 'Mopo on osina',
@@ -13677,6 +14041,11 @@
       }
       if(romuOpen) closeRomu(); else openRomu();
       return;
+    }
+    // poliisiasema: takavarikoidun mopon lunastus
+    if(!inStore && mopoTakavarikossa){
+      var dxpa = policeStationPos.x - player.position.x, dzpa = policeStationPos.z - player.position.z;
+      if(Math.sqrt(dxpa*dxpa + dzpa*dzpa) <= 14 && lunastaMopo()) return;
     }
     // kasinon ovi naapurikylässä: ovimies tarkistaa aukioloajan ja kortin
     var dxka = kasinoOviPos.x - player.position.x, dzka = kasinoOviPos.z - player.position.z;
@@ -22584,6 +22953,8 @@
   var damageLevelBy = {};  // mopoId -> 0..1 kokonaisvaurio
   var damagePullBy  = {};  // mopoId -> ohjauksen veto (-1..1)
   var maaliLaatuBy  = {};  // mopoId -> 0..1 maalipinnan laatu (puuttuva = tehdasmaali)
+  var wanted = 0;            // etsintakuulutustaso 0-5
+  var mopoTakavarikossa = false; // mopo poliisiaseman pihassa, lunastettava
   var feikkiIdOwned = false; // ostettu vaarennetty henkilokortti (paasylippu kasinolle)
   var kasinoNetto   = 0;     // kasinon kokonaissaldo: voitot miinus haviot
   var MAALI_TEHDAS  = 0.58;// tehdasmaalin laatu: talla materiaali jaa ennalleen
@@ -22764,6 +23135,9 @@
         damageLevel: damageLevelBy,
         damagePull: damagePullBy,
         maaliLaatu: maaliLaatuBy,
+        wanted: wanted,
+        mopoTakavarikossa: mopoTakavarikossa,
+        takavarikkoHinta: takavarikkoHinta,
         feikkiId: feikkiIdOwned,
         kasinoNetto: kasinoNetto,
         plateOn: plateOn,
@@ -22990,6 +23364,9 @@
       if(save.damageLevel && typeof save.damageLevel === 'object') damageLevelBy = save.damageLevel;
       if(save.damagePull && typeof save.damagePull === 'object') damagePullBy = save.damagePull;
       if(save.maaliLaatu && typeof save.maaliLaatu === 'object') maaliLaatuBy = save.maaliLaatu;
+      if(typeof save.wanted === 'number') wanted = Math.max(0, Math.min(5, save.wanted|0));
+      if(typeof save.mopoTakavarikossa === 'boolean') mopoTakavarikossa = save.mopoTakavarikossa;
+      if(typeof save.takavarikkoHinta === 'number') takavarikkoHinta = Math.max(0, save.takavarikkoHinta|0);
       if(typeof save.feikkiId === 'boolean') feikkiIdOwned = save.feikkiId;
       if(typeof save.kasinoNetto === 'number') kasinoNetto = save.kasinoNetto;
       if(Array.isArray(save.pendingFines)){
@@ -23276,6 +23653,8 @@
     updateSummerDisplay();
     damageByMoped = {}; damageLevelBy = {}; damagePullBy = {}; maaliLaatuBy = {};
     feikkiIdOwned = false; kasinoNetto = 0; diiliVihjeAnnettu = false;
+    wanted = 0; mopoTakavarikossa = false; takavarikkoHinta = 0;
+    if(typeof tiesulkuPoistaKaikki === 'function') tiesulkuPoistaKaikki();
     damageRebuild();
     plateOn = true;
     plateMesh.visible = true;
@@ -26191,6 +26570,8 @@
       updateBlinkers(nvObj, dt);
     }
     updatePolice(dt);
+    updateWanted(dt);
+    updateTiesulut(dt);
     checkMorningArrest();
 
     for(var cwi=0; cwi<cows.length; cwi++){
