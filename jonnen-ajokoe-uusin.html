@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:140-->
-<!--JONNE-NAME:Jonnen ajokoe 140-->
+<!--JONNE-VERSION:141-->
+<!--JONNE-NAME:Jonnen ajokoe 141 - Juhannus-->
 <!--JONNE-DATE:2026-10-27-->
-<!--JONNE-NOTES:Uusi reppu (TAB): tavararuudukko, valitun tavaran kortti, hahmon mittarit ja mopon osien kunto|Kaverit ja liikenne ajavat oikeilla mopoilla (Derbi, Scoba, Monkey) ja kuskeina on oikeita hahmoja omissa vaatteissaan|Kaverin mopo ei enää aja sivuttain: keula seuraa tietä|Rengastie ja kylän raitti eivät enää kulje kodin läpi - kotona on piha ja pihatie talolle ja tallille|Tallin, poliisiaseman, kyläkaupan ja Mac Donaldsin tie loppuu pihaan rakennuksen eteen, ei rakennuksen sisään|Pihateillä postilaatikot ja aidantolpat|Kävely ei enää heittele puolelta toiselle, ja hölkässä kädet eivät sojota eteen-->
+<!--JONNE-NOTES:JUHANNUS kesäpäivänä 15: Juhannusajo naapurikylästä uimarannalle klo 12-20 (palkinto 250 €)|Uusi tanssilava uimarannan vieressä: illalla klo 20-02 humppaorkesteri, tanssivat parit ja oma tanssipari E:llä - askella A/D tahdissa|Juhannuskokko rannassa: kasataan pari päivää ennen, palaa klo 21-03 kipinöineen, ääreen voi istua|Juhannusyö on valoisa yötön yö|Uimaranta käännetty oikein päin: hiekka ja laituri ovat nyt järven rannassa eikä nurmikolla|Korjattu: uimarannalla ja sen kohdalla kävellessä pelaaja siirtyi yhtäkkiä sillalle-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -3359,6 +3359,9 @@
     if(pos.x < SILTA_ALUE.x1 - 2 || pos.x > SILTA_ALUE.x2 + 2) return false;
     var raja = SILTA_ALUE.puolileveys - 0.5 - radius;   // kaiteen sisapinta
     var d = pos.z - SILTA_ALUE.z;
+    // Kaide koskee vain sillalla tai sen vieressä olevaa. Ilman tätä jokainen sillan
+    // x-välillä liikkuva (koko uimaranta mukaan lukien) siirtyi suoraan sillalle.
+    if(Math.abs(d) > SILTA_ALUE.puolileveys + 2.5) return false;
     if(d > raja){ pos.z = SILTA_ALUE.z + raja; return true; }
     if(d < -raja){ pos.z = SILTA_ALUE.z - raja; return true; }
     return false;
@@ -4233,30 +4236,36 @@
     var g = new THREE.Group();
     var sand = new THREE.Mesh(new THREE.PlaneGeometry(30,18), new THREE.MeshStandardMaterial({color:0xe8d8a6}));
     sand.rotation.x=-Math.PI/2; sand.position.y=0.015; sand.receiveShadow=true;
-    var water = new THREE.Mesh(new THREE.PlaneGeometry(60,40), new THREE.MeshStandardMaterial({color:0x4fa3c9, transparent:true, opacity:0.88, roughness:0.2, metalness:0.15}));
-    water.rotation.x=-Math.PI/2; water.position.set(0,0.01,16);
+    // Rannan oma vesilevy on poistettu: ranta on nyt Isojärven rannassa ja vesi on järven omaa.
+    // Laituri on pidempi, jotta se ulottuu oikeaan veteen asti; jalat jatkuvat pohjaan.
     var pierMat = new THREE.MeshStandardMaterial({color:0x8a6a45});
-    var pier = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,9), pierMat);
-    pier.position.set(0,0.35,10); pier.castShadow = true;
-    [[-0.6,4],[0.6,4],[-0.6,9],[0.6,9],[-0.6,14],[0.6,14]].forEach(function(p){
-      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.5,6), pierMat);
-      leg.position.set(p[0],0.1,p[1]); g.add(leg);
+    var pier = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,14), pierMat);
+    pier.position.set(0,0.35,13); pier.castShadow = true;
+    [[-0.6,7],[0.6,7],[-0.6,12],[0.6,12],[-0.6,16],[0.6,16],[-0.6,19.5],[0.6,19.5]].forEach(function(p){
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,3.0,6), pierMat);
+      leg.position.set(p[0],-1.15,p[1]); g.add(leg);
       if(collOut) collOut.push({x:p[0], z:p[1], r:0.15});
     });
     var umbrellaPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.6,6), new THREE.MeshStandardMaterial({color:0xdddddd}));
     umbrellaPole.position.set(-6,0.8,-2);
     var umbrellaTop = new THREE.Mesh(new THREE.ConeGeometry(1.6,0.7,10), new THREE.MeshStandardMaterial({color:0xe2572b}));
     umbrellaTop.position.set(-6,1.7,-2); umbrellaTop.castShadow = true;
-    g.add(sand, water, pier, umbrellaPole, umbrellaTop);
+    g.add(sand, pier, umbrellaPole, umbrellaTop);
     if(collOut) collOut.push({x:-6, z:-2, r:0.18});
     return g;
   }
   var rantaPos = worldSpread(26, -170);
   var uimarantaColl = [];
   var uimaranta = makeUimaranta(uimarantaColl);
-  uimaranta.position.copy(rantaPos);
-  uimaranta.rotation.y = -0.3;
+  // Ranta oli käännetty väärin päin: hiekka, laituri ja oma vesilevy osoittivat poispäin
+  // järvestä, joten laituri seisoi nurmikolla ja onkija heitti kohon heinikkoon. Nyt ryhmän
+  // +Z osoittaa järveen ja hiekka alkaa rantaviivalta. rantaPos jää tien päätteeksi.
+  uimaranta.position.set(rantaPos.x + 1.5, 0, rantaPos.z - 15.6);
+  uimaranta.rotation.y = -3.0;
   scene.add(uimaranta);
+  // juhannuskokko rantaviivalla hiekan itäpuolella ja tanssilava nurmella sen takana (ks. JUHANNUS)
+  var juhKokkoPos = new THREE.Vector3(rantaPos.x + 20, 0, rantaPos.z - 23);
+  var juhLavaPos = new THREE.Vector3(rantaPos.x + 38, 0, rantaPos.z - 6);
   registerColliders(uimaranta, uimarantaColl);
 
   // naapurikylä (neighbouring village): oikeannäköinen omakotitalo - harjakatto kahdesta kallistetusta
@@ -5341,6 +5350,9 @@
         // uimarannan kohdalle aukko, jotta rannalle paasee kavelemaan
         var dRanta = Math.sqrt((px-30)*(px-30) + (pz-540)*(pz-540));
         if(dRanta < 34) continue;
+        // juhannuskokko on rantaviivalla: sinne pitää päästä istumaan
+        var dKokko = Math.sqrt((px-juhKokkoPos.x)*(px-juhKokkoPos.x) + (pz-juhKokkoPos.z)*(pz-juhKokkoPos.z));
+        if(dKokko < 24) continue;
         // ja Kapeikon sillan kohdalle, jottei silta tyrmaisi nakymattomaan seinaan
         if(Math.abs(pz - JARVI_KAPEIKKO_Z) < 26 && Math.abs(px) < 170) continue;
         rantaEsteSpots.push({x:px, z:pz});
@@ -7088,6 +7100,7 @@
     rollDailyEvent();
     rollUsedOffer();
     seriesMorningNotice();
+    juhannusAamu();
     foodBoostLeft = 0;
     if(fuel < 25) fuel = 25;
     // yön yli nukkuminen palauttaa kunnon, mutta aamulla on nälkä
@@ -7891,6 +7904,20 @@
       }
     }
     tSpot.y = terrainHeight(tSpot.x, tSpot.z);
+  }
+  // Uimarannan hiekka, kokon paikka ja tanssilava raivataan: rannan kääntämisen jälkeen
+  // rantaviivan puurivi seisoi keskellä hiekkaa ja kokko olisi palanut kuusikossa. Tämä
+  // tehdään vasta tieltä siirron jälkeen, koska siirto työnsi puita juuri rannan hiekalle.
+  var raivattavat = [
+    {x: uimaranta.position.x, z: uimaranta.position.z, r: 18},
+    {x: juhKokkoPos.x, z: juhKokkoPos.z, r: 14},
+    {x: juhLavaPos.x, z: juhLavaPos.z, r: 15}
+  ];
+  for(var rIdx = treeSpots.length - 1; rIdx >= 0; rIdx--){
+    for(var rr = 0; rr < raivattavat.length; rr++){
+      var ra = raivattavat[rr], rdx = treeSpots[rIdx].x - ra.x, rdz = treeSpots[rIdx].z - ra.z;
+      if(rdx*rdx + rdz*rdz < ra.r*ra.r){ treeSpots.splice(rIdx, 1); break; }
+    }
   }
   // ---- metsän instansointi ----
   // Jokainen laji on yksi InstancedMesh: 560 puuta piirtyy neljällä piirtokutsulla aiemman
@@ -14710,6 +14737,8 @@
   function handleInteract(){
     if(crashed) return;
     if(mode === 'jail') return; // cutscenen aikana ei voi nousta mopoon/avata paneeleita
+    // juhannus: tanssin lopetus, kokko, lava ja kisaportti ovat omia paikkojaan rannassa
+    if(typeof juhannusInteract === 'function' && juhannusInteract()) return;
     // päivän tapahtuma tarkistetaan ensin: se on aina paikkaan sidottu eikä ole minkään
     // muun toiminnon tiellä, koska kohteet ovat kartan POI-pisteitä eivätkä rakennuksia
     if(tryDailyEvent()) return;
@@ -16603,11 +16632,12 @@
       rollDailyEvent();   // uusi päivä, uusi pikku keikka kylällä
       rollUsedOffer();    // Reiska tuo uuden käytetyn mopon myyntiin
       seriesMorningNotice();   // mestaruussarjan osakilpailu tänään / ohi mennyt
+      juhannusAamu();          // juhannusaatto huomenna / tänään
       if(typeof syncRadarTrapCount === 'function') syncRadarTrapCount();
       placeRadarTraps();
       repDecayOvernight();   // siivosti ajettu vuorokausi laskee poliisin kiinnostusta
     }
-    var d = sampleDayStops(dayTime);
+    var d = sampleDayStops(juhValoAika(dayTime));
     paintSky(d.sky);
     scene.fog.color.set(d.fog);
     sun.color.set(d.sunColor);
@@ -18518,6 +18548,967 @@
       showToast(false, '🔥 ' + rivi[0], rivi[1] + ' (tunti kului, voimat palautuivat)', 5200);
     }
   }
+  // ==========================================================================
+  // ---- JUHANNUS ----
+  // Kesässä oli kalenteri (ajokoe, mestaruussarjan osakilpailut) mutta ei yhtään juhlaa.
+  // Juhannusaatto on kesän ainoa päivä jolloin koko kylä on samassa paikassa:
+  //   klo 12-20  Juhannusajo kylältä uimarannalle (oma kisareitti, ks. RACE_ROUTES)
+  //   klo 20-02  tanssilavalla soi humppa ja tanssipari haetaan E:llä (tahtipeli A/D)
+  //   klo 21-03  kokko palaa rannassa ja sen ääreen voi istua
+  // Kokko kasataan rantaan jo pari päivää ennen ja tuhkat jäävät loppukesäksi.
+  //
+  // Lava on kylän maisemassa koko kesän, mutta valot ja soitto ovat vain juhannuksena.
+  // Tanssijat ja soittajat rakennetaan vasta kun juhla on lähellä, joten muina päivinä
+  // ne eivät maksa ruudunpäivityksessä mitään.
+  // ==========================================================================
+  var JUHANNUS_PAIVA = 15;
+  // juhKokkoPos ja juhLavaPos on määritelty uimarannan vieressä, koska metsä raivataan niiden ympäriltä
+  var JUH_LAVA_KULMA = 0.12;        // lavan pitkä sivu kulkee suunnilleen rantaviivan suuntaisesti
+  var JUH_LAVA_W = 7.5, JUH_LAVA_D = 5.5, JUH_LAVA_H = 0.3;   // puolileveys, puolisyvyys, lattian korkeus
+  var juhTila = {kesa: 0, kokko: false, tanssi: -1, kisa: 0};  // tallentuu; nollautuu uutena kesänä
+  var juhTanssi = null;             // käynnissä oleva tanssi, ks. juhTanssiAloita
+  var juhRakennettu = false, juhHahmot = null, juhPari = null;
+  var juhKokko = null, juhLava = null, juhPortti = null;
+  var juhT = 0;
+  function juhTilaNyt(){
+    if(juhTila.kesa !== summerNumber) juhTila = {kesa: summerNumber, kokko: false, tanssi: -1, kisa: 0};
+    return juhTila;
+  }
+  function juhTunti(){ return dayTime*24; }
+  function juhOnAatto(){ return summerDay === JUHANNUS_PAIVA; }
+  // aaton ilta jatkuu puolenyön yli seuraavan kesäpäivän puolelle
+  function juhIltaa(alku, loppu){
+    var h = juhTunti();
+    return (summerDay === JUHANNUS_PAIVA && h >= alku) || (summerDay === JUHANNUS_PAIVA + 1 && h < loppu);
+  }
+  function juhLavaSoi(){ return juhIltaa(20, 2); }
+  // Yötön yö: juhannusyönä hämärä ei syvene pimeäksi. Klo 21.30 ja 4.30 valaistus on lähes
+  // sama, joten illan hämärä pysyy puoleenyöhön ja vaihtuu sitten suoraan aamuhämärään.
+  function juhValoAika(t){
+    if(!juhIltaa(21.5, 4.5)) return t;
+    return (summerDay === JUHANNUS_PAIVA) ? 21.5/24 : 4.5/24;
+  }
+  function juhKisaAuki(){ var h = juhTunti(); return juhOnAatto() && h >= 12 && h < 20; }
+  // kokon palamisaste 0..1: syttyy klo 21, täysillä 21.30-01, hiipuu hiillokseksi klo 03 mennessä
+  function juhKokkoLiekki(){
+    if(!juhIltaa(21, 3)) return 0;
+    var h = juhTunti();
+    if(summerDay === JUHANNUS_PAIVA) return Math.min(1, (h - 21)/0.5);
+    if(h < 1) return 1;
+    return Math.max(0.12, 1 - (h - 1)/2*0.88);
+  }
+  // kokon vaihe: 0 = ei vielä, 1 = kasassa, 2 = palaa, 3 = tuhkat
+  function juhKokkoVaihe(){
+    if(juhKokkoLiekki() > 0) return 2;
+    if(summerDay >= JUHANNUS_PAIVA - 2 && summerDay <= JUHANNUS_PAIVA) return 1;
+    if(summerDay > JUHANNUS_PAIVA) return 3;
+    return 0;
+  }
+  // Äänikello pitää humpan ja tanssi-iskut samassa tahdissa. Pysäytetty äänikonteksti ei
+  // kuitenkaan etene lainkaan, joten silloin käytetään tavallista kelloa.
+  function juhKello(){
+    return (audioCtx && audioCtx.state === 'running') ? audioCtx.currentTime : performance.now()/1000;
+  }
+  function juhLavaPaikallinen(x, z){
+    var dx = x - juhLavaPos.x, dz = z - juhLavaPos.z;
+    var c = Math.cos(JUH_LAVA_KULMA), s = Math.sin(JUH_LAVA_KULMA);
+    return {x: dx*c - dz*s, z: dx*s + dz*c};
+  }
+  // Lavan lattia on maata korkeammalla: kävelijän korkeus luetaan tästä maaston lisäksi.
+  function juhLavaKorkeus(x, z){
+    var p = juhLavaPaikallinen(x, z);
+    if(Math.abs(p.z) <= JUH_LAVA_D && p.x >= -JUH_LAVA_W && p.x <= JUH_LAVA_W) return JUH_LAVA_H;
+    if(p.x < -JUH_LAVA_W && p.x >= -JUH_LAVA_W - 1.2 && Math.abs(p.z) <= 1.6) return JUH_LAVA_H*0.5;
+    return 0;
+  }
+  function juhLavalla(marginaali){
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var p = juhLavaPaikallinen(ref.x, ref.z), m = marginaali || 0;
+    return Math.abs(p.z) <= JUH_LAVA_D + m && p.x >= -JUH_LAVA_W - 1.2 - m && p.x <= JUH_LAVA_W + m;
+  }
+  function juhEtaisyys(pos){
+    var ref = (mode === 'riding') ? moped.position : player.position;
+    var dx = pos.x - ref.x, dz = pos.z - ref.z;
+    return Math.sqrt(dx*dx + dz*dz);
+  }
+  function juhKangas(w, h, piirra){
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    piirra(c.getContext('2d'), w, h);
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 4;
+    return tex;
+  }
+
+  // ---- tanssilava ----
+  function rakennaJuhLava(){
+    var g = new THREE.Group();
+    var coll = [];
+    var lankku = juhKangas(256, 256, function(x, w, h){
+      x.fillStyle = '#6b4f30'; x.fillRect(0, 0, w, h);
+      for(var i=0; i<16; i++){
+        x.fillStyle = (i % 2) ? '#614629' : '#715334';
+        x.fillRect(0, i*16, w, 15);
+        x.fillStyle = '#3d2b18'; x.fillRect(0, i*16 + 15, w, 1);
+      }
+    });
+    lankku.wrapS = lankku.wrapT = THREE.RepeatWrapping;
+    lankku.repeat.set(3, 2);
+    var puuMat = new THREE.MeshStandardMaterial({color:0x4a3520, roughness:0.9});
+    var maaliMat = new THREE.MeshStandardMaterial({color:0xb9b2a2, roughness:0.85});
+    var kattoMat = new THREE.MeshStandardMaterial({color:0x5e1d16, roughness:0.85, side:THREE.DoubleSide});
+    var lattia = new THREE.Mesh(new THREE.BoxGeometry(JUH_LAVA_W*2, JUH_LAVA_H, JUH_LAVA_D*2),
+      [puuMat, puuMat, new THREE.MeshStandardMaterial({map:lankku, roughness:0.8}), puuMat, puuMat, puuMat]);
+    lattia.position.y = JUH_LAVA_H/2;
+    lattia.receiveShadow = true;
+    g.add(lattia);
+    var porras = new THREE.Mesh(new THREE.BoxGeometry(1.2, JUH_LAVA_H*0.5, 3.2), puuMat);
+    porras.position.set(-JUH_LAVA_W - 0.6, JUH_LAVA_H*0.25, 0);
+    g.add(porras);
+    // tolpat kehälle, sisäänkäynti länsipäädyssä
+    var tolppaKork = 3.2, tolppaGeo = new THREE.BoxGeometry(0.2, tolppaKork, 0.2);
+    var tolpat = [];
+    [-7.3, -5, -2.5, 0, 2.5, 5, 7.3].forEach(function(x){ tolpat.push([x, -5.3], [x, 5.3]); });
+    [-2.6, 2.6].forEach(function(z){ tolpat.push([7.3, z]); });
+    [-1.9, 1.9].forEach(function(z){ tolpat.push([-7.3, z]); });
+    tolpat.forEach(function(p){
+      var t = new THREE.Mesh(tolppaGeo, maaliMat);
+      t.position.set(p[0], JUH_LAVA_H + tolppaKork/2, p[1]);
+      t.castShadow = true;
+      g.add(t);
+      coll.push({x:p[0], z:p[1], r:0.3});
+    });
+    // kaiteet: sivuilla ja itäpäädyssä koko matkalta, länsipäädyssä oviaukon molemmin puolin
+    function kaide(x1, z1, x2, z2){
+      var dx = x2 - x1, dz = z2 - z1, pit = Math.sqrt(dx*dx + dz*dz);
+      [0.45, 0.95].forEach(function(y){
+        var k = new THREE.Mesh(new THREE.BoxGeometry(pit, 0.08, 0.08), maaliMat);
+        k.position.set((x1+x2)/2, JUH_LAVA_H + y, (z1+z2)/2);
+        k.rotation.y = -Math.atan2(dz, dx);
+        g.add(k);
+      });
+      var n = Math.max(1, Math.round(pit/1.0));
+      for(var i=0; i<=n; i++) coll.push({x:x1 + dx*i/n, z:z1 + dz*i/n, r:0.45});
+    }
+    kaide(-7.3, -5.3, 7.3, -5.3);
+    kaide(-7.3, 5.3, 7.3, 5.3);
+    kaide(7.3, -5.3, 7.3, 5.3);
+    kaide(-7.3, -5.3, -7.3, -1.9);
+    kaide(-7.3, 1.9, -7.3, 5.3);
+    // harjakatto
+    var raysta = JUH_LAVA_H + tolppaKork, puoliSyv = 6.1, kulma = 0.42;
+    var lappeenLev = puoliSyv/Math.cos(kulma);
+    [-1, 1].forEach(function(puoli){
+      var lape = new THREE.Mesh(new THREE.BoxGeometry(16.4, 0.14, lappeenLev), kattoMat);
+      lape.position.set(0, raysta + Math.tan(kulma)*puoliSyv/2, puoli*puoliSyv/2);
+      lape.rotation.x = puoli*kulma;
+      lape.castShadow = true;
+      g.add(lape);
+    });
+    var paaty = new THREE.Shape();
+    paaty.moveTo(-puoliSyv, 0); paaty.lineTo(puoliSyv, 0); paaty.lineTo(0, Math.tan(kulma)*puoliSyv); paaty.lineTo(-puoliSyv, 0);
+    [-7.4, 7.4].forEach(function(x){
+      var p = new THREE.Mesh(new THREE.ShapeGeometry(paaty), maaliMat.clone());
+      p.material.side = THREE.DoubleSide;
+      p.position.set(x, raysta, 0);
+      p.rotation.y = Math.PI/2;
+      g.add(p);
+    });
+    // kyltti sisäänkäynnin päälle
+    var kylttiTex = juhKangas(512, 96, function(x, w, h){
+      x.fillStyle = '#efe4c8'; x.fillRect(0, 0, w, h);
+      x.strokeStyle = '#5e1d16'; x.lineWidth = 8; x.strokeRect(4, 4, w-8, h-8);
+      x.fillStyle = '#5e1d16'; x.font = 'bold 58px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText('TANSSILAVA', w/2, h/2 + 3);
+    });
+    var kyltti = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.64), new THREE.MeshStandardMaterial({map:kylttiTex, roughness:0.8}));
+    kyltti.position.set(-7.5, raysta + 0.45, 0);
+    kyltti.rotation.y = -Math.PI/2;
+    g.add(kyltti);
+    // orkesterilava itäpäädyssä ja takaseinä
+    var lava2 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.45, JUH_LAVA_D*2 - 0.4), puuMat);
+    lava2.position.set(6.0, JUH_LAVA_H + 0.225, 0);
+    lava2.receiveShadow = true;
+    g.add(lava2);
+    var seina = new THREE.Mesh(new THREE.BoxGeometry(0.12, tolppaKork, JUH_LAVA_D*2 - 0.2), maaliMat);
+    seina.position.set(7.35, JUH_LAVA_H + tolppaKork/2, 0);
+    g.add(seina);
+    for(var oz = -4.2; oz <= 4.21; oz += 1.4) coll.push({x:4.9, z:oz, r:0.62});
+    // soittimet orkesterilavalle
+    var rumpuMat = new THREE.MeshStandardMaterial({color:0x8c1f1f, roughness:0.5});
+    var rumpu = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.36, 14), rumpuMat);
+    rumpu.rotation.z = Math.PI/2;
+    rumpu.position.set(6.6, JUH_LAVA_H + 0.45 + 0.34, 2.6);
+    g.add(rumpu);
+    var symbaali = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 14), new THREE.MeshStandardMaterial({color:0xc9a43a, metalness:0.6, roughness:0.35}));
+    symbaali.position.set(6.2, JUH_LAVA_H + 0.45 + 1.0, 3.1);
+    g.add(symbaali);
+    var basso = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.34, 1.25, 10), new THREE.MeshStandardMaterial({color:0x6a3a1c, roughness:0.55}));
+    basso.scale.z = 0.45;
+    basso.position.set(5.8, JUH_LAVA_H + 0.45 + 0.75, -2.3);
+    g.add(basso);
+    // lamppunauha räystäille: syttyy vain kun lavalla soi
+    var lamput = new THREE.Group();
+    var lamppuVarit = [0xff4a3a, 0xffd14a, 0x4ac8ff, 0x6aff7a, 0xff86d6];
+    var lamppuGeo = new THREE.SphereGeometry(0.075, 8, 6);
+    var lamppuMatit = lamppuVarit.map(function(c){ return new THREE.MeshBasicMaterial({color:c, toneMapped:false}); });
+    var nro = 0;
+    [-5.75, 5.75].forEach(function(z){
+      for(var x = -7.6; x <= 7.61; x += 0.76){
+        var l = new THREE.Mesh(lamppuGeo, lamppuMatit[nro++ % lamppuMatit.length]);
+        l.position.set(x, raysta - 0.12 - 0.08*Math.sin((x + 7.6)/0.76*Math.PI), z);
+        lamput.add(l);
+      }
+    });
+    lamput.visible = false;
+    g.add(lamput);
+    var valo = new THREE.PointLight(0xffd8a0, 0, 24, 2);
+    valo.position.set(0, raysta - 0.4, 0);
+    g.add(valo);
+    // juhannuskoivut sisäänkäynnin pieliin ja lippusalko
+    var koivut = new THREE.Group();
+    var runkoTex = juhKangas(32, 128, function(x, w, h){
+      x.fillStyle = '#e8e4da'; x.fillRect(0, 0, w, h);
+      x.fillStyle = '#2a2622';
+      for(var i=0; i<14; i++) x.fillRect(Math.random()*w*0.6, Math.random()*h, 6 + Math.random()*10, 2 + Math.random()*3);
+    });
+    var runkoMat = new THREE.MeshStandardMaterial({map:runkoTex, roughness:0.8});
+    var lehtiMat = new THREE.MeshStandardMaterial({color:0x4f8a2e, roughness:0.85, flatShading:true});
+    [-2.4, 2.4].forEach(function(z){
+      var r = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.8, 7), runkoMat);
+      r.position.set(-8.9, 1.4, z);
+      koivut.add(r);
+      for(var k=0; k<3; k++){
+        var lehti = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55 - k*0.1, 0), lehtiMat);
+        lehti.position.set(-8.9 + (k-1)*0.12, 2.0 + k*0.45, z + (k-1)*0.1);
+        lehti.scale.y = 1.4;
+        koivut.add(lehti);
+      }
+    });
+    var salko = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 7, 8), new THREE.MeshStandardMaterial({color:0xf2f2ee, roughness:0.6}));
+    salko.position.set(-10.5, 3.5, -7.5);
+    koivut.add(salko);
+    coll.push({x:-10.5, z:-7.5, r:0.2});
+    var lippuTex = juhKangas(180, 110, function(x, w, h){
+      x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h);
+      x.fillStyle = '#1a4fa0';
+      x.fillRect(50, 0, 30, h);
+      x.fillRect(0, 40, w, 30);
+    });
+    var lippu = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1, 8, 1), new THREE.MeshStandardMaterial({map:lippuTex, side:THREE.DoubleSide, roughness:0.9}));
+    lippu.position.set(-10.5 + 0.92, 6.35, -7.5);
+    koivut.add(lippu);
+    koivut.visible = false;
+    g.add(koivut);
+    g.position.set(juhLavaPos.x, 0, juhLavaPos.z);
+    g.rotation.y = JUH_LAVA_KULMA;
+    g.traverse(function(o){ if(o.isMesh && o !== lattia) o.castShadow = true; });
+    scene.add(g);
+    registerColliders(g, coll);
+    return {g: g, lamput: lamput, valo: valo, koivut: koivut, lippu: lippu, sijoitettu: false};
+  }
+
+  // ---- kokko ----
+  function rakennaJuhKokko(){
+    var g = new THREE.Group();
+    var halkoMat = new THREE.MeshStandardMaterial({color:0x4a3a26, roughness:0.95, flatShading:true});
+    var havuMat = new THREE.MeshStandardMaterial({color:0x2e4a24, roughness:0.95, flatShading:true});
+    var kasa = new THREE.Group();
+    var i;
+    function kehä(n, r, kallistus, pituus, y){
+      for(var k=0; k<n; k++){
+        var a = k/n*Math.PI*2 + Math.random()*0.2;
+        var h = new THREE.Mesh(new THREE.CylinderGeometry(0.08 + Math.random()*0.04, 0.11 + Math.random()*0.04, pituus*(0.9 + Math.random()*0.2), 6), halkoMat);
+        h.position.set(Math.sin(a)*r, y, Math.cos(a)*r);
+        h.rotation.set(Math.cos(a)*kallistus, 0, -Math.sin(a)*kallistus);
+        kasa.add(h);
+      }
+    }
+    kehä(12, 0.55, 0.30, 3.6, 1.7);
+    kehä(18, 1.15, 0.50, 3.0, 1.25);
+    kehä(22, 1.75, 0.72, 2.2, 0.75);
+    for(i=0; i<10; i++){
+      var a2 = i/10*Math.PI*2;
+      var havu = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.9, 6), havuMat);
+      havu.position.set(Math.sin(a2)*2.0, 0.3, Math.cos(a2)*2.0);
+      havu.rotation.set(Math.cos(a2)*1.1, Math.random(), -Math.sin(a2)*1.1);
+      kasa.add(havu);
+    }
+    kasa.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+    g.add(kasa);
+    // tuhkat: jäävät rantaan loppukesäksi
+    var tuhka = new THREE.Group();
+    var tuhkaLevy = new THREE.Mesh(new THREE.CircleGeometry(2.6, 18), new THREE.MeshStandardMaterial({color:0x2b2826, roughness:1}));
+    tuhkaLevy.rotation.x = -Math.PI/2;
+    tuhkaLevy.position.y = 0.03;
+    tuhka.add(tuhkaLevy);
+    var hiiliMat = new THREE.MeshStandardMaterial({color:0x151210, roughness:1, emissive:0x3a1004, emissiveIntensity:0});
+    for(i=0; i<8; i++){
+      var hl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.2 + Math.random()*0.8, 6), hiiliMat);
+      var a3 = Math.random()*Math.PI*2, r3 = Math.random()*1.4;
+      hl.position.set(Math.sin(a3)*r3, 0.1, Math.cos(a3)*r3);
+      hl.rotation.set(Math.PI/2, Math.random()*3, 0);
+      tuhka.add(hl);
+    }
+    tuhka.visible = false;
+    g.add(tuhka);
+    // liekit kuten miitin nuotiossa, mutta isompina ja useampina
+    var liekit = [];
+    var liekkiVarit = [0xff5a10, 0xff7a18, 0xffa22a, 0xffc04a, 0xffe08a];
+    for(i=0; i<7; i++){
+      // liekit ulottuvat reilusti kasan yli: matalammat jäivät halkojen sisään piiloon
+      var lm = new THREE.Mesh(new THREE.ConeGeometry(1.9 - i*0.17, 4.8 + (i % 3)*1.3, 8),
+        new THREE.MeshBasicMaterial({color:liekkiVarit[i % liekkiVarit.length], transparent:true, opacity:0.62 - i*0.05,
+          depthWrite:false, blending:THREE.AdditiveBlending, toneMapped:false}));
+      var la = i/7*Math.PI*2;
+      lm.position.set(Math.sin(la)*0.5*(i % 2), 3.0 + i*0.28, Math.cos(la)*0.5*(i % 2));
+      lm.userData.ph = Math.random()*6.28;
+      lm.userData.baseY = lm.position.y;
+      lm.visible = false;
+      g.add(lm);
+      liekit.push(lm);
+    }
+    var savut = [];
+    for(i=0; i<10; i++){
+      var sm = new THREE.Mesh(new THREE.SphereGeometry(0.5, 7, 5),
+        new THREE.MeshBasicMaterial({color:0x8d8a84, transparent:true, opacity:0, depthWrite:false}));
+      sm.userData.t = i/10;
+      g.add(sm);
+      savut.push(sm);
+    }
+    // kipinät: pisteinä nousevat ja sammuvat
+    var KIPINAT = 70;
+    var kipGeo = new THREE.BufferGeometry();
+    var kipPos = new Float32Array(KIPINAT*3);
+    kipGeo.setAttribute('position', new THREE.BufferAttribute(kipPos, 3));
+    var kipData = [];
+    for(i=0; i<KIPINAT; i++) kipData.push({t: Math.random(), vx: 0, vz: 0});
+    var kipinat = new THREE.Points(kipGeo, new THREE.PointsMaterial({color:0xffb050, size:0.14, transparent:true, opacity:0.9,
+      depthWrite:false, blending:THREE.AdditiveBlending, toneMapped:false}));
+    kipinat.frustumCulled = false;
+    kipinat.visible = false;
+    g.add(kipinat);
+    var valo = new THREE.PointLight(0xff9a40, 0, 55, 1.6);
+    valo.position.set(0, 2.6, 0);
+    g.add(valo);
+    g.visible = false;
+    scene.add(g);
+    colliders.push({x: juhKokkoPos.x, z: juhKokkoPos.z, r: 2.3, obj: g});
+    return {g: g, kasa: kasa, tuhka: tuhka, hiiliMat: hiiliMat, liekit: liekit, savut: savut,
+            kipinat: kipinat, kipPos: kipPos, kipData: kipData, valo: valo, sijoitettu: false, ratinaT: 0};
+  }
+
+  // ---- kisan lähtöportti ----
+  function rakennaJuhPortti(){
+    var rt = raceRouteById('juhannus');
+    if(!rt || !rt.cps.length) return null;
+    var a = rt.cps[0], b = rt.cps[1] || rt.cps[0];
+    var suunta = Math.atan2(b.x - a.x, b.z - a.z);
+    var g = new THREE.Group();
+    var tolppaMat = new THREE.MeshStandardMaterial({color:0xf2f2ee, roughness:0.6});
+    [-4.6, 4.6].forEach(function(x){
+      var t = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 4.4, 8), tolppaMat);
+      t.position.set(x, 2.2, 0);
+      t.castShadow = true;
+      g.add(t);
+      var lehti = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 0), new THREE.MeshStandardMaterial({color:0x4f8a2e, flatShading:true}));
+      lehti.position.set(x, 4.5, 0);
+      lehti.scale.y = 1.3;
+      g.add(lehti);
+    });
+    var tex = juhKangas(512, 96, function(x, w, h){
+      x.fillStyle = '#1a4fa0'; x.fillRect(0, 0, w, h);
+      x.fillStyle = '#ffffff'; x.font = 'bold 52px Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText('JUHANNUSAJO  klo 12–20', w/2, h/2 + 2);
+    });
+    var banderolli = new THREE.Mesh(new THREE.PlaneGeometry(9.0, 1.1), new THREE.MeshStandardMaterial({map:tex, side:THREE.DoubleSide, roughness:0.8}));
+    banderolli.position.y = 3.6;
+    g.add(banderolli);
+    g.position.set(a.x, terrainHeight(a.x, a.z), a.z);
+    g.rotation.y = suunta;
+    g.visible = false;
+    scene.add(g);
+    return {g: g, pos: new THREE.Vector3(a.x, 0, a.z)};
+  }
+
+  // ---- juhlaväki ----
+  var JUH_PARIT = ['Sanna', 'Mikko', 'Jonna', 'Tero', 'Heidi', 'Krista', 'Pasi', 'Minna'];
+  function juhHahmo(nro){
+    var f = makeSkinnedFigure(true);
+    if(!f) return null;
+    var look = {height: 0.25 + ((nro*37) % 50)/100, build: 0.30 + ((nro*53) % 45)/100,
+                skin: nro*7 + 2, shirt: nro*5 + 3, pants: nro*3 + 1, hair: nro*11 + 5};
+    applyLookColors(f.figure, look);
+    var sc = lookScaleOf(look);
+    f.figure.scale.set(sc.xz, sc.y, sc.xz);
+    var g = new THREE.Group();
+    g.add(f.figure);
+    g.visible = false;
+    scene.add(g);
+    return {g: g, l: f.limbs, ph: nro*1.7};
+  }
+  function juhNollaa(l){
+    ['armL','armR','foreL','foreR','legL','legR','shinL','shinR','spine','hips','head'].forEach(function(n){
+      if(l[n]) l[n].rotation.set(0, 0, 0);
+    });
+    if(l.armL) l.armL.rotation.z = armRestZ;
+    if(l.armR) l.armR.rotation.z = -armRestZ;
+  }
+  // Paritanssin ote. Vientijä (vie = true): vasen käsi pitää parin kädestä sivulla ja oikea on
+  // parin selällä. Seuraajalla sama peilattuna. ph on tahdin vaihe (pi = yksi isku).
+  function juhTanssiAsento(l, root, ph, vie){
+    juhNollaa(l);
+    var s = Math.sin(ph), askel = 0.22;
+    if(l.legL) l.legL.rotation.x = -askel*s;
+    if(l.legR) l.legR.rotation.x = askel*s;
+    if(l.shinL) l.shinL.rotation.x = Math.max(0, s)*0.35 + 0.08;
+    if(l.shinR) l.shinR.rotation.x = Math.max(0, -s)*0.35 + 0.08;
+    if(l.hips) l.hips.rotation.z = 0.05*s;
+    if(l.spine){ l.spine.rotation.z = -0.04*s; l.spine.rotation.x = 0.04; }
+    var ojennus = vie ? l.armL : l.armR, ojFore = vie ? l.foreL : l.foreR;
+    var selka = vie ? l.armR : l.armL, seFore = vie ? l.foreR : l.foreL;
+    var merkki = vie ? 1 : -1;
+    if(ojennus){ ojennus.rotation.x = -0.75; ojennus.rotation.z = merkki*(armRestZ - 0.55); }
+    if(ojFore) ojFore.rotation.x = -1.05;
+    if(selka){ selka.rotation.x = -1.0; selka.rotation.z = merkki*(-armRestZ - 0.2); }
+    if(seFore) seFore.rotation.x = -1.35;
+    if(l.head) l.head.rotation.y = 0.15*merkki;
+    if(root) root.position.y = -0.03*Math.abs(Math.cos(ph));
+  }
+  function juhKatsojaAsento(l, t, ph, tahdissa){
+    juhNollaa(l);
+    var keinu = Math.sin(t*0.6 + ph);
+    if(l.spine){ l.spine.rotation.z = keinu*0.03; l.spine.rotation.x = 0.03; }
+    if(l.hips) l.hips.rotation.z = -keinu*0.02;
+    if(l.foreL) l.foreL.rotation.x = -0.35;
+    if(l.foreR) l.foreR.rotation.x = -0.35;
+    if(tahdissa){
+      var b = Math.sin(tahdissa);
+      if(l.head) l.head.rotation.x = 0.05*b;
+      if(l.shinL) l.shinL.rotation.x = 0.06 + 0.06*Math.max(0, b);
+    }
+  }
+  function juhSoittajaAsento(l, nro, ph){
+    juhNollaa(l);
+    var b = Math.sin(ph);
+    if(nro === 0){          // haitari: kädet edessä, palje aukeaa ja sulkeutuu
+      if(l.armL){ l.armL.rotation.x = -0.7; l.armL.rotation.z = armRestZ - 0.25 - 0.12*Math.sin(ph*0.5); }
+      if(l.armR){ l.armR.rotation.x = -0.7; l.armR.rotation.z = -armRestZ + 0.25; }
+      if(l.foreL) l.foreL.rotation.x = -1.2;
+      if(l.foreR) l.foreR.rotation.x = -1.3;
+    } else if(nro === 1){   // basso: vasen käsi kaulalla ylhäällä, oikea näppää
+      if(l.armL){ l.armL.rotation.x = -1.3; }
+      if(l.foreL) l.foreL.rotation.x = -0.9;
+      if(l.armR){ l.armR.rotation.x = -0.45 - 0.08*b; }
+      if(l.foreR) l.foreR.rotation.x = -0.9;
+    } else {                // rummut: kapulat lyövät vuorotellen
+      if(l.armL) l.armL.rotation.x = -0.6 - 0.25*Math.max(0, b);
+      if(l.armR) l.armR.rotation.x = -0.6 - 0.25*Math.max(0, -b);
+      if(l.foreL) l.foreL.rotation.x = -1.0;
+      if(l.foreR) l.foreR.rotation.x = -1.0;
+    }
+    if(l.head) l.head.rotation.x = 0.06*b;
+    if(l.legL) l.legL.rotation.x = 0;
+    if(l.shinR) l.shinR.rotation.x = 0.05 + 0.05*Math.max(0, b);
+  }
+  function juhRakennaHahmot(){
+    if(juhHahmot) return;
+    juhHahmot = {parit: [], katsojat: [], soittajat: []};
+    try{
+      var n = 0, i;
+      for(i=0; i<3; i++){
+        var a = juhHahmo(n++), b = juhHahmo(n++);
+        if(a && b) juhHahmot.parit.push({vie: a, seuraa: b, kulma: i*2.1, kierto: i*1.3});
+      }
+      for(i=0; i<6; i++){ var k = juhHahmo(n++); if(k) juhHahmot.katsojat.push(k); }
+      for(i=0; i<3; i++){ var s = juhHahmo(n++); if(s) juhHahmot.soittajat.push(s); }
+      juhPari = juhHahmo(n++);
+    }catch(e){ console.warn('Juhannusväen rakennus epäonnistui:', e); }
+  }
+  function juhLavaMaailmaan(lx, lz){
+    var c = Math.cos(JUH_LAVA_KULMA), s = Math.sin(JUH_LAVA_KULMA);
+    return {x: juhLavaPos.x + lx*c + lz*s, z: juhLavaPos.z - lx*s + lz*c};
+  }
+
+  // ---- humppa ----
+  // Lavan musiikki tehdään samalla periaatteella kuin radio: jokainen nuotti on oma
+  // oskillaattori. Nuotit ajastetaan äänikellon mukaan hieman etukäteen, jolloin tahti
+  // pysyy tasaisena vaikka ruudunpäivitys nykisi - ja tanssipelin iskut osuvat bassoon.
+  var HUMPPA_ASKEL = 0.25;          // kahdeksasosa; basso joka toisella, sointu välissä
+  var HUMPPA_TAHTI = HUMPPA_ASKEL*4;
+  var HUMPPA_SOINNUT = ['G','G','D','D','G','G','C','D'];
+  var HUMPPA_SOINTU = {
+    G: {basso:[98.00, 73.42],  s:[196.00, 246.94, 293.66]},
+    D: {basso:[73.42, 110.00], s:[185.00, 220.00, 293.66]},
+    C: {basso:[65.41, 98.00],  s:[196.00, 261.63, 329.63]}
+  };
+  var HUMPPA_MELODIA = [
+    587.33, 493.88, 392.00, 493.88,  587.33, 0, 659.25, 587.33,
+    523.25, 440.00, 369.99, 440.00,  523.25, 0, 587.33, 523.25,
+    493.88, 392.00, 587.33, 392.00,  493.88, 587.33, 783.99, 0,
+    659.25, 587.33, 523.25, 659.25,  587.33, 523.25, 440.00, 369.99
+  ];
+  var juhMusa = {t0: -1, seur: 0, gain: null};
+  function humppaNuotti(taaj, aika, kesto, aalto, vol, out, haitari){
+    var osc = audioCtx.createOscillator();
+    osc.type = aalto;
+    osc.frequency.value = taaj;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, aika);
+    g.gain.linearRampToValueAtTime(vol, aika + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, aika + kesto);
+    if(haitari){
+      // haitari: kaksi hieman eri vireessä olevaa kieltä ja pehmennys ylätaajuuksiin
+      var osc2 = audioCtx.createOscillator();
+      osc2.type = aalto;
+      osc2.frequency.value = taaj*1.006;
+      var lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 2400;
+      osc.connect(lp); osc2.connect(lp); lp.connect(g);
+      osc2.start(aika); osc2.stop(aika + kesto + 0.03);
+    } else {
+      osc.connect(g);
+    }
+    g.connect(out);
+    osc.start(aika); osc.stop(aika + kesto + 0.03);
+  }
+  function humppaAskel(i, aika, out){
+    var tahti = Math.floor(i/4) % HUMPPA_SOINNUT.length, kohta = i % 4;
+    var so = HUMPPA_SOINTU[HUMPPA_SOINNUT[tahti]];
+    if(kohta === 0 || kohta === 2) humppaNuotti(so.basso[kohta/2], aika, 0.24, 'triangle', 0.22, out);
+    else for(var k=0; k<3; k++) humppaNuotti(so.s[k], aika, 0.11, 'square', 0.022, out);
+    var m = HUMPPA_MELODIA[i % HUMPPA_MELODIA.length];
+    if(m) humppaNuotti(m, aika, 0.24, 'sawtooth', 0.032, out, true);
+  }
+  function juhMusaPaivita(soi){
+    var nyt = juhKello();
+    if(!soi){
+      juhMusa.t0 = -1;
+      if(juhMusa.gain && audioCtx) juhMusa.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
+      return;
+    }
+    // kellon lähde voi vaihtua kun ääni herää: kaukana tulevaisuudessa oleva tahtiruudukko aloitetaan alusta
+    if(juhMusa.t0 < 0 || juhMusa.t0 - nyt > 2){ juhMusa.t0 = nyt + 0.1; juhMusa.seur = 0; }
+    // ruudun jumittuessa ei soiteta kaikkia väliin jääneitä nuotteja kerralla
+    if(nyt - (juhMusa.t0 + juhMusa.seur*HUMPPA_ASKEL) > 1) juhMusa.seur = Math.ceil((nyt - juhMusa.t0)/HUMPPA_ASKEL);
+    var vol = 0;
+    if(audioCtx){
+      if(!juhMusa.gain){
+        juhMusa.gain = audioCtx.createGain();
+        juhMusa.gain.gain.value = 0;
+        juhMusa.gain.connect((typeof musicGain !== 'undefined' && musicGain) ? musicGain : sfxOut());
+      }
+      vol = juhTanssi ? 1 : Math.pow(Math.max(0, 1 - juhEtaisyys(juhLavaPos)/90), 2);
+      juhMusa.gain.gain.setTargetAtTime(vol*0.9, audioCtx.currentTime, 0.25);
+    }
+    while(juhMusa.t0 + juhMusa.seur*HUMPPA_ASKEL < nyt + 0.25){
+      var aika = juhMusa.t0 + juhMusa.seur*HUMPPA_ASKEL;
+      if(audioCtx && audioCtx.state === 'running' && !muted && vol > 0.01 && aika > nyt - 0.02) humppaAskel(juhMusa.seur, aika, juhMusa.gain);
+      juhMusa.seur++;
+    }
+  }
+  // humpan iskun vaihe: pi = yksi isku (0,5 s), jotta tanssijat astuvat bassoon
+  function juhIskuVaihe(){
+    if(juhMusa.t0 < 0) return juhT*Math.PI*2;
+    return (juhKello() - juhMusa.t0)/(HUMPPA_ASKEL*2)*Math.PI;
+  }
+
+  // ---- tanssipeli ----
+  var JUH_ISKUJA = 16;
+  var juhTanssiEl = null;
+  function juhTanssiUi(){
+    if(juhTanssiEl) return juhTanssiEl;
+    var tyyli = document.createElement('style');
+    tyyli.textContent =
+      '#juhTanssi{position:fixed;left:50%;top:16%;transform:translateX(-50%);z-index:60;width:300px;padding:14px 16px 12px;' +
+      'background:rgba(18,16,24,.86);border:1px solid rgba(255,210,122,.35);border-radius:14px;color:#f4ecd8;font:13px system-ui,sans-serif;text-align:center;pointer-events:none}' +
+      '#juhTanssi .jtOts{font-weight:700;letter-spacing:.06em;color:#ffd27a;font-size:12px;text-transform:uppercase}' +
+      '#juhTanssi .jtAla{position:relative;height:110px;margin:6px 0}' +
+      '#juhTanssi .jtKohde,#juhTanssi .jtRengas{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%)}' +
+      '#juhTanssi .jtKohde{width:64px;height:64px;background:#2c2638;border:3px solid #ffd27a;font:800 30px system-ui;line-height:58px;color:#fff}' +
+      '#juhTanssi .jtRengas{width:64px;height:64px;border:3px solid rgba(255,255,255,.75)}' +
+      '#juhTanssi .jtPal{height:18px;font-weight:700;color:#9fe6a0}' +
+      '#juhTanssi .jtPal.huono{color:#ff8a7a}' +
+      '#juhTanssi .jtRivi{display:flex;gap:3px;justify-content:center;margin-top:6px}' +
+      '#juhTanssi .jtRivi i{width:12px;height:6px;border-radius:3px;background:#3a3446}' +
+      '#juhTanssi .jtRivi i.t2{background:#ffd27a}#juhTanssi .jtRivi i.t1{background:#9fe6a0}#juhTanssi .jtRivi i.t0{background:#ff7a6a}' +
+      '#juhTanssi .jtOhje{margin-top:6px;opacity:.7;font-size:11px}';
+    document.head.appendChild(tyyli);
+    var el = document.createElement('div');
+    el.id = 'juhTanssi';
+    el.hidden = true;
+    el.innerHTML = '<div class="jtOts"></div><div class="jtAla"><div class="jtRengas"></div><div class="jtKohde"></div></div>' +
+      '<div class="jtPal"></div><div class="jtRivi"></div><div class="jtOhje">Paina näkyvää näppäintä kun rengas osuu ympyrään · <b>E</b> lopettaa</div>';
+    document.body.appendChild(el);
+    juhTanssiEl = el;
+    return el;
+  }
+  function juhSeuraavaTahti(t){
+    if(juhMusa.t0 < 0) return t;
+    var k = Math.ceil((t - juhMusa.t0)/HUMPPA_TAHTI);
+    return juhMusa.t0 + k*HUMPPA_TAHTI;
+  }
+  function juhTanssiAloita(){
+    if(juhTanssi) return;
+    juhRakennaHahmot();
+    ensureAudio();
+    juhMusaPaivita(true);
+    var avaimet = [], putki = 0;
+    for(var i=0; i<JUH_ISKUJA; i++){
+      var a = Math.random() < 0.5 ? 'A' : 'D';
+      if(i > 0 && a === avaimet[i-1]){ putki++; if(putki >= 2){ a = (a === 'A') ? 'D' : 'A'; putki = 0; } }
+      else putki = 0;
+      avaimet.push(a);
+    }
+    var nimi = JUH_PARIT[Math.floor(Math.random()*JUH_PARIT.length)];
+    juhTanssi = {pari: nimi, alku: juhSeuraavaTahti(juhKello() + 1.8), avaimet: avaimet, tulokset: [],
+                 palaute: 'Valmiina...', huono: false, palauteT: 9};
+    // tanssi alkaa siitä mihin pelaaja jäi, mutta parin pitää mahtua lavalle
+    var p = juhLavaPaikallinen(player.position.x, player.position.z);
+    var lx = Math.max(-5.6, Math.min(3.6, p.x)), lz = Math.max(-4.0, Math.min(4.0, p.z));
+    var w = juhLavaMaailmaan(lx, lz);
+    player.position.x = w.x; player.position.z = w.z;
+    var el = juhTanssiUi();
+    el.hidden = false;
+    el.querySelector('.jtOts').textContent = '🎻 Humppa · tanssipari ' + nimi;
+    showToast(false, '💃 ' + nimi + ' lähti tanssiin', 'Askella tahdissa: paina A tai D juuri kun rengas osuu ympyrään.', 3800);
+  }
+  function juhTanssiPainallus(avain){
+    var t = juhTanssi;
+    if(!t) return;
+    var nyt = juhKello(), paras = -1, parasD = 1e9;
+    for(var i=0; i<t.avaimet.length; i++){
+      if(t.tulokset[i] !== undefined) continue;
+      var d = Math.abs(nyt - (t.alku + i*HUMPPA_TAHTI));
+      if(d < parasD){ parasD = d; paras = i; }
+    }
+    if(paras < 0 || parasD > 0.32) return;   // iskujen välissä painettu ei rankaise
+    var tulos;
+    if(t.avaimet[paras] !== avain){ tulos = 0; t.palaute = 'Väärä jalka!'; }
+    else if(parasD < 0.09){ tulos = 2; t.palaute = 'Täydellinen!'; }
+    else if(parasD < 0.2){ tulos = 1; t.palaute = 'Hyvä'; }
+    else { tulos = 0; t.palaute = 'Ohi tahdista'; }
+    t.tulokset[paras] = tulos;
+    t.huono = tulos === 0;
+    t.palauteT = 0.8;
+  }
+  window.addEventListener('keydown', function(e){
+    if(!juhTanssi || e.repeat) return;
+    var k = (e.key || '').toLowerCase();
+    if(k === 'a' || k === 'arrowleft') juhTanssiPainallus('A');
+    else if(k === 'd' || k === 'arrowright') juhTanssiPainallus('D');
+  });
+  function juhTanssiPaivita(dt){
+    var t = juhTanssi;
+    if(!t) return;
+    if(mode === 'riding' || inStore || !juhLavaSoi()){ juhTanssiLopeta(true); return; }
+    var nyt = juhKello(), i;
+    if(Math.abs(t.alku - nyt) > 60){ juhTanssiLopeta(true); return; }   // kellon lähde vaihtui kesken
+    for(i=0; i<t.avaimet.length; i++){
+      if(t.tulokset[i] === undefined && nyt > t.alku + i*HUMPPA_TAHTI + 0.32){
+        t.tulokset[i] = 0; t.palaute = 'Myöhässä'; t.huono = true; t.palauteT = 0.8;
+      }
+    }
+    var viim = t.alku + (t.avaimet.length - 1)*HUMPPA_TAHTI;
+    if(nyt > viim + 0.6){ juhTanssiLopeta(false); return; }
+    // pari pyörii hitaasti lavalla, kamera kiertää mukana
+    playerHeading += dt*0.45;
+    var el = juhTanssiEl;
+    var seur = -1;
+    for(i=0; i<t.avaimet.length; i++) if(t.tulokset[i] === undefined){ seur = i; break; }
+    var kohde = el.querySelector('.jtKohde'), rengas = el.querySelector('.jtRengas');
+    if(seur >= 0){
+      var u = Math.max(0, Math.min(1.6, (t.alku + seur*HUMPPA_TAHTI - nyt)/HUMPPA_TAHTI));
+      kohde.textContent = t.avaimet[seur];
+      rengas.style.width = rengas.style.height = (64 + u*90) + 'px';
+      rengas.style.opacity = u > 1.2 ? 0.25 : 1;
+    } else {
+      kohde.textContent = '♪';
+      rengas.style.width = rengas.style.height = '64px';
+    }
+    t.palauteT -= dt;
+    var pal = el.querySelector('.jtPal');
+    pal.textContent = t.palauteT > 0 ? t.palaute : '';
+    pal.className = 'jtPal' + (t.huono ? ' huono' : '');
+    var rivi = '';
+    for(i=0; i<t.avaimet.length; i++) rivi += '<i' + (t.tulokset[i] !== undefined ? ' class="t' + t.tulokset[i] + '"' : '') + '></i>';
+    el.querySelector('.jtRivi').innerHTML = rivi;
+  }
+  function juhTanssiLopeta(keskeytys){
+    var t = juhTanssi;
+    if(!t) return;
+    juhTanssi = null;
+    if(juhTanssiEl) juhTanssiEl.hidden = true;
+    if(juhPari) juhPari.g.visible = false;
+    var pisteet = 0, ajettu = 0;
+    for(var i=0; i<t.avaimet.length; i++){ if(t.tulokset[i] !== undefined){ ajettu++; pisteet += t.tulokset[i]; } }
+    if(keskeytys && ajettu < t.avaimet.length/2){
+      showToast(false, 'Tanssi jäi kesken', t.pari + ' jäi lavalle odottelemaan seuraavaa kappaletta.', 3200);
+      return;
+    }
+    var osuus = pisteet/(t.avaimet.length*2);
+    var tila = juhTilaNyt(), eka = tila.tanssi < 0;
+    var maine = 0, otsikko, teksti;
+    if(osuus >= 0.8){
+      maine = eka ? 8 : 0;
+      otsikko = '🌟 Lavan tähti!';
+      teksti = t.pari + ': "Missä sä oot oppinu tanssimaan noin?" Koko lava katsoi teitä.';
+    } else if(osuus >= 0.5){
+      maine = eka ? 4 : 0;
+      otsikko = '💃 Hyvä humppa';
+      teksti = t.pari + ': "Ihan kivasti meni. Tuu uudestaan kun soi hitaampi."';
+    } else {
+      maine = eka ? 1 : 0;
+      otsikko = '🦶 Varpaille astuttiin';
+      teksti = t.pari + ': "Au. No, ainakin yritit."';
+    }
+    tila.tanssi = Math.max(tila.tanssi, Math.round(osuus*100));
+    health = Math.min(100, health + 8);
+    hunger = Math.max(0, hunger - 3);
+    updateVitalsDisplay();
+    if(maine > 0) repVillageAdd(maine);
+    showToast(osuus < 0.5, otsikko, teksti + ' (tahdissa ' + Math.round(osuus*100) + ' %' + (maine > 0 ? ', maine +' + maine : '') + ')', 6000);
+    saveGame();
+  }
+
+  // ---- kokolla istuminen ----
+  var JUH_KOKKO_REPLIIKIT = [
+    ['Jussi',        'Juhannus on ainoa yö jolloin äiti ei soita perään. Pidetään siitä kiinni.'],
+    ['Aku',          'Mä kuulin et jos kerää seittemän kukkaa tyynyn alle niin näkee unta tulevasta.'],
+    ['Romu-Reiska',  'Kokko -86 oli niin iso että palokunta tuli kattomaan. Ei sammuttamaan, kattomaan.'],
+    ['Jussi',        'Aatto on puolivälissä kesää. Ajokokeeseen on enää viisitoista päivää.'],
+    ['Aku',          'Lavalla soi humppa. Mee hakemaan joku tanssiin, ei siinä mitään menetä.'],
+    ['Romu-Reiska',  'Kattokaa kipinöitä. Kun ne nousee suoraan ylös, huomenna on helle.']
+  ];
+  function juhKokkoIstu(){
+    dayTime += 0.5/24;
+    if(dayTime >= 1){ dayTime -= 1; dayIndex = (dayIndex + 1) % 7; advanceSummerDay(); }
+    health = Math.min(100, health + 12);
+    hunger = Math.max(0, hunger - 4);
+    updateVitalsDisplay();
+    playFireCrackle();
+    var rivi = JUH_KOKKO_REPLIIKIT[Math.floor(Math.random()*JUH_KOKKO_REPLIIKIT.length)];
+    var tila = juhTilaNyt();
+    if(!tila.kokko){
+      tila.kokko = true;
+      repVillageAdd(6);
+      showToast(false, '🔥 ' + rivi[0], rivi[1] + ' (puoli tuntia kului, voimat palautuivat, maine +6)', 6500);
+      saveGame();
+    } else {
+      showToast(false, '🔥 ' + rivi[0], rivi[1] + ' (puoli tuntia kului)', 5200);
+    }
+  }
+
+  // ---- vihjeet ja E ----
+  function juhPorttiLahella(){
+    return juhPortti && juhOnAatto() && juhTunti() < 20 && juhEtaisyys(juhPortti.pos) <= 9;
+  }
+  function juhannusVihje(){
+    if(inStore || mode === 'riding') return null;
+    if(juhTanssi) return 'Tanssit (' + juhTanssi.pari + ') · paina <b>A</b>/<b>D</b> tahdissa · <b>E</b> lopettaa';
+    if(juhPorttiLahella()){
+      return juhKisaAuki() ? 'Paina <b>E</b>: lähde Juhannusajoon kokolle (palkinto 250 €)'
+                           : 'Juhannusajo lähtee tästä klo 12';
+    }
+    var vaihe = juhKokkoVaihe();
+    if(vaihe > 0 && vaihe < 3 && juhEtaisyys(juhKokkoPos) <= 6){
+      if(vaihe === 2) return 'Paina <b>E</b>: istu kokolle (puoli tuntia, palauttaa voimia)';
+      return juhOnAatto() ? 'Juhannuskokko sytytetään tänään klo 21'
+                          : 'Juhannuskokko · poltetaan juhannusaattona (kesäpäivä ' + JUHANNUS_PAIVA + ') klo 21';
+    }
+    if(juhLavalla(0.6)){
+      if(juhLavaSoi()) return 'Paina <b>E</b>: hae tanssipari (lavalla soi humppa)';
+      return 'Tanssilava · juhannustanssit kesäpäivänä ' + JUHANNUS_PAIVA + ' klo 20–02';
+    }
+    return null;
+  }
+  function juhannusInteract(){
+    if(juhTanssi){ juhTanssiLopeta(true); return true; }
+    if(inStore || mode === 'riding') return false;
+    if(juhPorttiLahella()){
+      if(juhKisaAuki()){ raceRequestStart('juhannus'); return true; }
+      showToast(false, 'Juhannusajo', 'Lähtö on tänään klo 12–20. Palkinto 250 € ja maali on uimarannan kokolla.', 3600);
+      return true;
+    }
+    if(juhKokkoVaihe() === 2 && juhEtaisyys(juhKokkoPos) <= 6){ juhKokkoIstu(); return true; }
+    if(juhLavalla(0.6) && juhLavaSoi()){ juhTanssiAloita(); return true; }
+    return false;
+  }
+  // Pelaajan oma tanssiasento: kävelyanimaation jälkeen, jotta se korvaa kädet ja jalat.
+  function juhannusPelaajaAsento(){
+    if(!juhTanssi || !playerLimbs) return;
+    juhTanssiAsento(playerLimbs, null, juhIskuVaihe(), true);
+    if(playerVisual){ playerVisual.position.y = -0.03*Math.abs(Math.cos(juhIskuVaihe())); playerVisual.rotation.set(0, 0, 0); }
+  }
+  // aamuilmoitukset: aattoa edeltävänä päivänä ja itse aattona
+  function juhannusAamu(){
+    if(summerDay === JUHANNUS_PAIVA - 1){
+      showToast(false, '🌿 Huomenna on juhannusaatto',
+        'Kokko kasataan uimarannalle. Huomenna klo 12–20 Juhannusajo kylältä rantaan, illalla kokko ja tanssit lavalla.', 7000);
+    } else if(summerDay === JUHANNUS_PAIVA){
+      showToast(false, '🌿 Hyvää juhannusta!',
+        'Klo 12–20 Juhannusajo naapurikylästä uimarannalle (palkinto 250 €, Kisat-sovellus tai lähtöportti). ' +
+        'Klo 20 lavalla alkaa humppa ja klo 21 kokko syttyy rannassa.', 9000);
+    }
+  }
+
+  function updateJuhannus(dt){
+    juhT += dt;
+    if(!juhRakennettu){
+      juhRakennettu = true;
+      try{ juhLava = rakennaJuhLava(); }catch(e){ console.warn('Tanssilavan rakennus epäonnistui:', e); }
+      try{ juhKokko = rakennaJuhKokko(); }catch(e2){ console.warn('Kokon rakennus epäonnistui:', e2); }
+    }
+    var lahella = juhEtaisyys(juhLavaPos) < 260;
+    var soi = juhLavaSoi(), liekki = juhKokkoLiekki(), vaihe = juhKokkoVaihe();
+    var juhlaPaiva = summerDay >= JUHANNUS_PAIVA - 1 && summerDay <= JUHANNUS_PAIVA + 1;
+    var ph = juhIskuVaihe(), i;
+
+    // lähtöportti rakennetaan vasta kun kisareitin pisteet on kiinnitetty teihin
+    if(!juhPortti && juhlaPaiva){ try{ juhPortti = rakennaJuhPortti(); }catch(e3){ juhPortti = false; } }
+    if(juhPortti) juhPortti.g.visible = juhOnAatto() && juhTunti() < 20 || summerDay === JUHANNUS_PAIVA - 1;
+
+    if(juhLava){
+      if(!juhLava.sijoitettu){
+        juhLava.g.position.y = terrainHeight(juhLavaPos.x, juhLavaPos.z);
+        juhLava.sijoitettu = true;
+      }
+      juhLava.lamput.visible = soi;
+      juhLava.valo.intensity = soi ? 1.6 : 0;
+      juhLava.koivut.visible = juhlaPaiva;
+      if(juhlaPaiva && lahella){
+        var pos = juhLava.lippu.geometry.attributes.position;
+        for(i=0; i<pos.count; i++){
+          var x = pos.getX(i);
+          pos.setZ(i, Math.sin(juhT*3 + x*2.2)*0.08*(x + 0.9));
+        }
+        pos.needsUpdate = true;
+      }
+    }
+    juhMusaPaivita(soi && lahella);
+
+    if(juhKokko){
+      var k = juhKokko;
+      if(!k.sijoitettu){
+        juhKokkoPos.y = terrainHeight(juhKokkoPos.x, juhKokkoPos.z);
+        k.g.position.copy(juhKokkoPos);
+        k.sijoitettu = true;
+      }
+      k.g.visible = vaihe > 0;
+      k.kasa.visible = vaihe === 1 || vaihe === 2;
+      k.tuhka.visible = vaihe === 3 || (vaihe === 2 && liekki < 0.5);
+      // kasa painuu kokoon palaessaan
+      if(vaihe === 2){
+        var palanut = summerDay === JUHANNUS_PAIVA ? Math.max(0, (juhTunti() - 21)/4) : Math.min(1, (juhTunti() + 3)/5);
+        k.kasa.scale.set(1, Math.max(0.3, 1 - palanut*0.7), 1);
+      } else k.kasa.scale.set(1, 1, 1);
+      k.hiiliMat.emissiveIntensity = (vaihe === 2 && liekki < 0.5) ? 0.8 : 0;
+      for(i=0; i<k.liekit.length; i++) k.liekit[i].visible = liekki > 0;
+      k.kipinat.visible = liekki > 0.2;
+      if(liekki > 0 && juhEtaisyys(juhKokkoPos) < 400){
+        for(i=0; i<k.liekit.length; i++){
+          var f = k.liekit[i], fph = f.userData.ph;
+          var kk = (0.75 + 0.3*Math.sin(juhT*6.2 + fph) + 0.14*Math.sin(juhT*13.1 + fph*2.1))*liekki;
+          f.scale.set((0.85 + 0.2*Math.sin(juhT*7 + fph))*Math.max(0.3, liekki), Math.max(0.05, kk), 0.85 + 0.2*Math.cos(juhT*6.4 + fph));
+          f.position.y = f.userData.baseY*Math.max(0.35, liekki) + 0.1*Math.sin(juhT*5.3 + fph);
+          f.rotation.y = juhT*0.6 + fph;
+        }
+        for(i=0; i<k.savut.length; i++){
+          var sm = k.savut[i];
+          sm.userData.t += dt*0.12;
+          if(sm.userData.t > 1) sm.userData.t -= 1;
+          var u = sm.userData.t;
+          sm.position.set(Math.sin(juhT*0.4 + i)*1.2*u + u*2.5, 4.0 + u*9, Math.cos(juhT*0.3 + i*1.7)*1.2*u);
+          sm.scale.setScalar(0.8 + u*3.2);
+          sm.material.opacity = 0.09*(1 - u)*(u < 0.15 ? u/0.15 : 1)*liekki;
+        }
+        if(k.kipinat.visible){
+          for(i=0; i<k.kipData.length; i++){
+            var d = k.kipData[i];
+            d.t += dt*(0.35 + (i % 5)*0.06);
+            if(d.t > 1){ d.t -= 1; d.vx = (Math.random() - 0.5)*1.6; d.vz = (Math.random() - 0.5)*1.6; }
+            k.kipPos[i*3]   = d.vx*d.t*2 + Math.sin(juhT*2 + i)*0.3;
+            k.kipPos[i*3+1] = 1.5 + d.t*9*liekki;
+            k.kipPos[i*3+2] = d.vz*d.t*2;
+          }
+          k.kipinat.geometry.attributes.position.needsUpdate = true;
+          k.kipinat.material.opacity = 0.9*liekki;
+        }
+        k.valo.intensity = (4.5 + 1.4*Math.sin(juhT*8.3) + 0.8*Math.sin(juhT*15.1))*liekki;
+        k.ratinaT -= dt;
+        if(k.ratinaT <= 0){
+          k.ratinaT = 0.15 + Math.random()*0.4;
+          if(juhEtaisyys(juhKokkoPos) < 35) playFireCrackle();
+        }
+      } else {
+        k.valo.intensity = 0;
+      }
+    }
+
+    // juhlaväki: rakennetaan kun ilta on käsillä ja pelaaja on lähistöllä
+    var vakea = (soi || liekki > 0) && lahella;
+    if(vakea) juhRakennaHahmot();
+    if(juhHahmot){
+      var h, p;
+      for(i=0; i<juhHahmot.parit.length; i++){
+        var pari = juhHahmot.parit[i];
+        pari.vie.g.visible = pari.seuraa.g.visible = vakea && soi;
+        if(!(vakea && soi)) continue;
+        // parit kiertävät lavaa vastapäivään ja pyörivät samalla toistensa ympäri
+        pari.kulma += dt*0.16;
+        pari.kierto += dt*0.9;
+        var kx = -1.0 + Math.cos(pari.kulma)*3.0, kz = Math.sin(pari.kulma)*2.6;
+        var cx = Math.cos(pari.kierto)*0.31, cz = Math.sin(pari.kierto)*0.31;
+        var w1 = juhLavaMaailmaan(kx + cx, kz + cz), w2 = juhLavaMaailmaan(kx - cx, kz - cz);
+        var y0 = (juhLava ? juhLava.g.position.y : 0) + JUH_LAVA_H;
+        pari.vie.g.position.set(w1.x, y0, w1.z);
+        pari.seuraa.g.position.set(w2.x, y0, w2.z);
+        var suunta = Math.atan2(w2.x - w1.x, w2.z - w1.z);
+        pari.vie.g.rotation.y = suunta;
+        pari.seuraa.g.rotation.y = suunta + Math.PI;
+        juhTanssiAsento(pari.vie.l, pari.vie.g.children[0], ph, true);
+        juhTanssiAsento(pari.seuraa.l, pari.seuraa.g.children[0], ph + Math.PI, false);
+      }
+      for(i=0; i<juhHahmot.katsojat.length; i++){
+        h = juhHahmot.katsojat[i];
+        h.g.visible = vakea;
+        if(!vakea) continue;
+        // kokon palaessa katsojat ovat rannalla, muuten lavan laidalla
+        if(liekki > 0){
+          var a = 0.14 + (i - 2.5)*0.42;
+          h.g.position.set(juhKokkoPos.x + Math.sin(a)*5.6, juhKokkoPos.y, juhKokkoPos.z + Math.cos(a)*5.6);
+          h.g.rotation.y = a + Math.PI;
+        } else {
+          p = juhLavaMaailmaan(-9.6 + (i % 3)*0.9, -3.4 + Math.floor(i/3)*6.8 + (i % 2)*0.5);
+          h.g.position.set(p.x, juhLava ? juhLava.g.position.y : 0, p.z);
+          h.g.rotation.y = Math.atan2(juhLavaPos.x - p.x, juhLavaPos.z - p.z);
+        }
+        juhKatsojaAsento(h.l, juhT, h.ph, soi ? ph : 0);
+      }
+      for(i=0; i<juhHahmot.soittajat.length; i++){
+        h = juhHahmot.soittajat[i];
+        h.g.visible = vakea && soi;
+        if(!(vakea && soi)) continue;
+        p = juhLavaMaailmaan(6.2, -2.3 + i*2.3);
+        h.g.position.set(p.x, (juhLava ? juhLava.g.position.y : 0) + JUH_LAVA_H + 0.45, p.z);
+        h.g.rotation.y = -Math.PI/2 + JUH_LAVA_KULMA;
+        juhSoittajaAsento(h.l, i, ph);
+      }
+      // oma tanssipari pelaajan edessä
+      if(juhPari){
+        juhPari.g.visible = !!juhTanssi;
+        if(juhTanssi){
+          var fx = Math.sin(playerHeading), fz = Math.cos(playerHeading);
+          juhPari.g.position.set(player.position.x + fx*0.62, player.position.y, player.position.z + fz*0.62);
+          juhPari.g.rotation.y = playerHeading + Math.PI;
+          juhTanssiAsento(juhPari.l, juhPari.g.children[0], ph + Math.PI, false);
+        }
+      }
+    }
+    juhTanssiPaivita(dt);
+  }
+
   var groupRide = null;          // {idx, cps, mukana[], t}
   function atMeetSpot(){
     var ref = (mode === 'riding') ? moped.position : player.position;
@@ -20579,6 +21570,7 @@
     {name:'Maalaamo',     pos:maalaamoPos,      color:'#9fd4e8'},
     {name:'Kyläkauppa',   pos:kauppaIsoPos,     color:'#9be86b'},
     {name:'Uimaranta',    pos:rantaPos,         color:'#6fe3d0'},
+    {name:'Tanssilava',   pos:juhLavaPos,       color:'#ffd27a'},
     {name:'Naapurikylä',  pos:kylaPos,          color:'#d9c1ff'},
     {name:'Kasino',       pos:kasinoPos,        color:'#ff5aa8'},
     {name:'Crossirata',   pos:crossiPos,        color:'#ff7a5c'},
@@ -23384,6 +24376,9 @@
      cps:[homePos, rantaPos, jarviPos, kylaPos, kauppaPos]},
     {id:'crossi', name:'Crossikisa',  reward:220,
      cps:[kauppaPos, crossiPos, romuPos, meetSpot, autotalliPos]},
+    // Juhannusajo: vain juhannusaattona klo 12-20, naapurikylästä järven itäpuolta uimarannan kokolle
+    {id:'juhannus', name:'Juhannusajo kokolle', reward:250, juhannus:true,
+     cps:[kylaPos, jarviPos, rantaPos]},
     // Moottorirata on suljettu ovaali: tarkistuspisteet ovat radan omalla keskilinjalla, joten
     // kisa kiertää radan eikä kulje kylän läpi. Pisin matka ja isoin palkkio.
     {id:'rata',   name:'Moottorirata', reward:200, noSnap:true,
@@ -23787,6 +24782,10 @@
     var route = raceRouteById(routeId);
     if(!route) return;
     if(race.active){ showToast(true, 'Kisa on jo käynnissä', 'Odota että tämä kisa päättyy.', 2600); return; }
+    if(route.juhannus && !juhKisaAuki()){
+      showToast(true, route.name, 'Ajetaan vain juhannusaattona (kesäpäivä ' + JUHANNUS_PAIVA + ') klo 12–20.', 3600);
+      return;
+    }
     if(netRole === 'client'){
       netSendRaw(netHostCh, {t:'rs', route:routeId});
       showToast(false, 'Kisaehdotus lähti', 'Odotetaan että host käynnistää kisan.', 2600);
@@ -23889,6 +24888,16 @@
     saveGame();
     // mestaruussarjan osakilpailu: pisteet ja sijoitus kavereita vastaan
     if(race.series !== null && race.series !== undefined) seriesFinishRound(race.series, route.id, race.myFinish);
+    // juhannusajon voitosta puhutaan kokolla
+    if(route.juhannus){
+      var jt = juhTilaNyt(), parempi = !jt.kisa || place < jt.kisa;
+      if(parempi){
+        jt.kisa = place;
+        if(place === 1) repVillageAdd(10, 'Jonne voitti juhannusajon. Kokolla nostetaan malja.');
+        else if(place <= 3) repVillageAdd(4);
+        saveGame();
+      }
+    }
   }
   function raceFinishAll(){
     race.phase = 'done';
@@ -24024,10 +25033,12 @@
     }
     for(var i=0; i<RACE_ROUTES.length; i++){
       var rt = RACE_ROUTES[i];
+      // juhannusajo näkyy listalla vain aattona
+      if(rt.juhannus && !juhOnAatto()) continue;
       var best = raceBest[rt.id];
       var onSarja = tanaan && tanaan.round.routeId === rt.id;
-      html += '<button class="raceBtn" type="button" data-race="' + rt.id + '">' + (onSarja ? '🏆 ' : '🏁 ') + rt.name +
-              (onSarja ? ' — OSAKILPAILU TÄNÄÄN' : '') +
+      html += '<button class="raceBtn" type="button" data-race="' + rt.id + '">' + (rt.juhannus ? '🌿 ' : (onSarja ? '🏆 ' : '🏁 ')) + rt.name +
+              (onSarja ? ' — OSAKILPAILU TÄNÄÄN' : '') + (rt.juhannus ? ' — TÄNÄÄN klo 12–20' : '') +
               '<span class="rbMeta">' + rt.cps.length + ' pistettä · palkinto ' + rt.reward + ' € · ' +
               (best ? ('ennätys ' + raceTime(best)) : 'ei ennätystä') + '</span></button>';
     }
@@ -24323,6 +25334,7 @@
         fridgeMeals: fridgeMeals,
         photoShownAtMeet: photoShownAtMeet,
         campSatDay: campSatDay,
+        juhannus: juhTila,
         engine: engineInstalled,
         radioChannel: radioChannel,
         radioAuto: radioAuto,
@@ -24370,6 +25382,10 @@
       if(typeof save.fridgeMeals === 'number') fridgeMeals = Math.max(0, Math.min(3, save.fridgeMeals|0));
       if(typeof save.photoShownAtMeet === 'number') photoShownAtMeet = save.photoShownAtMeet|0;
       if(typeof save.campSatDay === 'number') campSatDay = save.campSatDay|0;
+      if(save.juhannus && typeof save.juhannus === 'object'){
+        juhTila = {kesa: save.juhannus.kesa|0, kokko: !!save.juhannus.kokko,
+                   tanssi: typeof save.juhannus.tanssi === 'number' ? save.juhannus.tanssi : -1, kisa: save.juhannus.kisa|0};
+      }
       // Vanha tallennus ei tunne moottorin osia. Jos sylinteri oli siina asennettu,
       // moottori on ollut kasassa - muuten osat jaisivat poydalle vaikka mopo kulkee.
       if(save.engine && typeof save.engine === 'object') engineApplySaved(save.engine);
@@ -24737,6 +25753,8 @@
     updatePosters();
     engineReset();
     campSatDay = -1; radioChannel = 0; radioAuto = true;
+    juhTila = {kesa: 0, kokko: false, tanssi: -1, kisa: 0};
+    if(juhTanssi) juhTanssiLopeta(true);
     photos.length = 0; photoShownAtMeet = -1; photoMode = false; photoPending = false;
     if(photoFrameEl) photoFrameEl.hidden = true;
     app.classList.remove('photoing');
@@ -27120,11 +28138,12 @@
       // Kypäränäkymässä A ja D ovat SIVUASKELEITA eivätkä kääntymistä: ensimmäisessä
       // persoonassa suunnan antaa hiiri, ja näppäimillä kääntyminen tuntuu siltä kuin
       // kameraa väännettäisiin. Kolmannessa persoonassa A ja D kääntävät kuten ennen.
-      var turnInput2 = (input.left?1:0) - (input.right?1:0);
+      // tanssiessa A ja D ovat tanssiaskelia, eivät liikettä
+      var turnInput2 = juhTanssi ? 0 : (input.left?1:0) - (input.right?1:0);
       var sivuInput = 0;
       if(fpvOn) sivuInput = turnInput2;
       else playerHeading += turnInput2 * 2.6 * dt;
-      var moveDir = (input.fwd?1:0) - (input.back?1:0);
+      var moveDir = juhTanssi ? 0 : (input.fwd?1:0) - (input.back?1:0);
       // mopoa työntäessä kulku on reilusti hitaampaa - se on osa rangaistusta
       var pushMult = pushingMoped ? 0.52 : 1;
       // Vino liike ei saa olla nopeampaa kuin suora: eteen+sivuun yhdessä normalisoidaan.
@@ -27151,7 +28170,8 @@
       // inStore: ison kaupan sisätila ei ole osa oikeaa mäkistä maastoa (ks. selitys kauppaSisaOrigin-
       // kohdalla) - lattia on kiinteästi tasainen 0, muuten pelaaja "keinuisi" sisätilan ulkopuolisen
       // proseduraalisen mäkifunktion mukaan (voi vaihdella useita metrejä muutaman askeleen aikana).
-      player.position.y = inStore ? 0 : terrainHeight(player.position.x, player.position.z);
+      player.position.y = inStore ? 0 : terrainHeight(player.position.x, player.position.z) +
+        juhLavaKorkeus(player.position.x, player.position.z);
       updatePushedMoped();   // työnnettävä mopo seuraa pelaajaa
 
       // ---- kävelyanimaatio ----
@@ -27182,6 +28202,7 @@
       // patsaaksi sillä sekunnilla kun näppäin päästetään irti.
       updateIdlePose(dt, 1 - wA, playerLimbs);
       applyWalkTwist(wPh, wA, askelSuunta);
+      juhannusPelaajaAsento();   // lavalla tanssiessa ote ja askeleet korvaavat seisoma-asennon
       // tupakan/tölkin nosto suulle tulee kävelyn päälle, ei sen tilalle
       if(kadessa){ paivitaKasiKasi(kadessa); kadessa.asetettu = true; }
       updateBlink(dt, playerLimbs);
@@ -27348,7 +28369,11 @@
         }
       }
 
-      if(nearWeld && !inStore){
+      var juhVihje = juhannusVihje();
+      if(juhVihje){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = juhVihje;
+      } else if(nearWeld && !inStore){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b>: hitsaa sauma (palkka laadun mukaan)';
       } else if(nearPump && !inStore){
@@ -27552,6 +28577,7 @@
     engineUpdateGhost(dt);   // haamukuva: mihin kädessä oleva osa menee
     engineRenderPanel();     // työpöydän ohjetaulu
     updateCampfire(dt);      // miitin nuotio: liekit, savu, valo ja rätinä
+    updateJuhannus(dt);      // juhannus: kokko, lava, humppa, tanssipeli ja kisaportti
     updateFaceTalk(dt);      // puhuvan hahmon suu ja kulmat
     updateNpcBlink(dt);      // kyläläiset räpyttelevät
     trickTick(dt);           // temppuketju: keula, stoppie, hyppy ja luisu
