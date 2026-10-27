@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:139-->
-<!--JONNE-NAME:Jonnen ajokoe 139-->
+<!--JONNE-VERSION:140-->
+<!--JONNE-NAME:Jonnen ajokoe 140-->
 <!--JONNE-DATE:2026-10-27-->
-<!--JONNE-NOTES:Hyllyltä nostettu osa asentuu taas mopoon: E mopon vieressä ei enää näytä pelkkää "Mopo on osina"|E-vihje kertoo oikean toiminnon: nosta osa hyllyltä, kanna se mopolle ja asenna, nosta kasattu moottori|Uusi juonti: Megaforce nousee huulille asti ja pää kallistuu huikan mukana taakse|Uusi polttaminen: tupakka suuhun ja käsi suun vierelle, kädessä se osoittaa sormien välistä eteen|Tölkki ja tupakka pysyvät kädessä myös kävellessä|Uusi askellus: hölkkä täydellä vauhdilla, kävely hitaasti, jalat eivät enää luista|Kädet heiluvat oikein vastakkain jalkojen kanssa ja kyynärpäät taipuvat oikeaan suuntaan-->
+<!--JONNE-NOTES:Uusi reppu (TAB): tavararuudukko, valitun tavaran kortti, hahmon mittarit ja mopon osien kunto|Kaverit ja liikenne ajavat oikeilla mopoilla (Derbi, Scoba, Monkey) ja kuskeina on oikeita hahmoja omissa vaatteissaan|Kaverin mopo ei enää aja sivuttain: keula seuraa tietä|Rengastie ja kylän raitti eivät enää kulje kodin läpi - kotona on piha ja pihatie talolle ja tallille|Tallin, poliisiaseman, kyläkaupan ja Mac Donaldsin tie loppuu pihaan rakennuksen eteen, ei rakennuksen sisään|Pihateillä postilaatikot ja aidantolpat|Kävely ei enää heittele puolelta toiselle, ja hölkässä kädet eivät sojota eteen-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -337,13 +337,78 @@
   .maaliSuutin{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:#fbf6e9;
                box-shadow:0 0 6px rgba(0,0,0,0.6);border-radius:2px;}
   .maaliSuutin.on{background:#8ce99a;box-shadow:0 0 12px rgba(140,233,154,0.95);}
-  /* reppu (TAB): oma paneeli, leveampi kuin korjauspaneelit koska siina on kaksi saraketta */
+  /* reppu (TAB): tumma inventaarionäkymä - vasemmalla tavararuudukko ja valitun tavaran
+     kortti, oikealla hahmo, mittarit ja mopon osat, alhaalla pikanäppäimet */
   .reppuPanel{
     position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    background:var(--panel-bg);border:1px solid var(--panel-line);border-radius:14px;
-    padding:16px 18px;width:min(520px,92vw);max-height:84vh;overflow:auto;pointer-events:auto;
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgba(120,24,20,0.20), rgba(0,0,0,0) 55%),
+      linear-gradient(180deg, #17181b 0%, #0f1012 100%);
+    border:1px solid rgba(255,255,255,0.07);border-radius:6px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.6);
+    padding:22px 24px 16px;width:min(980px,96vw);max-height:90vh;overflow:auto;pointer-events:auto;
+    color:#e9e4da;
   }
   .reppuPanel[hidden]{display:none;}
+  .rpHead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;}
+  .rpTitle{font:600 46px/0.9 'Teko',sans-serif;letter-spacing:.02em;color:#f3eee4;text-transform:uppercase;
+           text-shadow:0 2px 0 #000;}
+  .rpTitle small{display:block;font:700 10px/1.2 'Karla',sans-serif;letter-spacing:.22em;color:#c0392b;margin-bottom:4px;}
+  .rpCash{display:flex;gap:10px;}
+  .rpCash .c{font:700 11px/1.3 'Karla',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#9c968c;text-align:right;}
+  .rpCash .c b{display:block;font:600 24px/1 'Teko',sans-serif;color:#f3eee4;letter-spacing:.02em;}
+  .rpCash .c b.neg{color:#e05a4a;}
+  .rpCash .chip{border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:4px;}
+  .rpBody{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(250px,1fr);gap:18px;}
+  @media (max-width:720px){ .rpBody{grid-template-columns:1fr;} }
+  .rpLabel{font:700 10px/1.2 'Karla',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8d877d;margin:0 0 8px;}
+  .rpGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;}
+  .rpSlot{position:relative;aspect-ratio:1/1;border-radius:4px;cursor:default;
+          background:linear-gradient(160deg,#24262a,#1a1b1e);border:1px solid rgba(255,255,255,0.06);
+          box-shadow:inset 0 2px 6px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;}
+  .rpSlot.taysi{cursor:pointer;background:linear-gradient(160deg,#2c2e33,#202125);border-color:rgba(255,255,255,0.12);}
+  .rpSlot.taysi:hover{border-color:rgba(224,82,62,0.7);}
+  .rpSlot.valittu{border-color:#e0523e;box-shadow:0 0 0 1px #e0523e, inset 0 0 18px rgba(224,82,62,0.25);}
+  .rpSlot.kaytossa{border-color:rgba(122,196,96,0.7);}
+  .rpSlot .ik{font-size:clamp(20px,3.2vw,30px);line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.6));}
+  .rpSlot .lkm{position:absolute;right:5px;bottom:3px;font:600 15px/1 'Teko',sans-serif;color:#f3eee4;text-shadow:0 1px 2px #000;}
+  .rpSlot .tila{position:absolute;left:5px;top:4px;font:700 8px/1 'Karla',sans-serif;letter-spacing:.08em;color:#7ac460;text-transform:uppercase;}
+  .rpCard{margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-left:3px solid #c0392b;border-radius:4px;
+          background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01));padding:12px 14px;min-height:92px;}
+  .rpCard h3{margin:0;font:600 24px/1 'Teko',sans-serif;letter-spacing:.02em;color:#f3eee4;text-transform:uppercase;}
+  .rpCard .sub{font:700 9.5px/1.2 'Karla',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8d877d;margin-top:3px;}
+  .rpCard p{margin:7px 0 0;font:600 12.5px/1.5 'Karla',sans-serif;color:#cfc9bf;}
+  .rpCard .rpBtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .rpBtn{font:700 11px/1 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:9px 14px;border-radius:3px;cursor:pointer;
+         border:1px solid rgba(255,255,255,0.14);background:#25272b;color:#e9e4da;}
+  .rpBtn:hover{background:#2f3136;}
+  .rpBtn.paa{background:linear-gradient(180deg,#c9a24a,#9c7a2c);border-color:#d8b660;color:#1a140a;}
+  .rpBtn.paa:hover{filter:brightness(1.08);}
+  .rpBtn:disabled{opacity:.4;cursor:default;}
+  .rpSide{display:flex;flex-direction:column;gap:12px;}
+  .rpBox{border:1px solid rgba(255,255,255,0.07);border-radius:4px;background:rgba(255,255,255,0.02);padding:12px 14px;}
+  .rpHahmo{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;}
+  .rpHahmo svg{width:96px;height:150px;display:block;}
+  .rpStat{margin-bottom:8px;}
+  .rpStat:last-child{margin-bottom:0;}
+  .rpStat .r{display:flex;justify-content:space-between;font:700 10px/1.2 'Karla',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#a7a196;margin-bottom:4px;}
+  .rpStat .r b{color:#f3eee4;letter-spacing:.02em;}
+  .rpBar{height:7px;border-radius:2px;background:rgba(255,255,255,0.07);overflow:hidden;}
+  .rpBar i{display:block;height:100%;border-radius:2px;}
+  .rpBuffs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .rpBuffs span{font:700 9.5px/1 'Karla',sans-serif;letter-spacing:.06em;padding:4px 7px;border-radius:999px;
+                background:rgba(224,82,62,0.18);border:1px solid rgba(224,82,62,0.45);color:#f1c9c1;}
+  .rpOsa{display:grid;grid-template-columns:1fr 64px 34px;gap:8px;align-items:center;font:600 11.5px/1.3 'Karla',sans-serif;
+         padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+  .rpOsa:last-child{border-bottom:none;}
+  .rpOsa .n{color:#d8d2c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rpOsa .n small{color:#8d877d;font-weight:600;}
+  .rpOsa .p{text-align:right;font:600 14px/1 'Teko',sans-serif;color:#f3eee4;}
+  .rpKeys{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);
+          font:600 11px/1.2 'Karla',sans-serif;color:#9c968c;}
+  .rpKeys kbd{display:inline-block;min-width:22px;text-align:center;font:700 10px/1 'Karla',sans-serif;color:#f3eee4;
+              background:#25272b;border:1px solid rgba(255,255,255,0.18);border-bottom-width:2px;border-radius:3px;padding:4px 6px;margin-right:6px;}
+  .rpKeys .sp{flex:1;}
   .reppuGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:8px 0 4px;}
   .reppuSlot{background:rgba(251,246,233,0.08);border:1px solid var(--panel-line);border-radius:10px;
              padding:9px 7px;text-align:center;}
@@ -1463,7 +1528,6 @@
       <div class="repairFoot">Raha: <b id="diiliMoney">0</b> €</div>
     </div>
     <div class="reppuPanel" id="reppuPanel" hidden>
-      <div class="tuneLabel">Reppu — tavarat, rahat ja mopon tila</div>
       <div id="reppuSisalto"></div>
     </div>
     <div class="repairPanel" id="maalaamoPanel" hidden>
@@ -4961,9 +5025,14 @@
   // suljettu rengastie jarven ympari: kaikki paikat ripustetaan siihen lyhyilla
   // pistoteilla, joten mihin suuntaan lahdetkin, paadyt lopulta takaisin kotiin.
   // ==========================================================================
+  // Koti osui lähes tasan rengastien keskiviivalle, joten rengastie kulki talon ja
+  // tallin läpi. Tie kaartaa nyt kodin kohdalla 24 m ulospäin talon taakse.
+  var KOTI_KULMA = Math.atan2(homePos.x, homePos.z);
   function rengasSade(a){
     // pieni aaltoilu sateessa, jottei tie ole geometrisen tarkka ympyra
-    return RENGAS_R + 22*Math.sin(a*3) + 14*Math.cos(a*5 + 1.0);
+    var r = RENGAS_R + 22*Math.sin(a*3) + 14*Math.cos(a*5 + 1.0);
+    var da = Math.atan2(Math.sin(a - KOTI_KULMA), Math.cos(a - KOTI_KULMA));
+    return r + 24*Math.exp(-(da*da)/(2*0.07*0.07));
   }
   function rengasPiste(a){
     var r = rengasSade(a);
@@ -4973,7 +5042,7 @@
   function rengasKohti(x, z){ return rengasPiste(Math.atan2(x, z)); }
   var rengasPisteet = [];
   (function rakennaRengastie(){
-    var N = 56, i;
+    var N = 112, i;   // tiheämpi kuin ennen (56), jotta kodin ohittava kaarre on pyöreä
     for(i = 0; i <= N; i++) rengasPisteet.push(rengasPiste(i/N*Math.PI*2));
     for(i = 0; i < N; i++){
       var p0 = rengasPisteet[i], p1 = rengasPisteet[i+1];
@@ -5003,30 +5072,142 @@
     void kapeikkoLansi;
   })();
 
-  // ---- pistotiet: jokainen paikka kiinni renkaaseen ----
-  function pistotie(px, pz, leveys, mutka, segs){
-    var rp = rengasKohti(px, pz);
-    var d = Math.sqrt((px-rp.x)*(px-rp.x) + (pz-rp.z)*(pz-rp.z));
-    if(d < 6){ makeStraightRoad(px, pz, leveys, leveys); return; }
-    makeCurvedSpurRoad(rp.x, rp.z, px, pz, leveys, mutka, segs || 5, 1);
-    makeStraightRoad(rp.x, rp.z, leveys, leveys);
+  // ==========================================================================
+  // ---- PIHAT JA PIHATIET ----
+  // Pistotiet vietiin ennen suoraan kohteen KESKIPISTEESEEN, joten soratie loppui
+  // talon, tallin tai kaupan sisään, ja kotona kylän raitti kulki talon läpi. Nyt
+  // tie loppuu kohteen eteen, ja siitä jatkuu kapea vaaleampi pihatie pihalle:
+  // tien päässä postilaatikko, pihalla sorakenttä ja tien varressa aidantolppia.
+  // ==========================================================================
+  // Tasavärinen sora: tien tekstuurissa on pientareiden raidat, jotka näyttivät pihalla lankuilta.
+  // Värit ovat lineaarisia ja ruutu näyttää ne gamman läpi, joten ne ovat tummia: 0x7c705a
+  // piirtyi lähes valkoisena.
+  var pihatieMat = new THREE.MeshStandardMaterial({color:0x4a3e2e, roughness:0.98});
+  var pihaSoraMat = new THREE.MeshStandardMaterial({color:0x3f3528, roughness:1});
+  var pihaPuuMat = new THREE.MeshStandardMaterial({color:0x8a6a48, roughness:0.9});
+  var postiMat = new THREE.MeshStandardMaterial({color:0xd8d2c0, roughness:0.6, metalness:0.2});
+  // piste matkan päässä pisteestä (x1,z1) takaisin kohti (x0,z0)
+  function ennenKohdetta(x0, z0, x1, z1, matka){
+    var dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx*dx + dz*dz) || 1;
+    var m = Math.min(matka, l*0.7);
+    return {x: x1 - dx/l*m, z: z1 - dz/l*m, ux: dx/l, uz: dz/l};
+  }
+  function postilaatikko(x, z, kulma){
+    var g = new THREE.Group();
+    var tolppa = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.05, 0.09), pihaPuuMat);
+    tolppa.position.y = 0.52;
+    var laatikko = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.26, 0.46), postiMat);
+    laatikko.position.y = 1.12;
+    var kansi = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.46, 8, 1, false, 0, Math.PI), postiMat);
+    kansi.rotation.set(Math.PI/2, 0, Math.PI/2);
+    kansi.position.y = 1.25;
+    g.add(tolppa, laatikko, kansi);
+    g.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+    g.position.set(x, 0, z);   // pihat ovat tasoitetulla alueella
+    g.rotation.y = kulma;
+    scene.add(g);
+    return g;
+  }
+  // Pihatie (x0,z0) -> (x1,z1) ja sen päähän sorapiha. pihaKoko = sorakentän sivu.
+  // Pihatie on oikea tiekäytävä: maasto tasoittuu sen alta ja kaverit osaavat ajaa sitä.
+  function pihatie(x0, z0, x1, z1, leveys, pihaKoko){
+    var dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx*dx + dz*dz);
+    if(l > 0.5){
+      var kulma = Math.atan2(-dz, dx);
+      var g = new THREE.Group();
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(l + 0.6, leveys), pihatieMat);
+      m.rotation.x = -Math.PI/2;
+      m.position.y = roadLayerY('spur') + 0.004;
+      m.receiveShadow = true;
+      g.add(m);
+      g.position.set((x0+x1)/2, 0, (z0+z1)/2);
+      g.rotation.y = kulma;
+      scene.add(g);
+      addRoadCorridor(x0, z0, x1, z1, leveys/2);
+      // aidantolpat pihatien molemmin puolin tien päässä
+      var ux = dx/l, uz = dz/l, nx = -uz, nz = ux;
+      for(var t = 1.5; t < Math.min(l - 1, 7.5); t += 2.2){
+        for(var s = -1; s <= 1; s += 2){
+          var tp = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.8, 0.11), pihaPuuMat);
+          tp.position.set(x0 + ux*t + nx*s*(leveys/2 + 0.6), 0.4, z0 + uz*t + nz*s*(leveys/2 + 0.6));
+          tp.castShadow = true;
+          scene.add(tp);
+        }
+      }
+      postilaatikko(x0 + nx*(leveys/2 + 1.3) + ux*0.6, z0 + nz*(leveys/2 + 1.3) + uz*0.6, Math.atan2(-ux, -uz));
+    }
+    if(pihaKoko){
+      var piha = new THREE.Mesh(new THREE.PlaneGeometry(pihaKoko, pihaKoko*0.8), pihaSoraMat);
+      piha.rotation.x = -Math.PI/2;
+      piha.position.y = roadLayerY('spur') + 0.002;
+      piha.receiveShadow = true;
+      var pg = new THREE.Group();
+      pg.add(piha);
+      pg.position.set(x1, 0, z1);
+      pg.rotation.y = Math.atan2(-dz, dx) + Math.PI/2;
+      scene.add(pg);
+    }
+  }
+  // Tie kohteeseen (x1,z1), joka on rakennus: tie loppuu rakennuksen eteen ja loput
+  // tehdään pihatienä. rakR = rakennuksen säde, pihatien pituus noin 9 m.
+  // Palauttaa tien todellisen päätepisteen, jotta muut tiet voivat lähteä siitä.
+  function tieRakennukselle(x0, z0, x1, z1, leveys, mutka, segs, rakR){
+    var paa = ennenKohdetta(x0, z0, x1, z1, rakR + 10);
+    makeCurvedSpurRoad(x0, z0, paa.x, paa.z, leveys, mutka, segs, 1);
+    makeStraightRoad(paa.x, paa.z, leveys, leveys);
+    var reuna = ennenKohdetta(x0, z0, x1, z1, rakR + 1.2);
+    pihatie(paa.x + paa.ux*leveys*0.5, paa.z + paa.uz*leveys*0.5, reuna.x, reuna.z, 3.4, rakR*2 + 5);
+    return paa;
   }
 
-  // kylan oma raitti: pohjoinen liittyma -> koti -> risteys, ja haara kylakaupalle
-  makeCurvedSpurRoad(townTop.x, townTop.z, homePos.x, homePos.z, hubRoadWidth, 8, 6, 1);
-  makeCurvedSpurRoad(homePos.x, homePos.z, hubJunction.x, hubJunction.z, hubRoadWidth, -7, 5, 1);
+  // ---- pistotiet: jokainen paikka kiinni renkaaseen ----
+  // rakR: jos kohde on rakennus, tie loppuu sen eteen pihatieksi (ks. tieRakennukselle)
+  function pistotie(px, pz, leveys, mutka, segs, rakR){
+    var rp = rengasKohti(px, pz);
+    var d = Math.sqrt((px-rp.x)*(px-rp.x) + (pz-rp.z)*(pz-rp.z));
+    if(d < 6){ makeStraightRoad(px, pz, leveys, leveys); return {x:px, z:pz}; }
+    makeStraightRoad(rp.x, rp.z, leveys, leveys);
+    if(rakR) return tieRakennukselle(rp.x, rp.z, px, pz, leveys, mutka, segs || 5, rakR);
+    makeCurvedSpurRoad(rp.x, rp.z, px, pz, leveys, mutka, segs || 5, 1);
+    return {x:px, z:pz};
+  }
+
+  // Kylän oma raitti: pohjoinen liittymä -> kodin ohi -> risteys, ja haara kyläkaupalle.
+  // Raitti kulki ennen suoraan kodin keskipisteen kautta eli talon läpi. Nyt se
+  // ohittaa talon 17 metrin päästä itäpuolelta (tallin oviaukon puolelta), ja talolle
+  // ja tallille johtaa oma pihatie.
+  var kotiRaittiPiste = (function(){
+    var ux = hubJunction.x - townTop.x, uz = hubJunction.z - townTop.z, l = Math.sqrt(ux*ux + uz*uz) || 1;
+    ux /= l; uz /= l;
+    // kohtisuora suunta, joka osoittaa kodista poispäin itään (+x)
+    var nx = uz, nz = -ux;
+    if(nx < 0){ nx = -nx; nz = -nz; }
+    return {x: homePos.x + nx*17, z: homePos.z + nz*17};
+  })();
+  makeCurvedSpurRoad(townTop.x, townTop.z, kotiRaittiPiste.x, kotiRaittiPiste.z, hubRoadWidth, 3, 6, 1);
+  makeCurvedSpurRoad(kotiRaittiPiste.x, kotiRaittiPiste.z, hubJunction.x, hubJunction.z, hubRoadWidth, -3, 5, 1);
+  makeStraightRoad(kotiRaittiPiste.x, kotiRaittiPiste.z, hubRoadWidth, hubRoadWidth);
+  (function kodinPihatie(){
+    // raitilta talon ja tallin väliin: piha on talon edessä, talli sen vieressä
+    var pihaKeski = {x: homePos.x + 4.5, z: homePos.z + 7};
+    var ux = pihaKeski.x - kotiRaittiPiste.x, uz = pihaKeski.z - kotiRaittiPiste.z;
+    var l = Math.sqrt(ux*ux + uz*uz) || 1;
+    pihatie(kotiRaittiPiste.x + ux/l*hubRoadWidth*0.5, kotiRaittiPiste.z + uz/l*hubRoadWidth*0.5,
+            pihaKeski.x, pihaKeski.z, 3.6, 11);
+  })();
   // kylakauppa ja poliisiasema maaritellaan vasta myohemmin tiedostossa, joten
   // niiden sijainti haetaan tassa suoraan paikkataulukosta
   var kylakauppaXZ = worldSpread(-25, -200);
   var poliisiXZ    = worldSpread(27, -37);
-  makeCurvedSpurRoad(hubJunction.x, hubJunction.z, kylakauppaXZ.x, kylakauppaXZ.z, hubRoadWidth, 9, 6, 1);
+  tieRakennukselle(hubJunction.x, hubJunction.z, kylakauppaXZ.x, kylakauppaXZ.z, hubRoadWidth, 9, 6, 6);
   makeStraightRoad(hubJunction.x, hubJunction.z, hubRoadWidth, hubRoadWidth);
   makeStraightRoad(townTop.x, townTop.z, hubRoadWidth, hubRoadWidth);
   pistotie(townTop.x, townTop.z, hubRoadWidth, 6, 4);
 
-  // luoteen pari: talli ja poliisiasema
-  pistotie(kauppaPos.x, kauppaPos.z, hubRoadWidth, 8, 5);
-  makeCurvedSpurRoad(kauppaPos.x, kauppaPos.z, poliisiXZ.x, poliisiXZ.z, 8, -10, 6, 1);
+  // luoteen pari: talli ja poliisiasema. Poliisin tie lähtee tallin tien päästä,
+  // ei tallin keskeltä.
+  var talliTienPaa = pistotie(kauppaPos.x, kauppaPos.z, hubRoadWidth, 8, 5, 4.5);
+  tieRakennukselle(talliTienPaa.x, talliTienPaa.z, poliisiXZ.x, poliisiXZ.z, 8, -10, 6, 4.5);
 
   // pohjoinen: miitti ja huoltoasema, ja niiden takana romuttamo
   pistotie(meetSpot.x, meetSpot.z, hubRoadWidth, 6, 4);
@@ -5038,7 +5219,7 @@
   pistotie(maalaamoPos.x - 1.7, maalaamoPos.z + 9.2, 7, 8, 4);
 
   // koillinen, ita ja kaakko
-  pistotie(macdonaldsPos.x, macdonaldsPos.z, hubRoadWidth, 6, 4);
+  pistotie(macdonaldsPos.x, macdonaldsPos.z, hubRoadWidth, 6, 4, 5.5);
   pistotie(kylaPos.x, kylaPos.z, 8, 10, 5);
   makeStraightRoad(kylaPos.x - 7.3, kylaPos.z, 37, 7);
   pistotie(jarviPos.x, jarviPos.z, 7, 10, 5);
@@ -5527,7 +5708,13 @@
   }
   var policeStationPos = worldSpread(27, -37);
   var policeStationJunction = worldSpreadXZ(-9, -37);
-  makeStraightRoad((policeStationJunction.x+policeStationPos.x)/2, policeStationJunction.z, Math.abs(policeStationPos.x-policeStationJunction.x), hubRoadWidth);
+  // Tie loppuu aseman eteen (ei aseman keskelle), ja loput 10 m on pihatietä.
+  (function poliisinTie(){
+    var suunta = (policeStationPos.x < policeStationJunction.x) ? -1 : 1;
+    var paaX = policeStationPos.x - suunta*14;
+    makeStraightRoad((policeStationJunction.x + paaX)/2, policeStationJunction.z, Math.abs(paaX - policeStationJunction.x), hubRoadWidth);
+    pihatie(paaX, policeStationJunction.z, policeStationPos.x - suunta*4, policeStationJunction.z, 3.4, 0);
+  })();
   // Mac Donaldsilta poliisiasemalle - itäinen silmukka kiinni. HUOM: tämä rakennetaan vasta tässä,
   // koska policeStationPos määritellään vasta ylempänä olevan tielohkon JÄLKEEN - ylempänä se olisi
   // vielä undefined ja koko peli kaatuisi käynnistyessään.
@@ -7864,7 +8051,74 @@
     g.userData.wheels = [w1, w2];
     g.userData.collR = 0.55;
     addBlinkers(g, 0.2, 0.75, -0.7, 0.62);
+    // Laatikko ja palloukko ovat vain varakuva: oikea mopomalli ja kuski vaihdetaan
+    // tilalle, kun pelaajan mopo ja hahmo ovat valmiita (ks. paivitaNpcMopo).
+    g.userData.varakuva = [b, w1, w2, torso, head];
+    g.userData.mopoId = NPC_MOPOMALLIT[npcMopedGroups.length % NPC_MOPOMALLIT.length];
+    g.userData.npcNro = npcMopedGroups.length;
+    npcMopedGroups.push(g);
+    if(npcMopotPaivitetty){
+      try{ paivitaNpcMopo(g); } catch(e){ console.warn('NPC-mopon mallin vaihto epäonnistui:', e); }
+    }
     return g;
+  }
+  // ==========================================================================
+  // ---- NPC-MOPOT: OIKEA MALLI JA OIKEA KUSKI ----
+  // Kaverit, liikenne ja kisakumppanit ajoivat laatikolla, jonka päällä oli laatikko-
+  // vartalo ja pallopää. Nyt ne saavat saman mopomallin kuin pelaaja (scoba, derbi tai
+  // monkey vuorotellen) ja kuskiksi saman nivelpainotetun hahmon kuin pelaajalla ja
+  // moninpelin kavereilla - jokaiselle oma ulkonäkö ja istuma-asento mopon mukaan.
+  // ==========================================================================
+  var NPC_MOPOMALLIT = ['derbi', 'scoba', 'monkey'];
+  var npcMopedGroups = [];
+  var npcMopotPaivitetty = false;
+  function paivitaNpcMopo(g){
+    if(g.userData.oikeaMalli) return;
+    var id = g.userData.mopoId, nro = g.userData.npcNro || 0;
+    var bike = moped.clone(true);
+    // Pelaajan oma kuski on mopon lapsi: kloonin kopio jakaisi saman luurangon, joten pois.
+    var kuskiIdx = (typeof riderEntry !== 'undefined' && riderEntry) ? moped.children.indexOf(riderEntry.group) : -1;
+    if(kuskiIdx >= 0 && bike.children[kuskiIdx]) bike.remove(bike.children[kuskiIdx]);
+    var pois = [];
+    bike.traverse(function(o){ if(o.isLight) pois.push(o); });
+    for(var li=0; li<pois.length; li++) if(pois[li].parent) pois[li].parent.remove(pois[li]);
+    bike.position.set(0, 0, 0);
+    bike.rotation.set(0, 0, 0);
+    bike.scale.copy(moped.scale);
+    bike.visible = true;   // pelaajan mopo on piilossa niin kauan kuin se on osina
+    netApplyMopedSkin(bike, id, null);
+    // Piilotetut mallit pois ja näkyvälle oma geometria: muuten pelaajan mopon vauriot
+    // (lommot painetaan suoraan kärkipisteisiin) näkyisivät jokaisessa NPC-mopossa.
+    var piilossa = [];
+    bike.traverse(function(o){ if(/^mdl_/.test(o.name) && !o.visible) piilossa.push(o); });
+    for(var pi=0; pi<piilossa.length; pi++) if(piilossa[pi].parent) piilossa[pi].parent.remove(piilossa[pi]);
+    bike.traverse(function(o){
+      if(o.isMesh && o.geometry){ o.geometry = o.geometry.clone(); o.castShadow = true; }
+    });
+    var kuski = makeRiderFigure();
+    cloneFigureGeometry(kuski.group);
+    var look = {
+      height: 0.30 + ((nro*37) % 40)/100, build: 0.35 + ((nro*53) % 40)/100,
+      skin: nro*7 + 1, shirt: nro*3 + 2, pants: nro*5 + 1, hair: nro*11 + 3
+    };
+    applyLookColors(kuski.group, look);
+    var sc = lookScaleOf(look);
+    kuski.group.scale.set(sc.xz, sc.y, sc.xz);
+    applyRiderPose(kuski, riderPoseFor(id));
+    var vk = g.userData.varakuva || [];
+    for(var vi=0; vi<vk.length; vi++) vk[vi].visible = false;
+    g.add(bike, kuski.group);
+    g.userData.oikeaMalli = bike;
+  }
+  // Ajetaan kerran ensimmäisellä ruudulla: silloin pelaajan mopo, sen mallit ja
+  // hahmon luuranko ovat varmasti valmiita. Epäonnistuessa jää laatikkomopo.
+  function paivitaNpcMopot(){
+    npcMopotPaivitetty = true;
+    if(typeof moped === 'undefined' || !moped || typeof makeRiderFigure !== 'function') return;
+    for(var i=0; i<npcMopedGroups.length; i++){
+      try{ paivitaNpcMopo(npcMopedGroups[i]); }
+      catch(e){ console.warn('NPC-mopon mallin vaihto epäonnistui:', e); }
+    }
   }
   function makeNpcCar(color){
     var g = new THREE.Group();
@@ -8092,8 +8346,10 @@
     }
     return pts;
   }
-  var hubLoopPoints = [ new THREE.Vector3(homePos.x, 0, homePos.z) ]
-    .concat(curveWaypoints(homePos.x,homePos.z, hubJunction.x,hubJunction.z, 6, 4))              // koti -> hub
+  // Kylän raitti ohittaa kodin nyt kotiRaittiPisteen kautta (ennen se kulki talon läpi),
+  // joten partiokin kääntyy siellä eikä aja talon läpi.
+  var hubLoopPoints = [ new THREE.Vector3(kotiRaittiPiste.x, 0, kotiRaittiPiste.z) ]
+    .concat(curveWaypoints(kotiRaittiPiste.x,kotiRaittiPiste.z, hubJunction.x,hubJunction.z, 3, 4))  // koti -> hub
     .concat(curveWaypoints(hubJunction.x,hubJunction.z, kauppaPos.x,hubJunction.z, 7, 4))        // hub -> kauppa
     .concat([ new THREE.Vector3(romuPos.x, 0, romuPos.z) ])                                       // kauppa -> romu (suora tie)
     .concat([ new THREE.Vector3(kauppaPos.x, 0, kauppaPos.z) ])                                    // romu -> kauppa (suora tie)
@@ -8108,7 +8364,7 @@
     .concat(curveWaypoints(macdonaldsPos.x,macdonaldsPos.z, macdonaldsPos.x,meetSpot.z, 5, 3))    // Mac Donalds -> kulma (takaperin)
     .concat(curveWaypoints(macdonaldsPos.x,meetSpot.z, meetSpot.x,meetSpot.z, -5, 3))             // kulma -> huoltoasema (takaperin)
     .concat(curveWaypoints(meetSpot.x,hubJunction.z, hubJunction.x,hubJunction.z, 7, 4))          // huoltoasema -> hub (takaperin)
-    .concat(curveWaypoints(hubJunction.x,hubJunction.z, homePos.x,homePos.z, -6, 4));             // hub -> koti (takaperin)
+    .concat(curveWaypoints(hubJunction.x,hubJunction.z, kotiRaittiPiste.x,kotiRaittiPiste.z, -3, 4));  // hub -> koti (takaperin)
   // Partiointireitit kulkivat tarkalleen tien keskiviivaa pitkin, joten poliisi ajoi keskellä tietä
   // vastaantulijoiden päältä. Tämä siirtää jokaisen reittipisteen kulkusuunnasta katsoen oikealle
   // kaistalle, samalla tavalla kuin muukin NPC-liikenne.
@@ -10414,13 +10670,13 @@
       reisi: [[0,0.40],[0.30,0.02],[0.60,-0.36],[0.78,0.12],[0.90,0.46]],
       polvi: [[0,0.06],[0.13,0.24],[0.42,0.08],[0.60,0.52],[0.73,1.02],[0.88,0.28]],
       kasi: 0.36, kyynar: -0.24, kyynarHeilu: -0.32, kasiSisaan: 0.0,
-      pomppu: 0.026, pomppuKohta: 0.30, heilunta: 0.010, nojaus: 0.050, kierto: 0.10
+      pomppu: 0.022, pomppuKohta: 0.30, heilunta: 0.003, kallistus: 0.008, nojaus: 0.050, kierto: 0.05
     },
     holkka: {
       reisi: [[0,0.42],[0.18,0.04],[0.36,-0.50],[0.55,-0.08],[0.80,0.86],[0.92,0.62]],
       polvi: [[0,0.30],[0.13,0.62],[0.34,0.36],[0.50,1.45],[0.63,1.92],[0.82,0.95],[0.95,0.36]],
-      kasi: 0.58, kyynar: -1.25, kyynarHeilu: -0.30, kasiSisaan: 0.10,
-      pomppu: 0.050, pomppuKohta: 0.44, heilunta: 0.006, nojaus: 0.130, kierto: 0.17
+      kasi: 0.50, kyynar: -0.95, kyynarHeilu: -0.25, kasiSisaan: 0.06,
+      pomppu: 0.040, pomppuKohta: 0.44, heilunta: 0.002, kallistus: 0.006, nojaus: 0.110, kierto: 0.08
     }
   };
   // Sileä jaksollinen käyrä avainpisteiden läpi (Catmull-Rom). Pelkkä smoothstep
@@ -10499,10 +10755,11 @@
     // keskituessa, hölkässä lennossa juuri ponnistuksen jälkeen.
     var pomppu = askelSekoita('pomppu', g), pk = askelSekoita('pomppuKohta', g);
     playerVisual.position.y = (Math.cos((uL - pk)*Math.PI*4)*0.5 - 0.5)*pomppu*wA;
-    // paino siirtyy tukijalan puolelle kerran askelparissa
+    // Paino siirtyy tukijalan puolelle kerran askelparissa. Pidetään pienenä: isompi
+    // sivuttaisliike ja kallistus näyttivät siltä kuin hahmo heittelisi puolelta toiselle.
     var sivu = Math.cos((uL - 0.15)*Math.PI*2);
     playerVisual.position.x = -sivu*askelSekoita('heilunta', g)*wA;
-    playerVisual.rotation.z = sivu*0.022*wA;
+    playerVisual.rotation.z = sivu*askelSekoita('kallistus', g)*wA;
     playerVisual.rotation.x = (askelSekoita('nojaus', g) + Math.cos((uL - pk)*Math.PI*4)*0.010)*wA;
     playerVisual.rotation.y = 0;
   }
@@ -10518,7 +10775,7 @@
     var hartiat = kierto*0.9;
     if(playerLimbs.hips){
       playerLimbs.hips.rotation.y += kierto;
-      playerLimbs.hips.rotation.z += -Math.cos((uL - 0.15)*Math.PI*2)*0.030*wA;
+      playerLimbs.hips.rotation.z += -Math.cos((uL - 0.15)*Math.PI*2)*0.012*wA;
     }
     if(playerLimbs.spine){
       // selkä on lantion lapsi: ensin kumotaan lantion kierto, sitten hartiat vastakkain
@@ -14289,10 +14546,142 @@
     }
     return html;
   }
+  // ---- TAB-repun oma näkymä ----
+  // Puhelimen Reppu-sovellus käyttää yllä olevia listafunktioita, mutta TAB-reppu on oma
+  // inventaarionäkymänsä: ruudukko tavaroita, valitun tavaran kortti toimintonappeineen,
+  // hahmon mittarit ja mopon osien kunto. Tavaran saa valittua klikkaamalla ruutua.
+  var reppuValittu = null;
+  var REPPU_RUUTUJA = 24;
+  var REPPU_IKONIT = {
+    varatulppa:'⚡', ketjulukko:'⛓️', paikkaussarja:'🩹', kaksitahtioljy:'🛢️', kanisteri:'⛽', kypara:'⛑️',
+    radio:'📻', essanssi:'🌲', aurinkolasit:'🕶️', karkkipussi:'🍬', kalastuslupa:'🎣', ilmansuodatin:'🌀',
+    onnenkolikko:'🪙', momenttiavain:'🔧', juliste1:'🖼️', juliste2:'🖼️', juliste3:'🖼️'
+  };
+  function reppuEsineet(){
+    var aski = storeItemById('tupakkaaski'), meg = storeItemById('megis');
+    var askeja = aski ? (aski.count || 0) : 0, tolkkeja = meg ? (meg.count || 0) : 0;
+    var lista = [];
+    if(kadessa){
+      lista.push({id:'kadessa', ik: kadessa.laji === 'tupakka' ? '🚬' : '🥫', nimi:'Kädessä: ' + (kadessa.laji === 'tupakka' ? 'tupakka' : 'Megaforce'),
+        lkm: Math.max(0, Math.round(kadessa.jaljella)) + 's', tila:'käytössä', sub:'Kädessä nyt',
+        kuvaus:'Hiiren vasen ottaa ' + (kadessa.laji === 'tupakka' ? 'hatsin' : 'horpyn') + '. Loppuun asti käytettynä vaikutus kestää pidempään.',
+        napit:[{act:'heita', label:'Heitä pois (' + keyLabel(keyBind.heitaPois) + ')'}]});
+    }
+    if(savukkeita > 0 || askeja > 0){
+      lista.push({id:'savuke', ik:'🚬', nimi:'Savukkeet', lkm: savukkeita, sub:'Aski auki · ' + askeja + ' täyttä askia',
+        kuvaus:'Rauhoittaa kädet pultinkiristykseen, mutta kunto laskee ja nälkä kasvaa. Ei mopon selässä.',
+        napit:[{act:'tupakka', label:'Sytytä', paa:true, off: !!kadessa}]});
+    }
+    if(askeja > 0) lista.push({id:'aski', ik:'📦', nimi:'Tupakka-aski', lkm: askeja, sub:'20 savuketta',
+      kuvaus:'Uusi aski avataan, kun avattu loppuu.', napit:[]});
+    if(tolkkeja > 0) lista.push({id:'megis', ik:'🥫', nimi:'Megaforce', lkm: tolkkeja, sub:'Energiajuoma',
+      kuvaus:'Kävely nopeutuu ja nälkä hidastuu, mutta kädet tärisevät ja lopuksi tulee krapula.',
+      napit:[{act:'megis', label:'Avaa', paa:true, off: !!kadessa}]});
+    if(typeof feikkiIdOwned !== 'undefined' && feikkiIdOwned) lista.push({id:'idkortti', ik:'🪪', nimi:'Henkilökortti', lkm:'', tila:'mukana',
+      sub:'Väärennetty', kuvaus:'Kasinon ovimies päästää sisään. Älä näytä poliisille.', napit:[]});
+    storeItems.forEach(function(it){
+      if(!it.owned || it.id === 'tupakkaaski' || it.id === 'megis') return;
+      if(it.consumable && !(it.count > 0)) return;
+      lista.push({id:'kauppa_' + it.id, ik: REPPU_IKONIT[it.id] || '🧰', nimi: it.name,
+        lkm: it.consumable ? it.count : (it.id === 'kanisteri' ? Math.round(canFuel) + '%' : ''),
+        tila: (!it.consumable && it.id !== 'kanisteri') ? 'oma' : '',
+        sub: it.consumable ? 'Varaosa reppuun' : (it.id === 'kanisteri' ? 'Bensaa ' + Math.round(canFuel) + ' %' : 'Omistat'),
+        kuvaus: it.desc || '', napit:[]});
+    });
+    return lista;
+  }
+  function reppuMittari(nimi, arvo, max, vari, teksti){
+    var p = Math.max(0, Math.min(1, arvo/max));
+    return '<div class="rpStat"><div class="r"><span>' + nimi + '</span><b>' + (teksti || Math.round(p*100) + ' %') + '</b></div>' +
+           '<div class="rpBar"><i style="width:' + (p*100).toFixed(1) + '%;background:' + vari + '"></i></div></div>';
+  }
+  function reppuUusiHTML(){
+    var esineet = reppuEsineet();
+    if(!reppuValittu || !esineet.some(function(e){ return e.id === reppuValittu; })) reppuValittu = esineet.length ? esineet[0].id : null;
+    var valittu = null;
+    var nimiTurva = String(playerName).replace(/[<>&"]/g, '');   // nimi tulee osoitteesta
+    var h = '<div class="rpHead"><div class="rpTitle"><small>Kesä -96 · ' + nimiTurva + '</small>Reppu</div><div class="rpCash">';
+    h += '<div class="chip c">Käteinen<b>' + Math.round(money) + ' €</b></div>';
+    if(typeof kasinoNetto !== 'undefined' && kasinoNetto !== 0){
+      h += '<div class="chip c">Kasino<b class="' + (kasinoNetto < 0 ? 'neg' : '') + '">' + (kasinoNetto > 0 ? '+' : '') + Math.round(kasinoNetto) + ' €</b></div>';
+    }
+    h += '</div></div><div class="rpBody"><div>';
+    h += '<div class="rpLabel">Tavarat · ' + esineet.length + '/' + REPPU_RUUTUJA + '</div><div class="rpGrid">';
+    for(var i = 0; i < REPPU_RUUTUJA; i++){
+      var e = esineet[i];
+      if(!e){ h += '<div class="rpSlot"></div>'; continue; }
+      if(e.id === reppuValittu) valittu = e;
+      h += '<div class="rpSlot taysi' + (e.id === reppuValittu ? ' valittu' : '') + (e.tila === 'käytössä' ? ' kaytossa' : '') +
+           '" data-slot="' + e.id + '" title="' + e.nimi + '">' +
+           (e.tila ? '<span class="tila">' + e.tila + '</span>' : '') +
+           '<span class="ik">' + e.ik + '</span>' +
+           (e.lkm !== '' && e.lkm !== undefined ? '<span class="lkm">' + e.lkm + '</span>' : '') + '</div>';
+    }
+    h += '</div><div class="rpCard">';
+    if(valittu){
+      h += '<h3>' + valittu.nimi + '</h3><div class="sub">' + valittu.sub + '</div><p>' + valittu.kuvaus + '</p>';
+      if(valittu.napit.length){
+        h += '<div class="rpBtns">';
+        valittu.napit.forEach(function(n){
+          h += '<button class="rpBtn' + (n.paa ? ' paa' : '') + '" data-act="' + n.act + '" type="button"' + (n.off ? ' disabled' : '') + '>' + n.label + '</button>';
+        });
+        h += '</div>';
+      }
+    } else {
+      h += '<h3>Tyhjä reppu</h3><p>Tupakat ja Megaforcet ostetaan kyläkaupasta, varaosat tallilta.</p>';
+    }
+    h += '</div></div>';
+    // ---- oikea sarake: hahmo ja mittarit, mopo ----
+    h += '<div class="rpSide"><div class="rpBox"><div class="rpLabel">Hahmo</div><div class="rpHahmo">' +
+         '<svg viewBox="0 0 60 100" aria-hidden="true"><defs><linearGradient id="rpSil" x1="0" y1="0" x2="0" y2="1">' +
+         '<stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1c1d21"/></linearGradient></defs>' +
+         '<circle cx="30" cy="11" r="8" fill="url(#rpSil)"/>' +
+         '<path d="M18 22 Q30 18 42 22 L46 50 L41 51 L39 34 L38 58 L36 96 L31 96 L30 62 L29 96 L24 96 L22 58 L21 34 L19 51 L14 50 Z" fill="url(#rpSil)"/>' +
+         '</svg><div>';
+    h += reppuMittari('Kunto', health, 100, 'linear-gradient(90deg,#9c2a1f,#e0523e)');
+    h += reppuMittari('Kylläisyys', hunger, 100, 'linear-gradient(90deg,#a8742a,#e2b04a)');
+    var maine = (typeof repVillage === 'number') ? repVillage : 0;
+    h += reppuMittari('Maine', maine + 100, 200, 'linear-gradient(90deg,#2f6d8a,#55b6d6)',
+                      (typeof repVillageLabel === 'function') ? repVillageLabel() : Math.round(maine));
+    h += reppuMittari('Bensa', fuel, 100, 'linear-gradient(90deg,#2d7a5c,#4fc28e)');
+    var buffit = [];
+    if(tupakkaBuff > 0) buffit.push('🚬 Rauhalliset kädet ' + Math.ceil(tupakkaBuff) + 's');
+    if(megisBuff > 0) buffit.push('⚡ Virtapiikki ' + Math.ceil(megisBuff) + 's');
+    if(megisKrapula > 0) buffit.push('😵 Krapula ' + Math.ceil(megisKrapula) + 's');
+    if(buffit.length) h += '<div class="rpBuffs"><span>' + buffit.join('</span><span>') + '</span></div>';
+    h += '</div></div></div>';
+    var mopo = mopedModels.filter(function(m){ return m.id === equippedMopedId; })[0];
+    h += '<div class="rpBox"><div class="rpLabel">Mopo · ' + (mopo ? mopo.name : '—') + '</div>';
+    parts.forEach(function(p){
+      var c = Math.round(p.condition);
+      var vari = c > 60 ? '#4fc28e' : (c > 30 ? '#e2b04a' : '#e0523e');
+      h += '<div class="rpOsa"><span class="n">' + p.name + ' <small>' + p.tiers[p.tierIndex].label + '</small></span>' +
+           '<div class="rpBar"><i style="width:' + c + '%;background:' + vari + '"></i></div><span class="p">' + c + '%</span></div>';
+    });
+    h += '</div></div></div>';
+    h += '<div class="rpKeys"><span><kbd>' + keyLabel(keyBind.puhelin) + '</kbd>Sulje</span>' +
+         '<span><kbd>Hiiri</kbd>Hatsi / horppy</span>' +
+         '<span><kbd>' + keyLabel(keyBind.heitaPois) + '</kbd>Heitä kädestä</span><span class="sp"></span>' +
+         '<button class="rpBtn" data-act="puhelin" type="button">📱 Puhelin</button></div>';
+    return h;
+  }
   function reppuPiirra(){
     if(!reppuSisaltoEl) return;
-    reppuSisaltoEl.innerHTML = reppuTavaratHTML() + reppuTiedotHTML();
-    reppuSidoNapit();   // innerHTML pyyhkii kuuntelijat, joten ne sidotaan joka piirrolla
+    reppuSisaltoEl.innerHTML = reppuUusiHTML();
+    // innerHTML pyyhkii kuuntelijat, joten ne sidotaan joka piirrolla
+    Array.prototype.forEach.call(reppuSisaltoEl.querySelectorAll('[data-slot]'), function(el){
+      el.addEventListener('click', function(){ reppuValittu = el.getAttribute('data-slot'); reppuPiirra(); });
+    });
+    Array.prototype.forEach.call(reppuSisaltoEl.querySelectorAll('[data-act]'), function(el){
+      el.addEventListener('click', function(){
+        var a = el.getAttribute('data-act');
+        if(a === 'tupakka') sytytaTupakka();
+        else if(a === 'megis') juoMegis();
+        else if(a === 'heita') heitaKadesta(false);
+        else if(a === 'puhelin'){ closeReppu(); togglePhone(); return; }
+        reppuPiirra();
+      });
+    });
   }
   function openReppu(){
     reppuOpen = true;
@@ -17773,13 +18162,27 @@
       if(f.state === 'follow') wantSpeed = (d < 4) ? 0 : Math.min(f.top, 2 + d*0.9);
       else wantSpeed = (d < 12) ? f.top*0.35 : f.top*0.7;
       f.speed += (wantSpeed - f.speed) * Math.min(1, dt*1.6);
+      var ennenX = f.group.position.x, ennenZ = f.group.position.z;
       f.group.position.x += Math.sin(f.heading)*f.speed*dt;
       f.group.position.z += Math.cos(f.heading)*f.speed*dt;
       // Ilman tätä kaveri oikaisisi pellon poikki kohteesta toiseen. Sama korjaus kuin
       // partioautoilla: kaistalta valuva ajoneuvo vedetään takaisin tielle.
       if(f.state === 'cruise') keepCarOnRoad(f.group.position);
       f.group.position.y = terrainHeight(f.group.position.x, f.group.position.z);
-      f.group.rotation.y = f.heading;
+      // Keula TODELLISEEN liikesuuntaan. Ennen mopo osoitti kohdetta kohti, mutta
+      // tielläpito siirsi sitä tietä pitkin - ja mopo ajoi sivuttain kuin rapu.
+      var liikeX = f.group.position.x - ennenX, liikeZ = f.group.position.z - ennenZ;
+      if(liikeX*liikeX + liikeZ*liikeZ > 1e-6){
+        var liikeSuunta = Math.atan2(liikeX, liikeZ);
+        if(f.visHeading === undefined) f.visHeading = liikeSuunta;
+        var vd = liikeSuunta - f.visHeading;
+        while(vd >  Math.PI) vd -= Math.PI*2;
+        while(vd < -Math.PI) vd += Math.PI*2;
+        f.visHeading += vd * Math.min(1, dt*6);
+        // tie vie toiseen suuntaan kuin kohde: käännetään myös ajosuunta tien mukaan
+        if(f.state === 'cruise') f.heading += vd * Math.min(1, dt*1.5);
+      }
+      f.group.rotation.y = (f.visHeading === undefined) ? f.heading : f.visHeading;
       if(f.group.userData.wheels){
         for(var w=0; w<f.group.userData.wheels.length; w++) f.group.userData.wheels[w].rotation.x += f.speed*dt*2.2;
       }
@@ -26377,6 +26780,7 @@
   function animate(){
     requestAnimationFrame(animate);
     var dt = Math.min(clock.getDelta(), 0.05);
+    if(!npcMopotPaivitetty) paivitaNpcMopot();   // kerran: oikeat mopot ja kuskit NPC:ille
     // Tauolla piirretaan mutta ei paiviteta mitaan: kello, bensa, poliisi ja saa
     // jaavat paikalleen. clock.getDelta() kutsutaan silti, jottei jatkaessa tule
     // yhta isoa hyppya kertyneesta ajasta.
