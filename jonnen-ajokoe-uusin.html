@@ -2,10 +2,10 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8">
-<!--JONNE-VERSION:137-->
-<!--JONNE-NAME:Jonnen ajokoe 137-->
+<!--JONNE-VERSION:138-->
+<!--JONNE-NAME:Jonnen ajokoe 138-->
 <!--JONNE-DATE:2026-10-26-->
-<!--JONNE-NOTES:Etsintäkuulutustaso 0-5: tähdet HUDiin, taso nousee rikkeistä ja pitkästä jahdista|Taso ratkaisee: montako partiota perässä, kuinka kovaa ne ajavat ja kuinka kauas pitää päästä|Tiesulut nelostasolta ylöspäin - ohi pääsee vain pellon kautta|Kiinni kolmostasolla tai yli: mopo takavarikkoon ja lunastus poliisiasemalta|Taso laskee itsestään kun poliisi ei näe - sisällä kolme kertaa nopeammin-->
+<!--JONNE-NOTES:Kasinolle kävellään sisään: oikea sali punaisella matolla, neonvalot ja baari|Kolme pelipöytää omilla jakajillaan - blackjack, ruletti ja baccarat eri puolilla salia|Kolme erilaista slottiautomaattia: Kirsikka, Seiska ja Jättipotti omilla maksutauluillaan|Peli valitaan kävelemällä pöytään, ei välilehdistä|Puhjennut rengas: G astuttuasi kyydistä - ilman paikkaussarjaa paikataan käsin-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jonnen ajokoe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Karla:wght@400;600;700&display=swap">
@@ -2356,7 +2356,7 @@
       var dx = ref.x - p.x, dz = ref.z - p.z;
       return (dx*dx + dz*dz) < r*r;
     }
-    if(inStore) return indoorPlace === 'koti' ? 'Koti' : 'Kyläkauppa';
+    if(inStore) return indoorPlace === 'koti' ? 'Koti' : (indoorPlace === 'kasino' ? 'Kasino' : 'Kyläkauppa');
     if(typeof meetSpot !== 'undefined' && lahella(meetSpot, 26)) return 'Miitti';
     if(typeof jarviPos !== 'undefined' && lahella(jarviPos, 55)) return 'Järvi';
     if(typeof crossiPos !== 'undefined' && lahella(crossiPos, 60)) return 'Crossirata';
@@ -6022,6 +6022,300 @@
     snapCameraToPlayer();
   }
 
+
+  // ==========================================================================
+  // ---- KASINON SISATILA ----
+  // Sama tekniikka kuin kylakaupalla ja kotitalolla: huone rakennetaan kauas
+  // paakartan ulkopuolelle ja pelaaja teleportataan sinne ovesta. Aiemmin kasino
+  // oli pelkka paneeli jonka ovimies avasi - nyt sisalle oikeasti kavellaan,
+  // poydat ovat eri puolilla salia ja jokaisen aaressa seisoo oma jakaja.
+  // ==========================================================================
+  var kasinoSisaOrigin = new THREE.Vector3(300, 0, 5400);
+  var kasinoRoomW = 22, kasinoRoomD = 16, kasinoRoomH = 3.6, kasinoDoorGap = 3.2;
+
+  // Pelipoyta: ovaali huopapoyta, reunalista ja jakajan paikka.
+  function makeKasinoPoyta(huopaVari, leveys){
+    var g = new THREE.Group();
+    var jalkaMat = new THREE.MeshStandardMaterial({color:0x2a1b18, roughness:0.8});
+    var huopaMat = new THREE.MeshStandardMaterial({color:huopaVari, roughness:0.95});
+    var listaMat = new THREE.MeshStandardMaterial({color:0x6b4a2a, roughness:0.5, metalness:0.25});
+    var levy = new THREE.Mesh(new THREE.CylinderGeometry(leveys, leveys, 0.12, 24), huopaMat);
+    levy.position.y = 0.92; levy.castShadow = true; levy.receiveShadow = true;
+    g.add(levy);
+    var lista = new THREE.Mesh(new THREE.TorusGeometry(leveys, 0.085, 8, 28), listaMat);
+    lista.rotation.x = Math.PI/2; lista.position.y = 0.99;
+    g.add(lista);
+    var jalka = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.34, 0.86, 10), jalkaMat);
+    jalka.position.y = 0.45; jalka.castShadow = true;
+    g.add(jalka);
+    var alusta = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.08, 14), jalkaMat);
+    alusta.position.y = 0.04;
+    g.add(alusta);
+    // pelimerkkipinot poydalle
+    var merkkiVarit = [0xd8402c, 0x2f6ea8, 0xf0ece0, 0x2b2b2b];
+    for(var m = 0; m < 4; m++){
+      var kulma = m/4 * Math.PI*2 + 0.4;
+      for(var k = 0; k < 3; k++){
+        var merkki = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.022, 12),
+          new THREE.MeshStandardMaterial({color:merkkiVarit[m], roughness:0.6}));
+        merkki.position.set(Math.sin(kulma)*leveys*0.55, 1.0 + k*0.023, Math.cos(kulma)*leveys*0.55);
+        g.add(merkki);
+      }
+    }
+    return g;
+  }
+
+  // Tuoli poydan aareen - pelkkaa tunnelmaa, ei tormaysta.
+  function makeKasinoTuoli(){
+    var g = new THREE.Group();
+    var mat = new THREE.MeshStandardMaterial({color:0x7a1b24, roughness:0.9});
+    var puu = new THREE.MeshStandardMaterial({color:0x3a2a20, roughness:0.85});
+    var istuin = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 12), mat);
+    istuin.position.y = 0.62; istuin.castShadow = true;
+    var selka = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.5, 0.08), mat);
+    selka.position.set(0, 0.92, -0.22);
+    var tanko = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.62, 8), puu);
+    tanko.position.y = 0.31;
+    var jalusta = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 12), puu);
+    jalusta.position.y = 0.025;
+    g.add(istuin, selka, tanko, jalusta);
+    return g;
+  }
+
+  // Slottikone. Jokaisella koneella oma vari ja kyltti, jotta ne erottuvat salissa.
+  function makeSlottiKone(vari, nimi){
+    var g = new THREE.Group();
+    var runkoMat = new THREE.MeshStandardMaterial({color:vari, roughness:0.55, metalness:0.25});
+    var tummaMat = new THREE.MeshStandardMaterial({color:0x14110f, roughness:0.7});
+    var runko = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.45, 0.72), runkoMat);
+    runko.position.y = 0.72; runko.castShadow = true; runko.receiveShadow = true;
+    g.add(runko);
+    var jalusta = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.18, 0.8), tummaMat);
+    jalusta.position.y = 0.09;
+    g.add(jalusta);
+    // rullaikkuna
+    var ikkuna = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.4, 0.06),
+      new THREE.MeshStandardMaterial({color:0xf6f1dc, emissive:0xf6e9b8, emissiveIntensity:0.55}));
+    ikkuna.position.set(0, 1.0, 0.37);
+    g.add(ikkuna);
+    // nappirivi
+    for(var b = -1; b <= 1; b++){
+      var nappi = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 10),
+        new THREE.MeshStandardMaterial({color: b === 0 ? 0xe2572b : 0xc9c4b4, roughness:0.5}));
+      nappi.rotation.x = Math.PI/2;
+      nappi.position.set(b*0.2, 0.62, 0.38);
+      g.add(nappi);
+    }
+    // kahva sivulla
+    var kahvaVarsi = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8),
+      new THREE.MeshStandardMaterial({color:0x9a9a92, roughness:0.4, metalness:0.5}));
+    kahvaVarsi.position.set(0.52, 0.95, 0.1);
+    kahvaVarsi.rotation.z = -0.25;
+    var kahvaNuppi = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8),
+      new THREE.MeshStandardMaterial({color:0xd8402c, roughness:0.4}));
+    kahvaNuppi.position.set(0.58, 1.19, 0.1);
+    g.add(kahvaVarsi, kahvaNuppi);
+    // kyltti koneen paalle
+    var tex = makeSignTexture(nimi, '#140d12', '#ffd36e');
+    var kyltti = new THREE.Mesh(new THREE.PlaneGeometry(0.86, 0.26),
+      new THREE.MeshBasicMaterial({map:tex}));
+    kyltti.position.set(0, 1.52, 0.37);
+    g.add(kyltti);
+    return g;
+  }
+
+  function makeKasinoSisatila(){
+    var g = new THREE.Group();
+    var w = kasinoRoomW, d = kasinoRoomD, h = kasinoRoomH;
+    var seinaMat = new THREE.MeshStandardMaterial({color:0x3a2230, side:THREE.DoubleSide, roughness:0.9});
+    var kattoMat = new THREE.MeshStandardMaterial({color:0x1b1016, side:THREE.DoubleSide, roughness:0.95});
+    var mattoMat = new THREE.MeshStandardMaterial({
+      map: makeTileTexture('#6e1726', '#4a0f1c', '#8a2436', 10, 7), roughness:1});
+
+    var lattia = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mattoMat);
+    lattia.rotation.x = -Math.PI/2;
+    lattia.receiveShadow = true;
+    g.add(lattia);
+    var katto = new THREE.Mesh(new THREE.PlaneGeometry(w, d), kattoMat);
+    katto.rotation.x = Math.PI/2;
+    katto.position.y = h;
+    g.add(katto);
+
+    var takaseina = new THREE.Mesh(new THREE.PlaneGeometry(w, h), seinaMat);
+    takaseina.position.set(0, h/2, -d/2);
+    g.add(takaseina);
+    var vasenSeina = new THREE.Mesh(new THREE.PlaneGeometry(d, h), seinaMat);
+    vasenSeina.rotation.y = Math.PI/2;
+    vasenSeina.position.set(-w/2, h/2, 0);
+    g.add(vasenSeina);
+    var oikeaSeina = vasenSeina.clone();
+    oikeaSeina.position.set(w/2, h/2, 0);
+    g.add(oikeaSeina);
+    var aukko = kasinoDoorGap;
+    var etuV = new THREE.Mesh(new THREE.PlaneGeometry((w-aukko)/2, h), seinaMat);
+    etuV.position.set(-(w+aukko)/4, h/2, d/2);
+    g.add(etuV);
+    var etuO = etuV.clone();
+    etuO.position.set((w+aukko)/4, h/2, d/2);
+    g.add(etuO);
+
+    // kultalistat seinien ylareunaan
+    var listaMat = new THREE.MeshStandardMaterial({color:0x8a6a2a, roughness:0.45, metalness:0.5});
+    [[0, -d/2+0.06, w, 0], [0, d/2-0.06, w, 0], [-w/2+0.06, 0, d, Math.PI/2], [w/2-0.06, 0, d, Math.PI/2]].forEach(function(L){
+      var lista = new THREE.Mesh(new THREE.BoxGeometry(L[2], 0.12, 0.09), listaMat);
+      lista.position.set(L[0], h - 0.35, L[1]);
+      lista.rotation.y = L[3];
+      g.add(lista);
+    });
+
+    // neonnauhat kattoon
+    for(var nz = -5; nz <= 5; nz += 5){
+      var neon = new THREE.Mesh(new THREE.BoxGeometry(w - 2.5, 0.09, 0.14),
+        new THREE.MeshBasicMaterial({color:0xff5aa8}));
+      neon.position.set(0, h - 0.12, nz);
+      g.add(neon);
+    }
+    // seinavalot
+    for(var vx = -8; vx <= 8; vx += 8){
+      var valo = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.1),
+        new THREE.MeshBasicMaterial({color:0xffc96b}));
+      valo.position.set(vx, 2.3, -d/2 + 0.12);
+      g.add(valo);
+    }
+
+    var coll = [];
+
+    // ---- pelipoydat ----
+    // Paikat ovat paikallisia; samat luvut toistuvat alla KASINO_POYDAT-listassa.
+    var poydat = [
+      {x:-6.0, z: 1.6, vari:0x1d5c38, r:1.45},   // blackjack
+      {x: 0.0, z:-3.6, vari:0x6e1726, r:1.7 },   // ruletti
+      {x: 6.0, z: 1.6, vari:0x1d4a5c, r:1.45}    // baccarat
+    ];
+    poydat.forEach(function(p){
+      var poyta = makeKasinoPoyta(p.vari, p.r);
+      poyta.position.set(p.x, 0, p.z);
+      g.add(poyta);
+      coll.push({x:p.x, z:p.z, r:p.r*0.8});
+      // tuolit pelaajan puolelle
+      for(var t = -1; t <= 1; t++){
+        var tuoli = makeKasinoTuoli();
+        tuoli.position.set(p.x + t*0.95, 0, p.z + p.r + 0.75);
+        tuoli.rotation.y = Math.PI;
+        g.add(tuoli);
+      }
+    });
+    // ruletin kiekko poydalle
+    var kiekko = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.14, 24),
+      new THREE.MeshStandardMaterial({color:0x2a1b18, roughness:0.5, metalness:0.3}));
+    kiekko.position.set(0, 1.05, -3.6 - 0.5);
+    g.add(kiekko);
+    var kiekkoKeski = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.26, 10),
+      new THREE.MeshStandardMaterial({color:0x8a6a2a, roughness:0.4, metalness:0.55}));
+    kiekkoKeski.position.set(0, 1.22, -3.6 - 0.5);
+    g.add(kiekkoKeski);
+
+    // ---- slottirivi vasemmalla seinalla ----
+    var koneVarit = [0xb02a3a, 0x2a5fa8, 0xc9922a];
+    var koneNimet = ['KIRSIKKA', 'SEISKA', 'JATTIPOTTI'];
+    for(var s = 0; s < 3; s++){
+      var kone = makeSlottiKone(koneVarit[s], koneNimet[s]);
+      kone.position.set(-w/2 + 1.1, 0, -4.2 + s*4.2);
+      kone.rotation.y = Math.PI/2;
+      g.add(kone);
+      coll.push({x:-w/2 + 1.1, z:-4.2 + s*4.2, r:0.55});
+    }
+
+    // ---- baari oikealle seinalle ----
+    var baariMat = new THREE.MeshStandardMaterial({color:0x3a2018, roughness:0.7});
+    var baari = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 7.0), baariMat);
+    baari.position.set(w/2 - 1.0, 0.55, -1.0);
+    baari.castShadow = true; baari.receiveShadow = true;
+    g.add(baari);
+    coll.push({x:w/2 - 1.0, z:-1.0, r:1.1});
+    var baariLevy = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.09, 7.2),
+      new THREE.MeshStandardMaterial({color:0x6b4a2a, roughness:0.4, metalness:0.2}));
+    baariLevy.position.set(w/2 - 1.0, 1.14, -1.0);
+    g.add(baariLevy);
+    // pullohylly
+    var pulloVarit = [0x6e1726, 0x1d5c38, 0xc9922a, 0x2a5fa8, 0xf0ece0];
+    for(var pb = 0; pb < 10; pb++){
+      var pullo = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.3, 8),
+        new THREE.MeshStandardMaterial({color:pulloVarit[pb % pulloVarit.length], roughness:0.3}));
+      pullo.position.set(w/2 - 0.35, 1.5, -4.0 + pb*0.62);
+      g.add(pullo);
+    }
+
+    // ovimatto
+    var matto = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4),
+      new THREE.MeshStandardMaterial({color:0x2a1016, roughness:1}));
+    matto.rotation.x = -Math.PI/2;
+    matto.position.set(0, 0.014, d/2 - 1.1);
+    g.add(matto);
+
+    g.userData.coll = coll;
+    return g;
+  }
+
+  var kasinoSisatila = makeKasinoSisatila();
+  kasinoSisatila.position.copy(kasinoSisaOrigin);
+  scene.add(kasinoSisatila);
+  for(var kswx = -10.5; kswx <= 10.5; kswx += 2.5){
+    registerCollider(kasinoSisatila, kswx, -kasinoRoomD/2, 0.3);
+    if(Math.abs(kswx) > 2.0) registerCollider(kasinoSisatila, kswx, kasinoRoomD/2, 0.3);
+  }
+  for(var kswz = -7.5; kswz <= 7.5; kswz += 2.5){
+    registerCollider(kasinoSisatila, -kasinoRoomW/2, kswz, 0.3);
+    registerCollider(kasinoSisatila, kasinoRoomW/2, kswz, 0.3);
+  }
+  if(kasinoSisatila.userData.coll) registerColliders(kasinoSisatila, kasinoSisatila.userData.coll);
+
+  var kasinoSisaLight1 = new THREE.PointLight(0xffd0a8, 1.1, 26);
+  kasinoSisaLight1.position.set(kasinoSisaOrigin.x - 6, 3.1, kasinoSisaOrigin.z + 1);
+  scene.add(kasinoSisaLight1);
+  var kasinoSisaLight2 = new THREE.PointLight(0xff9ecb, 0.9, 24);
+  kasinoSisaLight2.position.set(kasinoSisaOrigin.x + 6, 3.1, kasinoSisaOrigin.z - 2);
+  scene.add(kasinoSisaLight2);
+  var kasinoSisaHemi = new THREE.HemisphereLight(0xffd9ec, 0x2a1016, 0.55);
+  scene.add(kasinoSisaHemi);
+
+  // ---- vuorovaikutuspisteet ----
+  var kasinoDoorInside = kasinoSisaOrigin.clone().add(new THREE.Vector3(0, 0, 6.6));
+  var KASINO_POYDAT = [
+    {id:'blackjack', nimi:'Blackjack', pos: kasinoSisaOrigin.clone().add(new THREE.Vector3(-6.0, 0,  3.3))},
+    {id:'ruletti',   nimi:'Ruletti',   pos: kasinoSisaOrigin.clone().add(new THREE.Vector3( 0.0, 0, -1.6))},
+    {id:'baccarat',  nimi:'Baccarat',  pos: kasinoSisaOrigin.clone().add(new THREE.Vector3( 6.0, 0,  3.3))}
+  ];
+  var KASINO_KONEET = [
+    {id:'kirsikka',   nimi:'Kirsikka',   pos: kasinoSisaOrigin.clone().add(new THREE.Vector3(-kasinoRoomW/2 + 2.2, 0, -4.2))},
+    {id:'seiska',     nimi:'Seiska',     pos: kasinoSisaOrigin.clone().add(new THREE.Vector3(-kasinoRoomW/2 + 2.2, 0,  0.0))},
+    {id:'jattipotti', nimi:'Jättipotti', pos: kasinoSisaOrigin.clone().add(new THREE.Vector3(-kasinoRoomW/2 + 2.2, 0,  4.2))}
+  ];
+  var kasinoInteractRadius = 2.4;
+
+
+  function enterKasino(){
+    inStore = true;
+    indoorPlace = 'kasino';
+    player.position.copy(kasinoDoorInside);
+    playerHeading = Math.PI;
+    player.rotation.y = playerHeading;
+    mountHintEl.hidden = true;
+    snapCameraToPlayer();
+    showToast(false, '🎰 Kultainen Mopo',
+      'Kolme pöytää ja kolme automaattia. Kävele pöydän ääreen ja paina E.', 5200);
+  }
+  function exitKasino(){
+    inStore = false;
+    indoorPlace = '';
+    closeKasino();
+    player.position.set(kasinoOviPos.x, terrainHeight(kasinoOviPos.x, kasinoOviPos.z), kasinoOviPos.z);
+    playerHeading = Math.PI;
+    player.rotation.y = playerHeading;
+    mountHintEl.hidden = true;
+    snapCameraToPlayer();
+  }
+
   // ---- kotitalon sisätila ----
   // Sama tekniikka kuin kyläkaupalla: huone rakennetaan kauas näkyvistä ja pelaaja teleportataan
   // sinne ovesta. inStore toimii yleisenä "sisällä"-lippuna (kamera, lattiakorkeus, ympäristöäänet),
@@ -6526,6 +6820,7 @@
   function currentRoomBounds(){
     if(indoorPlace === 'kauppa') return {ox:kauppaSisaOrigin.x, oz:kauppaSisaOrigin.z, w:kauppaRoomW, d:kauppaRoomD, gap:kauppaDoorGap};
     if(indoorPlace === 'koti')   return {ox:kotiSisaOrigin.x,   oz:kotiSisaOrigin.z,   w:kotiRoomW,   d:kotiRoomD,   gap:kotiDoorGap};
+    if(indoorPlace === 'kasino') return {ox:kasinoSisaOrigin.x, oz:kasinoSisaOrigin.z, w:kasinoRoomW, d:kasinoRoomD, gap:kasinoDoorGap};
     return null;
   }
   // palauttaa true jos pelaaja käveli ulos oviaukosta
@@ -9431,6 +9726,18 @@
     var armBotR = b[2] ? b[2].minY : hgt*0.42;
     var elbowL = new THREE.Vector3(shoulderL.x, (shoulderL.y + armBotL)*0.5, 0);
     var elbowR = new THREE.Vector3(shoulderR.x, (shoulderR.y + armBotR)*0.5, 0);
+    // Kyynärnivel sinne missä käsivarsi oikeasti on sillä korkeudella. Malli on A-asennossa,
+    // eli käsi on viistosti sivulla: olkapään x:llä nivel jäi käsivarren SISÄPUOLELLE, ja
+    // kyynärvarsi kiersi väärän pisteen ympäri - koukistettu käsi ei yltänyt suulle asti.
+    function elbowCenter(kind, e){
+      var band = hgt*0.03, sx = 0, sz = 0, c = 0;
+      for(var q=0; q<n; q++){
+        if(KIND[q] === kind && Math.abs(P[q*3+1] - e.y) < band){ sx += P[q*3]; sz += P[q*3+2]; c++; }
+      }
+      if(c >= 3){ e.x = sx/c; e.z = sz/c; }
+    }
+    elbowCenter(1, elbowL);
+    elbowCenter(2, elbowR);
     var hipL = new THREE.Vector3(b[3] ? b[3].sumX/b[3].cnt : -halfW*0.35, hipY, 0);
     var hipR = new THREE.Vector3(b[4] ? b[4].sumX/b[4].cnt :  halfW*0.35, hipY, 0);
 
@@ -10087,62 +10394,143 @@
     }
     return best;
   }
-  // Kavelyn polvikulma vaiheen funktiona. Kaksi pehmeaa piikkia: iso heilahduksessa
-  // (vaihe 0, jalka tulee eteen) ja pieni kantaiskun jalkeen (vaihe ~2,0), jossa polvi
-  // joustaa painon alla. Piikki on paraabeli ympyrAEtaisyyden yli, jolloin se on jatkuva
-  // myos vaiheen kierrahtaessa ympari.
-  function kavelyPiikki(ph, keski, leveys){
-    var d = Math.atan2(Math.sin(ph - keski), Math.cos(ph - keski));
-    var t = d/leveys;
-    return (t > -1 && t < 1) ? (1 - t*t) : 0;
+  // ---- ASKELLUS: KÄVELY JA HÖLKKÄ AVAINASENNOISTA ----
+  // Vanha kävely oli kaksi siniaaltoa, ja siinä oli kaksi vikaa:
+  //   1. Kädet heiluivat SAMAAN tahtiin saman puolen jalan kanssa (kuin kameli),
+  //      koska olkavarren etumerkki oli väärin päin. Ihminen heilauttaa vasenta
+  //      kättä eteen silloin kun oikea jalka tulee eteen.
+  //   2. Askelrytmi oli kiinteä ja riitti noin 2 m/s vauhtiin, mutta hahmo kulkee
+  //      4,4 m/s. Jalat liukuivat maata pitkin kuin luistimilla.
+  // Nyt raajojen kulmat luetaan avainasennoista askelsyklin kohdan mukaan, rytmi
+  // seuraa todellista nopeutta, ja hitaasti (mopoa työntäessä) kävellään, mutta
+  // täydellä vauhdilla hölkätään. Kaksi askellajia sekoitetaan pehmeästi.
+  //
+  // u = jalan oma syklin kohta 0..1, jossa 0 = kantapää osuu maahan. Taulukoissa
+  // reisi ja olkavarsi + = eteen ja sääri + = koukkuun (luissa reiden ja olkavarren
+  // eteenpäin on -X, joten ne käännetään asetettaessa). Kyynärvarsi koukistuu -X:llä:
+  // vanha koodi käytti +X:ää kuten polvessa, ja kyynärpäät taipuivat väärään suuntaan.
+  var ASKEL = {
+    kavely: {
+      reisi: [[0,0.40],[0.30,0.02],[0.60,-0.36],[0.78,0.12],[0.90,0.46]],
+      polvi: [[0,0.06],[0.13,0.24],[0.42,0.08],[0.60,0.52],[0.73,1.02],[0.88,0.28]],
+      kasi: 0.36, kyynar: -0.24, kyynarHeilu: -0.32, kasiSisaan: 0.0,
+      pomppu: 0.026, pomppuKohta: 0.30, heilunta: 0.010, nojaus: 0.050, kierto: 0.10
+    },
+    holkka: {
+      reisi: [[0,0.42],[0.18,0.04],[0.36,-0.50],[0.55,-0.08],[0.80,0.86],[0.92,0.62]],
+      polvi: [[0,0.30],[0.13,0.62],[0.34,0.36],[0.50,1.45],[0.63,1.92],[0.82,0.95],[0.95,0.36]],
+      kasi: 0.58, kyynar: -1.25, kyynarHeilu: -0.30, kasiSisaan: 0.10,
+      pomppu: 0.050, pomppuKohta: 0.44, heilunta: 0.006, nojaus: 0.130, kierto: 0.17
+    }
+  };
+  // Sileä jaksollinen käyrä avainpisteiden läpi (Catmull-Rom). Pelkkä smoothstep
+  // pysäyttäisi liikkeen jokaiseen avainpisteeseen ja näyttäisi nykivältä robotilta.
+  function askelKayra(keys, u){
+    var n = keys.length;
+    u -= Math.floor(u);
+    var i = n - 1;
+    for(var k=1; k<n; k++){ if(keys[k][0] > u){ i = k - 1; break; } }
+    var i0 = (i - 1 + n) % n, i2 = (i + 1) % n, i3 = (i + 2) % n;
+    var u1 = keys[i][0], u2 = keys[i2][0];
+    if(u2 <= u1) u2 += 1;
+    var u0 = keys[i0][0]; if(u0 >= u1) u0 -= 1;
+    var u3 = keys[i3][0]; while(u3 <= u2) u3 += 1;
+    var h = u2 - u1, t = (u - u1)/h;
+    var p0 = keys[i0][1], p1 = keys[i][1], p2 = keys[i2][1], p3 = keys[i3][1];
+    var m1 = (p2 - p0)/(u2 - u0)*h, m2 = (p3 - p1)/(u3 - u1)*h;
+    var t2 = t*t, t3 = t2*t;
+    return (2*t3 - 3*t2 + 1)*p1 + (t3 - 2*t2 + t)*m1 + (-2*t3 + 3*t2)*p2 + (t3 - t2)*m2;
   }
-  function kavelyPolvi(ph){
-    return kavelyPiikki(ph, 0.0, 1.75)*1.05 + kavelyPiikki(ph, 2.05, 0.95)*0.22;
+  // reiden heilahduksen keskikohta ja puolikas, jotta kädet saadaan samaan mittakaavaan
+  function askelReisiAla(laji){
+    if(laji.reisiAla) return laji.reisiAla;
+    var mn = 1e9, mx = -1e9;
+    for(var s=0; s<64; s++){ var r = askelKayra(laji.reisi, s/64); if(r<mn) mn=r; if(r>mx) mx=r; }
+    laji.reisiAla = {keski:(mn+mx)/2, puoli:Math.max(0.01, (mx-mn)/2)};
+    return laji.reisiAla;
   }
-  // Raajat ja vartalon paino askelsyklin vaiheen mukaan.
+  // Askellaji nopeuden mukaan: 0 = kävely, 1 = hölkkä
+  function askelLajiNopeudelle(v){ return Math.max(0, Math.min(1, (v - 2.4)/1.2)); }
+  // Askelpareja sekunnissa. Kävelyssä rytmi kasvaa nopeuden mukana, hölkässä vähemmän,
+  // koska juostessa askel pitenee eikä tihene.
+  function askelRytmi(v, g){
+    var kav = Math.max(0.7, Math.min(1.1, 0.55 + 0.22*v));
+    var hol = 1.20 + 0.06*v;
+    return kav + (hol - kav)*g;
+  }
+  var gaitBlend = 0;   // askellajin pehmeä sekoitus, seuraa askelLajiNopeudelle-arvoa
+  function askelArvot(u, g){
+    var A = ASKEL.kavely, B = ASKEL.holkka;
+    var ra = askelReisiAla(A), rb = askelReisiAla(B);
+    var reisiA = askelKayra(A.reisi, u), reisiB = askelKayra(B.reisi, u);
+    return {
+      reisi: reisiA + (reisiB - reisiA)*g,
+      polvi: askelKayra(A.polvi, u) + (askelKayra(B.polvi, u) - askelKayra(A.polvi, u))*g,
+      // -1..1: kuinka edessä reisi on omaan heilahdukseensa nähden
+      eteen: ((reisiA - ra.keski)/ra.puoli)*(1 - g) + ((reisiB - rb.keski)/rb.puoli)*g
+    };
+  }
+  function askelSekoita(nimi, g){ return ASKEL.kavely[nimi] + (ASKEL.holkka[nimi] - ASKEL.kavely[nimi])*g; }
+  // Raajat ja vartalon paino askelsyklin kohdan mukaan. wPh on syklin kulma radiaaneina
+  // (2pi = yksi askelpari), wA kävelyn voimakkuus 0..1 ja backw -1 peruuttaessa.
   function applyWalkLimbs(wPh, wA, backw){
+    var g = gaitBlend;
+    var uL = (wPh*backw)/(Math.PI*2), uR = uL + 0.5;
+    var jL = askelArvot(uL, g), jR = askelArvot(uR, g);
     if(playerLimbs){
-      var phL = wPh*backw, phR = phL + Math.PI;
-      // reisi: perussiniaalto, kantaisku vaiheessa pi/2
-      if(playerLimbs.legL) playerLimbs.legL.rotation.x = -Math.sin(phL)*0.50*wA;
-      if(playerLimbs.legR) playerLimbs.legR.rotation.x = -Math.sin(phR)*0.50*wA;
-      // polvi: iso koukku heilahduksessa ja pieni kuormituksen jousto kantaiskun jalkeen
-      if(playerLimbs.shinL) playerLimbs.shinL.rotation.x = kavelyPolvi(phL)*wA;
-      if(playerLimbs.shinR) playerLimbs.shinR.rotation.x = kavelyPolvi(phR)*wA;
-      // kädet heiluvat vastakkain jalkojen kanssa
-      var kasiL = Math.sin(phR), kasiR = Math.sin(phL);
-      if(playerLimbs.armL) playerLimbs.armL.rotation.x = kasiL*0.46*wA;
-      if(playerLimbs.armR) playerLimbs.armR.rotation.x = kasiR*0.46*wA;
-      // kyynärpää koukistuu kun käsi tulee eteen - suorat kädet näyttävät marssilta
-      if(playerLimbs.foreL) playerLimbs.foreL.rotation.x = (0.14 + Math.max(0, kasiL)*0.46)*wA;
-      if(playerLimbs.foreR) playerLimbs.foreR.rotation.x = (0.14 + Math.max(0, kasiR)*0.46)*wA;
+      if(playerLimbs.legL) playerLimbs.legL.rotation.x = -jL.reisi*wA;
+      if(playerLimbs.legR) playerLimbs.legR.rotation.x = -jR.reisi*wA;
+      if(playerLimbs.shinL) playerLimbs.shinL.rotation.x = jL.polvi*wA;
+      if(playerLimbs.shinR) playerLimbs.shinR.rotation.x = jR.polvi*wA;
+      // Kädet VASTAKKAIN jalkojen kanssa: vasen käsi seuraa oikeaa jalkaa. Pieni viive
+      // (0,04 sykliä) tekee heilahduksesta rennon - kädet ovat heilureita, eivät moottoreita.
+      var kasiAmp = askelSekoita('kasi', g);
+      var kL = askelArvot(uR - 0.04, g).eteen, kR = askelArvot(uL - 0.04, g).eteen;
+      if(playerLimbs.armL){ playerLimbs.armL.rotation.x = -kL*kasiAmp*wA; playerLimbs.armL.rotation.y = 0; }
+      // y nollataan joka ruudulla: tupakan/tölkin nosto kiertää olkavartta sisäänpäin
+      if(playerLimbs.armR){ playerLimbs.armR.rotation.x = -kR*kasiAmp*wA; playerLimbs.armR.rotation.y = 0; }
+      // kyynärpää koukistuu eniten silloin kun käsi on edessä
+      var kyy = askelSekoita('kyynar', g), kyyH = askelSekoita('kyynarHeilu', g);
+      if(playerLimbs.foreL) playerLimbs.foreL.rotation.x = (kyy + Math.max(0, kL)*kyyH)*wA;
+      if(playerLimbs.foreR) playerLimbs.foreR.rotation.x = (kyy + Math.max(0, kR)*kyyH)*wA;
     }
     if(!playerVisual) return;
-    // vartalo nousee keskituessa ja laskee kaksoistuessa: kaksi jaksoa askelparia kohden
-    playerVisual.position.y = (Math.cos(wPh*2)*0.026 - 0.012) * wA;
-    // Paino siirtyy tukijalan puolelle kerran askelparissa. Liike oli 2,2 cm ja nakyi
-    // sivuttaisena luisuna - oikeassa kavelyssa lantio siirtyy, mutta jalat pitavat
-    // vartalon paikallaan. Siirtymasta jaa vain vihje, ja loput tulee kallistuksesta.
-    playerVisual.position.x = -Math.cos(wPh)*0.008*wA;
-    playerVisual.rotation.z = Math.cos(wPh)*0.026*wA;     // lantion lasku heilahtavalle puolelle
-    playerVisual.rotation.x = (0.055 + Math.cos(wPh*2)*0.010)*wA;
+    // Vartalo nousee ja laskee kahdesti askelparissa. Kävellessä korkein kohta on
+    // keskituessa, hölkässä lennossa juuri ponnistuksen jälkeen.
+    var pomppu = askelSekoita('pomppu', g), pk = askelSekoita('pomppuKohta', g);
+    playerVisual.position.y = (Math.cos((uL - pk)*Math.PI*4)*0.5 - 0.5)*pomppu*wA;
+    // paino siirtyy tukijalan puolelle kerran askelparissa
+    var sivu = Math.cos((uL - 0.15)*Math.PI*2);
+    playerVisual.position.x = -sivu*askelSekoita('heilunta', g)*wA;
+    playerVisual.rotation.z = sivu*0.022*wA;
+    playerVisual.rotation.x = (askelSekoita('nojaus', g) + Math.cos((uL - pk)*Math.PI*4)*0.010)*wA;
     playerVisual.rotation.y = 0;
   }
   // Lantion ja hartioiden vastakierto LISATAAN lepoasennon paalle, koska updateIdlePose
   // asettaa spine- ja hips-arvot suoraan - jos nama tehtaisiin ennen sita, ne pyyhkiytyisivat.
-  function applyWalkTwist(wPh, wA){
+  function applyWalkTwist(wPh, wA, backw){
     if(!playerLimbs || wA <= 0.001) return;
-    var kierto = Math.sin(wPh)*wA;
+    var g = gaitBlend;
+    var uL = (wPh*(backw || 1))/(Math.PI*2);
+    // lantio kiertyy eteen menevän jalan puolelta, hartiat päinvastoin
+    var f = (askelArvot(uL, g).eteen - askelArvot(uL + 0.5, g).eteen)*0.5;
+    var kierto = askelSekoita('kierto', g)*f*wA;
+    var hartiat = kierto*0.9;
     if(playerLimbs.hips){
-      playerLimbs.hips.rotation.y += kierto*0.085;
-      playerLimbs.hips.rotation.z += -Math.cos(wPh)*0.030*wA;
+      playerLimbs.hips.rotation.y += kierto;
+      playerLimbs.hips.rotation.z += -Math.cos((uL - 0.15)*Math.PI*2)*0.030*wA;
     }
     if(playerLimbs.spine){
-      playerLimbs.spine.rotation.y += -kierto*0.075;   // hartiat vastakkain lantion kanssa
-      playerLimbs.spine.rotation.x += 0.045*wA;        // pieni eteenkallistus kavellessa
+      // selkä on lantion lapsi: ensin kumotaan lantion kierto, sitten hartiat vastakkain
+      playerLimbs.spine.rotation.y += -kierto - hartiat;
+      playerLimbs.spine.rotation.x += 0.040*wA;
+      // hölkässä kädet tuodaan hieman vartalon eteen
+      var sisaan = askelSekoita('kasiSisaan', g)*wA;
+      if(playerLimbs.armL) playerLimbs.armL.rotation.z += sisaan;    // sama suunta kuin armRestZ
+      if(playerLimbs.armR) playerLimbs.armR.rotation.z += -sisaan;
     }
     // pää pitää katseen suorassa vaikka hartiat kiertyvät
-    if(playerLimbs.head) playerLimbs.head.rotation.y += kierto*0.055;
+    if(playerLimbs.head) playerLimbs.head.rotation.y += hartiat*0.85;
   }
   function updateIdlePose(dt, idleAmt, limbs){
     idleT += dt;
@@ -10167,9 +10555,10 @@
     // armRestZ oikaisee mallin A-asennon joka ruudulla - myös kävellessä, jolloin A on 0
     if(limbs.armL) limbs.armL.rotation.z =  armRestZ + (-0.055 + shift*0.016)*A;
     if(limbs.armR) limbs.armR.rotation.z = -armRestZ + ( 0.055 - shift*0.016)*A;
-    // kyynärpää LISÄTÄÄN kävelyn päälle: kävelysykli on jo asettanut oman arvonsa tälle ruudulle
-    if(limbs.foreL) limbs.foreL.rotation.x += (0.19 + microA*0.012)*A;
-    if(limbs.foreR) limbs.foreR.rotation.x += (0.19 - microA*0.012)*A;
+    // kyynärpää LISÄTÄÄN kävelyn päälle: kävelysykli on jo asettanut oman arvonsa tälle ruudulle.
+    // Koukistus on -X (ks. ASKEL); +X taivutti kyynärpäätä taaksepäin.
+    if(limbs.foreL) limbs.foreL.rotation.x += (-0.19 + microA*0.012)*A;
+    if(limbs.foreR) limbs.foreR.rotation.x += (-0.19 - microA*0.012)*A;
     // 3. katse
     headLookT -= dt;
     if(headLookT <= 0){
@@ -13976,6 +14365,14 @@
       speed = 0;
       return;
     }
+    // Tallin osatyot menevat mopoon nousemisen edelle: asennussade on sama kuin nousun
+    // sade, joten kannettu osa tai moottori ei muuten menisi koskaan paikalleen - E
+    // nayttaisi vain "Mopo on osina". Sama koskee hyllylta nostoa, kun mopo on vieressa.
+    if(!inStore){
+      if(typeof moottoriKadessa !== 'undefined' && moottoriKadessa && mopoLahella()){ moottoriAsennaRunkoon(); return; }
+      var tallinOsa = (typeof mopoOsaAction === 'function' && !engineCarry) ? mopoOsaAction() : null;
+      if(tallinOsa && tallinOsa.tyyppi !== 'laske'){ mopoOsaInteract(); return; }
+    }
     var dxm = moped.position.x - player.position.x;
     var dzm = moped.position.z - player.position.z;
     // oma mopo voittaa kaverin tarakan jos molemmat ovat lähellä
@@ -13992,6 +14389,9 @@
       }
       if(mopedDead() || pushingMoped){ togglePushMoped(); return; }
       if(!mopedAssembled()){
+        // osina olevan mopon vieressa E tekee ensin tyopoydan tyot (moottorin osat ja nosto)
+        if(typeof engineInteract === 'function' && engineInteract()) return;
+        if(typeof moottoriNostettavissa === 'function' && moottoriNostettavissa()){ moottoriNosta(); return; }
         showToast(false, 'Mopo on osina',
           'Moottori kasataan työpöydällä ja muut osat haetaan autotallin hyllyltä. ' +
           'E nostaa osan, E mopon vieressä asentaa sen. (' + installedCount() + '/' + parts.length + ' valmiina.)', 5200);
@@ -14097,6 +14497,29 @@
       var dxfr = kotiFridgePos.x - player.position.x, dzfr = kotiFridgePos.z - player.position.z;
       if(Math.sqrt(dxfr*dxfr+dzfr*dzfr) <= kotiFridgeRadius){ eatFromFridge(); return; }
       return; // kotona ei ole muita toimintoja
+    }
+    // ---- kasinon sisalla: ovi ulos, kolme poytaa ja kolme automaattia ----
+    if(inStore && indoorPlace === 'kasino'){
+      var dxko = kasinoDoorInside.x - player.position.x, dzko = kasinoDoorInside.z - player.position.z;
+      if(Math.sqrt(dxko*dxko + dzko*dzko) <= kasinoInteractRadius){ exitKasino(); return; }
+      for(var kpi = 0; kpi < KASINO_POYDAT.length; kpi++){
+        var kp = KASINO_POYDAT[kpi];
+        var dxkp = kp.pos.x - player.position.x, dzkp = kp.pos.z - player.position.z;
+        if(Math.sqrt(dxkp*dxkp + dzkp*dzkp) <= kasinoInteractRadius){
+          kasinoIstuPoytaan(kp.id, kp.nimi);
+          return;
+        }
+      }
+      for(var kki = 0; kki < KASINO_KONEET.length; kki++){
+        var kk = KASINO_KONEET[kki];
+        var dxkk = kk.pos.x - player.position.x, dzkk = kk.pos.z - player.position.z;
+        if(Math.sqrt(dxkk*dxkk + dzkk*dzkk) <= kasinoInteractRadius){
+          kasinoIstuKoneelle(kk.id, kk.nimi);
+          return;
+        }
+      }
+      if(kasinoOpen){ closeKasino(); return; }
+      return;   // kasinossa ei ole muita toimintoja
     }
     if(!inStore){
       var dxhd = kotiDoorOutside.x - player.position.x, dzhd = kotiDoorOutside.z - player.position.z;
@@ -14894,7 +15317,13 @@
   // Repussa oleva varaosa korjaa yhden vian paikan päällä. Tämä on se hetki jolloin
   // kyläkaupan kuuden euron ketjulukko maksaa itsensä takaisin.
   function roadsideRepair(){
-    if(mode === 'riding' || crashed) return;
+    if(crashed) return;
+    // Aiemmin G ei tehnyt kyydissa YHTAAN mitaan - ei edes kertonut miksi.
+    // Nyt se sanoo mita pitaa tehda.
+    if(mode === 'riding'){
+      showToast(false, 'Astu ensin kyydistä', 'Pysähdy, paina E ja korjaa mopo sen vierestä.', 3000);
+      return;
+    }
     var dxr = moped.position.x - player.position.x, dzr = moped.position.z - player.position.z;
     if(Math.sqrt(dxr*dxr + dzr*dzr) > mountRadius + 0.8){
       showToast(false, 'Mene mopon viereen', 'Korjaus onnistuu vain mopon vierestä.', 2200);
@@ -14907,6 +15336,33 @@
       tyrePatched++;
       updateBreakdownBanner();
       saveGame();
+      return;
+    }
+    // Ilman paikkaussarjaa rengas paikataan KASIN. Aiemmin tama tapaus putosi
+    // lapi alimpaan haaraan, joka vakuutti ettei mopossa ole mitaan vikaa -
+    // vaikka kumi oli juuri puhjennut. Sama minipeli kuin tallilla.
+    if(brokenTyre){
+      if(mini.active || bolt.active){
+        showToast(false, 'Lopeta ensin aloittamasi homma', 'Yksi homma kerrallaan.', 2400);
+        return;
+      }
+      showToast(false, '🔧 Paikataan käsin',
+        'Paikkaussarjaa ei ole repussa, joten tämä tehdään vanhalla konstilla. Tee työvaiheet oikeassa järjestyksessä.', 5200);
+      openMini('paikkaus', null, function(laatu){
+        brokenTyre = false;
+        tyrePatched++;
+        var tyre = partById('renkaat');
+        if(tyre && (laatu === undefined || laatu < 0.5)){
+          // hutiloitu paikkaus kuluttaa rengasta: se pitaa, mutta ei kauan
+          tyre.condition = Math.max(8, tyre.condition - 10);
+        }
+        updateBreakdownBanner();
+        showToast(false, '🔧 Rengas paikattu käsin',
+          (laatu !== undefined && laatu >= 0.5)
+            ? 'Siisti paikka. Mopo kulkee taas normaalisti.'
+            : 'Paikka pitää juuri ja juuri. Osta kyläkaupasta paikkaussarja ennen seuraavaa kertaa.', 5200);
+        saveGame();
+      });
       return;
     }
     if(breakdown){
@@ -15446,7 +15902,8 @@
     }
     if(brokenTyre){
       osat.push('💨 Rengas puhki · ' + (spareCount('paikkaussarja') > 0
-        ? 'paina <b>G</b> ja paikkaa' : 'tarvitset paikkaussarjan kyläkaupasta'));
+        ? 'astu kyydistä ja paina <b>G</b>'
+        : 'astu kyydistä ja paina <b>G</b> - ilman paikkaussarjaa paikataan käsin'));
     }
     if(!osat.length){ brokenBarEl.hidden = true; return; }
     brokenBarEl.hidden = false;
@@ -16185,6 +16642,9 @@
     kauppaSisaHemi.intensity   = (indoorPlace === 'kauppa') ? 0.38 : 0;
     kauppaSisaLight1.intensity = (indoorPlace === 'kauppa') ? 0.85 : 0;
     kauppaSisaLight2.intensity = (indoorPlace === 'kauppa') ? 0.70 : 0;
+    kasinoSisaHemi.intensity   = (indoorPlace === 'kasino') ? 0.55 : 0;
+    kasinoSisaLight1.intensity = (indoorPlace === 'kasino') ? 1.10 : 0;
+    kasinoSisaLight2.intensity = (indoorPlace === 'kasino') ? 0.90 : 0;
     kotiSisaLight.intensity    = (indoorPlace === 'koti')   ? 0.95 : 0;
     kotiSisaLight2.intensity   = (indoorPlace === 'koti')   ? 0.65 : 0;
     // sade sumentaa, ja aamusumu sumentaa vielä enemmän: aikaisin aamulla näkee vain lähelle
@@ -17790,6 +18250,28 @@
     }
   }
 
+  // Jakajat: musta-valkea asu kuten oikeassa kasinossa - valkoinen paita, musta
+  // liivi ja housut. Nama ovat pelkkia hahmoja eivatka npcCharactersin jasenia:
+  // poytaan mennaan E:lla poydan aaressa, ei puhumalla jakajalle.
+  (function pystytaJakajat(){
+    var asut = [
+      [0x14140f, 0x1b1b20, 0xf4f1e8, 0xd8ab85, 0x2a2420, 0x101010],
+      [0x14140f, 0x1b1b20, 0xf4f1e8, 0xc08a62, 0x4a3a2a, 0x101010],
+      [0x14140f, 0x1b1b20, 0xf4f1e8, 0xe8c09a, 0x6a5a48, 0x101010]
+    ];
+    var paikat = [
+      {x:-6.0, z: 1.6 - 2.3, rot: 0},
+      {x: 0.0, z:-3.6 - 2.4, rot: 0},
+      {x: 6.0, z: 1.6 - 2.3, rot: 0}
+    ];
+    for(var i = 0; i < paikat.length; i++){
+      var hahmo = makeNpcFigure('normi', asut[i], 1.76);
+      hahmo.position.set(kasinoSisaOrigin.x + paikat[i].x, 0, kasinoSisaOrigin.z + paikat[i].z);
+      hahmo.rotation.y = paikat[i].rot;
+      scene.add(hahmo);
+    }
+  })();
+
   npcCharacters.forEach(function(npc){
     // sisätilan hahmot seisovat huoneen lattialla (y=0), ulkona maaston korkeudella
     npc.mesh.position.set(npc.pos.x, npc.indoor ? 0 : terrainHeight(npc.pos.x, npc.pos.z), npc.pos.z);
@@ -17915,6 +18397,11 @@
   var kasinoPanos = 10;
 
   function kasinoNykyPeli(){
+    // Slotilla rajat tulevat koneelta, muilla pelilta.
+    if(kasinoPeli === 'slotti' && typeof slottiKone === 'function'){
+      var k = slottiKone();
+      return {id:'slotti', nimi:k.nimi, min:k.min, max:k.max};
+    }
     for(var i=0;i<KASINO_PELIT.length;i++) if(KASINO_PELIT[i].id === kasinoPeli) return KASINO_PELIT[i];
     return KASINO_PELIT[0];
   }
@@ -18242,27 +18729,72 @@
 
   // =========================== SLOTTI ===========================
   // Painotettu nauha: harvinaisempi symboli maksaa enemman. Palautusprosentti n. 90.
-  var SLOTTI_SYMBOLIT = [
-    {s:'🍒', paino:5, maksu:8},    // kirsikka
-    {s:'🍋', paino:5, maksu:8},    // sitruuna
-    {s:'🔔', paino:4, maksu:25},   // kello
-    {s:'🍉', paino:3, maksu:40},   // vesimeloni
-    {s:'⭐',       paino:2, maksu:90},   // tahti
-    {s:'7️⃣', paino:1, maksu:400}  // seiska
-  ];
-  var SLOTTI_NAUHA = (function(){
-    var n = [];
-    for(var i=0;i<SLOTTI_SYMBOLIT.length;i++){
-      for(var j=0;j<SLOTTI_SYMBOLIT[i].paino;j++) n.push(SLOTTI_SYMBOLIT[i].s);
+  // Kolme erilaista konetta. Kirsikka maksaa usein ja vahan, Seiska on talon
+  // perusautomaatti ja Jattipotti maksaa harvoin mutta kerran tuhannella voi
+  // osua timanttikolmonen. Kaikkien palautusprosentti on mitattu noin 90:ksi -
+  // ero on siina MITEN raha tulee takaisin, ei siina kuinka paljon.
+  var SLOTTI_KONEET = {
+    kirsikka: {
+      nimi:'Kirsikka', min:1, max:20,
+      kuvaus:'Pieniä voittoja tiheään. Kaksi kirsikkaa palauttaa panoksen.',
+      symbolit:[
+        {s:'🍒', paino:6, maksu:8},
+        {s:'🍋', paino:5, maksu:8},
+        {s:'🔔', paino:4, maksu:14},
+        {s:'🍀', paino:3, maksu:30},
+        {s:'⭐',       paino:2, maksu:70}
+      ],
+      parit:[{s:'🍒', kerroin:1, teksti:'Kaksi kirsikkaa - panos takaisin.'},
+             {s:'⭐',       kerroin:4, teksti:'Kaksi tähteä - 4x panos.'}]
+    },
+    seiska: {
+      nimi:'Seiska', min:1, max:100,
+      kuvaus:'Talon perusautomaatti. Kolme seiskaa maksaa 400-kertaisesti.',
+      symbolit:[
+        {s:'🍒', paino:5, maksu:8},
+        {s:'🍋', paino:5, maksu:8},
+        {s:'🔔', paino:4, maksu:25},
+        {s:'🍉', paino:3, maksu:40},
+        {s:'⭐',       paino:2, maksu:90},
+        {s:'7️⃣', paino:1, maksu:400}
+      ],
+      parit:[{s:'7️⃣', kerroin:5, teksti:'Kaksi seiskaa - 5x panos.'},
+             {s:'🍒', kerroin:1, teksti:'Kaksi kirsikkaa - panos takaisin.'}]
+    },
+    jattipotti: {
+      nimi:'Jättipotti', min:5, max:100,
+      kuvaus:'Maksaa harvoin. Kolme timanttia on 1200-kertainen - noin kerran kahdeksassatuhannessa.',
+      symbolit:[
+        {s:'🍒', paino:8, maksu:3},
+        {s:'🔔', paino:5, maksu:10},
+        {s:'🍉', paino:4, maksu:30},
+        {s:'⭐',       paino:2, maksu:120},
+        {s:'💎', paino:1, maksu:1200}
+      ],
+      parit:[{s:'💎', kerroin:10, teksti:'Kaksi timanttia - 10x panos.'}]
     }
-    return n;
-  })();
+  };
+  var kasinoKone = 'seiska';          // mika automaatti on kaytossa
+  function slottiKone(){ return SLOTTI_KONEET[kasinoKone] || SLOTTI_KONEET.seiska; }
+  // Nauha rakennetaan kerran konetta kohden ja jaa valimuistiin.
+  function slottiNauha(){
+    var k = slottiKone();
+    if(!k._nauha){
+      var n = [];
+      for(var i=0;i<k.symbolit.length;i++){
+        for(var j=0;j<k.symbolit[i].paino;j++) n.push(k.symbolit[i].s);
+      }
+      k._nauha = n;
+    }
+    return k._nauha;
+  }
   function slottiMaksu(s){
-    for(var i=0;i<SLOTTI_SYMBOLIT.length;i++) if(SLOTTI_SYMBOLIT[i].s === s) return SLOTTI_SYMBOLIT[i].maksu;
+    var k = slottiKone();
+    for(var i=0;i<k.symbolit.length;i++) if(k.symbolit[i].s === s) return k.symbolit[i].maksu;
     return 0;
   }
   var slotti = {rullat:['🍒','🍋','🔔'], pyorii:false, viesti:'', panos:0, jaljella:0, viive:0};
-  function slottiArvoSymboli(){ return SLOTTI_NAUHA[Math.floor(Math.random()*SLOTTI_NAUHA.length)]; }
+  function slottiArvoSymboli(){ var n = slottiNauha(); return n[Math.floor(Math.random()*n.length)]; }
   // Rullien pyöritys ajetaan pelisilmukasta eikä setIntervalilla. Syy on sama kuin
   // kaikessa muussakin pelin ajastuksessa: jos selain kuristaa ajastimia (taustavälilehti,
   // raskas ruutu), setInterval jää jumiin ja rullat jäisivät pyörimään ikuisesti.
@@ -18299,37 +18831,42 @@
   }
   function slottiRatkaise(){
     slotti.pyorii = false;
-    var r = slotti.rullat, panos = slotti.panos, voitto = 0, txt;
-    var seiska = '7️⃣', kirsikka = '🍒';
-    var seiskoja = 0, kirsikoita = 0, i;
-    for(i=0;i<3;i++){ if(r[i] === seiska) seiskoja++; if(r[i] === kirsikka) kirsikoita++; }
+    var r = slotti.rullat, panos = slotti.panos, voitto = 0, txt = null;
+    var k = slottiKone();
     if(r[0] === r[1] && r[1] === r[2]){
       voitto = panos * slottiMaksu(r[0]);
       txt = 'Kolme samaa! ' + slottiMaksu(r[0]) + 'x panos = ' + voitto + ' €.';
-    } else if(seiskoja === 2){
-      voitto = panos * 5;
-      txt = 'Kaksi seiskaa – 5x panos = ' + voitto + ' €.';
-    } else if(kirsikoita === 2){
-      voitto = panos;
-      txt = 'Kaksi kirsikkaa – panos takaisin.';
     } else {
-      txt = 'Ei mitään. Rullat pyörivät uudestaan.';
+      // Parisaannot ovat konekohtaisia: kirsikkakoneella kaksi tahtea maksaa,
+      // jattipotilla vain kaksi timanttia.
+      for(var pi = 0; pi < k.parit.length && txt === null; pi++){
+        var pari = k.parit[pi], n = 0;
+        for(var i = 0; i < 3; i++) if(r[i] === pari.s) n++;
+        if(n === 2){
+          voitto = Math.round(panos * pari.kerroin);
+          txt = pari.teksti + (pari.kerroin > 1 ? ' = ' + voitto + ' €.' : '');
+        }
+      }
+      if(txt === null) txt = 'Ei mitään. Rullat pyörivät uudestaan.';
     }
     if(voitto > 0) kasinoTilitys(voitto);
     slotti.viesti = txt;
     kasinoRender();
   }
   function slottiHTML(){
+    var k = slottiKone();
     var h = kasinoPanosHTML();
     h += '<div class="slottiRullat" id="slottiRullat">' + slotti.rullat.join(' ') + '</div>';
-    h += '<div class="kasinoRivi"><span>Kolme seiskaa</span><b>400x</b></div>' +
-         '<div class="kasinoRivi"><span>Kolme tähteä</span><b>90x</b></div>' +
-         '<div class="kasinoRivi"><span>Kolme melonia</span><b>40x</b></div>' +
-         '<div class="kasinoRivi"><span>Kolme kelloa</span><b>25x</b></div>' +
-         '<div class="kasinoRivi"><span>Kolme kirsikkaa tai sitruunaa</span><b>8x</b></div>' +
-         '<div class="kasinoRivi"><span>Kaksi seiskaa</span><b>5x</b></div>' +
-         '<div class="kasinoRivi"><span>Kaksi kirsikkaa</span><b>panos takaisin</b></div>';
-    h += '<div class="kasinoViesti">' + (slotti.viesti || 'Pienin panos, suurin kerroin. Talon katto 100 €.') + '</div>';
+    // maksutaulu suoraan koneen omista symboleista, suurin kerroin ensin
+    var jarj = k.symbolit.slice().sort(function(a,b){ return b.maksu - a.maksu; });
+    for(var i = 0; i < jarj.length; i++){
+      h += '<div class="kasinoRivi"><span>Kolme ' + jarj[i].s + '</span><b>' + jarj[i].maksu + 'x</b></div>';
+    }
+    for(var p = 0; p < k.parit.length; p++){
+      h += '<div class="kasinoRivi"><span>Kaksi ' + k.parit[p].s + '</span><b>' +
+           (k.parit[p].kerroin > 1 ? k.parit[p].kerroin + 'x' : 'panos takaisin') + '</b></div>';
+    }
+    h += '<div class="kasinoViesti">' + (slotti.viesti || k.kuvaus) + '</div>';
     h += '<div class="kasinoNapit"><button type="button" data-slotti="pyorayta"' +
          (slotti.pyorii ? ' disabled' : '') + '>PYÖRÄYTÄ (' + kasinoPanos + ' €)</button></div>';
     return h;
@@ -18340,9 +18877,14 @@
     if(!kasinoPanelEl) return;
     kasinoRajaaPanos();
     var vh = '';
-    for(var i=0;i<KASINO_PELIT.length;i++){
-      vh += '<button type="button" data-kasinopeli="' + KASINO_PELIT[i].id + '"' +
-            (kasinoPeli === KASINO_PELIT[i].id ? ' class="active"' : '') + '>' + KASINO_PELIT[i].nimi + '</button>';
+    if(kasinoPoydassa){
+      vh = '<button type="button" class="active" disabled>' + kasinoPoydassa + '</button>' +
+           '<button type="button" data-kasinopoistu="1">Nouse pöydästä</button>';
+    } else {
+      for(var i=0;i<KASINO_PELIT.length;i++){
+        vh += '<button type="button" data-kasinopeli="' + KASINO_PELIT[i].id + '"' +
+              (kasinoPeli === KASINO_PELIT[i].id ? ' class="active"' : '') + '>' + KASINO_PELIT[i].nimi + '</button>';
+      }
     }
     kasinoValikkoEl.innerHTML = vh;
     if(kasinoPeli === 'blackjack')      kasinoSisaltoEl.innerHTML = bjHTML();
@@ -18354,6 +18896,8 @@
     kasinoSido();
   }
   function kasinoSido(){
+    var poistuNappi = kasinoValikkoEl.querySelector('button[data-kasinopoistu]');
+    if(poistuNappi) poistuNappi.addEventListener('click', function(){ closeKasino(); kasinoPoydassa = ''; });
     Array.prototype.forEach.call(kasinoValikkoEl.querySelectorAll('button[data-kasinopeli]'), function(b){
       b.addEventListener('click', function(){
         if(slotti.pyorii) return;
@@ -18400,6 +18944,28 @@
       if(slotAct !== null){ b.addEventListener('click', slottiPyorayta); return; }
     });
   }
+  // ---- poytaan ja koneelle istuminen ----
+  // Kasinolla ei enaa valita pelia valilehdista vaan kavelemalla: paneelin ylaosassa
+  // lukee minka poydan aaressa istut, ja ainoa nappi on poistuminen. Toiseen peliin
+  // pitaa oikeasti kavella.
+  var kasinoPoydassa = '';
+  function kasinoIstuPoytaan(id, nimi){
+    if(kasinoOpen && kasinoPeli === id){ closeKasino(); kasinoPoydassa = ''; return; }
+    kasinoPeli = id;
+    kasinoPoydassa = nimi;
+    kasinoRajaaPanos();
+    openKasino();
+  }
+  function kasinoIstuKoneelle(koneId, nimi){
+    if(kasinoOpen && kasinoPeli === 'slotti' && kasinoKone === koneId){ closeKasino(); kasinoPoydassa = ''; return; }
+    kasinoKone = koneId;
+    kasinoPeli = 'slotti';
+    kasinoPoydassa = nimi + ' -automaatti';
+    slotti.viesti = '';
+    kasinoRajaaPanos();
+    openKasino();
+  }
+
   function openKasino(){
     kasinoOpen = true;
     kasinoPanelEl.hidden = false;
@@ -18410,6 +18976,7 @@
   }
   function closeKasino(){
     kasinoOpen = false;
+    kasinoPoydassa = '';
     if(kasinoPanelEl) kasinoPanelEl.hidden = true;
     // kesken jäänyt pyöräytys ratkaistaan loppuun, ettei panos jää talolle vahingossa
     if(slotti.pyorii){
@@ -18437,7 +19004,7 @@
         '"Henkilökortti." Sinulla ei ole mitään näytettävää. Joku kyläkaupan takana kuulemma myy sellaisia öisin.', 5600);
       return;
     }
-    openKasino();
+    enterKasino();
   }
 
   // hahmot kääntyvät katsomaan pelaajaa kun tämä tulee lähelle, ja palaavat omaan asentoonsa kun
@@ -20642,31 +21209,111 @@
   // Alla olevat kaksi pistetta ovat sen mittauksen tulos: nyrkki lepoasennossa
   // ja nyrkki silloin kun kasi on nostettu alla olevaan asentoon. Tavara
   // liu'utetaan niiden valilla, jolloin se pysyy kadessa koko noston ajan.
+  //
+  // 4. (nykyinen) Mittaus toimi vain lepoasennossa, ja tavara liu'utettiin kahden
+  //    kiinteän pisteen välillä. Kävellessä käsi heilui mutta tölkki leijui paikallaan
+  //    lantion vieressä, ja nostossa käsi jäi rinnan korkeudelle. Nyt nyrkin paikka
+  //    LASKETAAN joka ruudulla samasta nivelpainotuksesta jolla näytönohjain piirtää
+  //    ihon (SkinnedMesh.boneTransform). Näin tavara on aina siellä missä näkyvä käsi on,
+  //    asennosta riippumatta. Mittauspisteet jäävät varalle, jos hahmo ei ole skinnattu.
   // ==========================================================================
-  var KASI_LEPO  = new THREE.Vector3(0.215, 0.860, 0.075);  // nyrkki vartalon sivulla
-  // Mitattu nyrkin paikka on (0,29 / 1,24 / 0,16). Tavaraa nostetaan siita
-  // viela vahan ylos ja sisaanpain, koska tolkkia pidetaan pohjasta kiinni -
-  // sen runko jaa nyrkin YLAPUOLELLE, suuta kohti.
-  var KASI_NOSTO = new THREE.Vector3(0.268, 1.308, 0.158);
-  // nostoasento: nama kolme kiertoa VIEVAT kaden yllä olevaan pisteeseen
-  var NOSTO_OLKA_X = -0.45, NOSTO_OLKA_Z = -0.45, NOSTO_KYYNAR_X = 1.60;
+  var KASI_LEPO  = new THREE.Vector3(0.215, 0.860, 0.075);  // nyrkki vartalon sivulla (vara)
+  var KASI_NOSTO = new THREE.Vector3(0.268, 1.308, 0.158);  // nyrkki suun edessä (vara)
+
+  // Asento suulla. Olkavarren ja kyynärvarren arvot ovat KOHTEITA joihin käsi liukuu
+  // kävelyn päältä (ei lisäyksiä), joten kävelyn heilahdus ei heitä kättä pois suulta.
+  // olka = [x, y, z] Euler-kulmat, z suhteessa lepoasentoon (-armRestZ). Kyynärvarren
+  // koukistus on -X. huikka = asento juonnin lopussa, kun pää on taipunut taakse.
+  // Kulmat on haettu numeerisesti hahmon omasta ihosta: nyrkki osuu tölkin keskelle
+  // alle sentin tarkkuudella, kun tölkin kansi on huulilla.
+  // akseli = tavaran pituusakseli hahmon omassa avaruudessa (hahmo katsoo +Z:aan).
+  // Olkavarteen liu'utaan kvaternioina (slerp), ei Euler-kulmina: kulmien suora sekoitus
+  // heittäisi käden kaarelle sivukautta ylös ennen kuin se löytää suun.
+  var KASI_ASENTO = {
+    megis:   {olka:[-2.29, -0.91, -1.38], kyynar:-1.87, huikkaOlka:[-2.39, -0.87, -1.22], huikkaKyynar:-1.77,
+              paaX:-0.10, juontiPaa:-0.22,
+              akseli:new THREE.Vector3(0.10, -0.12, -1), juontiKulma:0.45, suuSiirto:0.090},
+    tupakka: {olka:[-2.63, -0.75, -1.85], kyynar:-2.27, huikkaOlka:null, huikkaKyynar:-2.27,
+              paaX:0.06, juontiPaa:0.02,
+              akseli:new THREE.Vector3(0.12, -0.18, 1), juontiKulma:0, suuSiirto:0.036}
+  };
+  var _kasiQ = new THREE.Quaternion(), _kasiE = new THREE.Euler();
+  var KASI_KANTO = {heiluKerroin:0.45, kyynarLisa:-0.32};  // tavara kädessä: käsi heiluu vähemmän
 
   function kadenKiinnitys(){
     return playerVisual || player;
   }
+
+  // ---- nyrkin seuranta ihosta ----
+  // Kyynärvarren kärkipisteistä alimmat ovat nyrkki ja ylimmät kyynärpää. Kummastakin
+  // otetaan keskiarvo muutamasta pisteestä, jolloin yksittäinen kärkipiste ei nyi.
+  var kasiSeuranta = null;          // null = ei vielä etsitty, false = ei käytettävissä
+  var _ksV = new THREE.Vector3(), _ksM = new THREE.Matrix4();
+  function kasiSeurantaAlusta(){
+    if(kasiSeuranta !== null) return kasiSeuranta;
+    kasiSeuranta = false;
+    var mesh = null;
+    if(playerVisual) playerVisual.traverse(function(o){ if(!mesh && o.isSkinnedMesh) mesh = o; });
+    if(!mesh || !playerLimbs || !playerLimbs.foreR || !playerLimbs.head || typeof mesh.boneTransform !== 'function') return false;
+    var bones = mesh.skeleton.bones;
+    var bi = bones.indexOf(playerLimbs.foreR), hi = bones.indexOf(playerLimbs.head);
+    var ga = mesh.geometry.attributes;
+    var lista = [];
+    for(var i=0; i<ga.position.count; i++){
+      if(ga.skinIndex.getX(i) === bi && ga.skinWeight.getX(i) > 0.99) lista.push(i);
+    }
+    if(lista.length < 12 || hi < 0) return false;
+    lista.sort(function(a, b){ return ga.position.getY(a) - ga.position.getY(b); });
+    function harvenna(osa){
+      var ulos = [], askel = Math.max(1, Math.floor(osa.length/10));
+      for(var j=0; j<osa.length; j+=askel) ulos.push(osa[j]);
+      return ulos;
+    }
+    var face = skinnedTemplate && skinnedTemplate.face;
+    kasiSeuranta = {
+      mesh: mesh, paaLuu: hi,
+      nyrkki: harvenna(lista.slice(0, Math.max(6, Math.floor(lista.length*0.10)))),
+      kyynar: harvenna(lista.slice(Math.floor(lista.length*0.60), Math.floor(lista.length*0.80))),
+      // Suun paikka lepoasennossa mallin omassa avaruudessa; pään luu kuljettaa sitä.
+      // Hieman piirretyn suun alapuolelle ja eteen: tölkin reunus ulottuu kannen
+      // keskeltä 4 cm ylös, ja ilman siirtoa se osuisi nenään.
+      suu: face ? new THREE.Vector3(0, face.mouthY - 0.012, face.mouthZ + 0.025) : null
+    };
+    return kasiSeuranta;
+  }
+  // kärkipisteiden keskiarvo kiinnitysryhmän (playerVisual) avaruudessa
+  function kasiPisteet(s, lista, ulos, kohde){
+    ulos.set(0, 0, 0);
+    for(var i=0; i<lista.length; i++){ s.mesh.boneTransform(lista[i], _ksV); ulos.add(_ksV); }
+    ulos.multiplyScalar(1/lista.length);
+    s.mesh.localToWorld(ulos);
+    return kohde.worldToLocal(ulos);
+  }
+  // Suun paikka: lasketaan kuin pään luuhun täysin sidottu kärkipiste.
+  function suunPaikka(s, ulos, kohde){
+    var luu = s.mesh.skeleton.bones[s.paaLuu];
+    _ksM.multiplyMatrices(luu.matrixWorld, s.mesh.skeleton.boneInverses[s.paaLuu]);
+    ulos.copy(s.suu).applyMatrix4(s.mesh.bindMatrix).applyMatrix4(_ksM).applyMatrix4(s.mesh.bindMatrixInverse);
+    s.mesh.localToWorld(ulos);
+    return kohde.worldToLocal(ulos);
+  }
+
   function luoKateen(laji){
     var ryhma = new THREE.Group();
     if(laji === 'tupakka'){
       var t = propMalli('tupakka');
       if(t){
         t.scale.setScalar(0.085);               // n. 8,5 cm pitkä savuke
-        // perusasento asetetaan joka ruudulla paivitaKasiKasissa
+        // Ryhmän +Y on aina tavaran pituusakseli: savukkeen malli käännetään niin,
+        // että sen pisin sivu osoittaa ylös, ja asento annetaan ryhmälle.
+        var mt = propValmiit.tupakka && propValmiit.tupakka.mitat;
+        if(mt && mt.x >= mt.y && mt.x >= mt.z) t.rotation.z = Math.PI/2;
+        else if(mt && mt.z >= mt.y && mt.z >= mt.x) t.rotation.x = -Math.PI/2;
         ryhma.add(t);
       } else {
         // varamalli jos GLB ei latautunut
         var sylinteri = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.08, 6),
           new THREE.MeshStandardMaterial({color:0xf2efe6, roughness:0.9}));
-        sylinteri.rotation.z = Math.PI/2;
         ryhma.add(sylinteri);
       }
     } else {
@@ -20879,7 +21526,10 @@
       if(tupakka) tupakkaBuff = Math.max(tupakkaBuff, 18 + k.vetoja*8);
       else megisBuff = Math.max(megisBuff, 20 + k.vetoja*12);
     }
-    paivitaKasiKasi(k);
+    // Kävellessä asento on jo asetettu tällä ruudulla kävelyanimaation jälkeen. Toinen
+    // kutsu lisäisi kannon kulmat kahteen kertaan, joten se tehdään vain muissa tiloissa.
+    if(!k.asetettu) paivitaKasiKasi(k);
+    k.asetettu = false;
   }
 
   // Käden nosto suulle. Kiertokulmat lisätään kävelyanimaation PÄÄLLE, joten
@@ -20898,29 +21548,80 @@
     if(k.vaihe === 'lasku') return Math.max(0, 1 - k.vaiheT / nostoKesto);
     return 0;
   }
+  // Huikan eteneminen suulla 0..1: tölkki kallistuu ja pää taipuu taakse vähitellen,
+  // ei kerralla - juuri se tekee juomisesta juomisen näköistä.
+  function juontiOsuus(k){
+    if(k.vaihe !== 'suulla') return (k.vaihe === 'lasku') ? Math.max(0, 1 - k.vaiheT/0.42) : 0;
+    var q = Math.min(1, k.vaiheT/0.55);
+    return q*q*(3 - 2*q);
+  }
+  var _kkN = new THREE.Vector3(), _kkK = new THREE.Vector3(), _kkS = new THREE.Vector3();
+  var _kkA = new THREE.Vector3(), _kkF = new THREE.Vector3(), _kkY = new THREE.Vector3(0, 1, 0);
+  var _kkEteen = new THREE.Vector3(0, 0, 1);
   function paivitaKasiKasi(k){
     var p = nostoOsuus(k);
     var pehmea = p*p*(3 - 2*p);                       // pehmeä kiihdytys ja jarrutus
-    if(playerLimbs && playerLimbs.armR){
-      playerLimbs.armR.rotation.x += NOSTO_OLKA_X*pehmea;
-      playerLimbs.armR.rotation.z += NOSTO_OLKA_Z*pehmea;
-      if(playerLimbs.foreR) playerLimbs.foreR.rotation.x += NOSTO_KYYNAR_X*pehmea;
-      // Pää kallistuu tavaraa kohti. Käsi ei yllä aivan huulille, joten loppu
-      // matkasta tehdään päällä - juuri niin kuin oikeakin ihminen tekee.
-      if(playerLimbs.head){
-        playerLimbs.head.rotation.x += 0.30*pehmea;
-        playerLimbs.head.rotation.z += -0.16*pehmea;
+    var as = KASI_ASENTO[k.laji] || KASI_ASENTO.megis;
+    var jq = juontiOsuus(k) * pehmea;
+    var L = playerLimbs;
+    if(L && L.armR){
+      // Tavara kädessä: käsi heiluu vähemmän ja kyynärpää on hieman koukussa, kuin
+      // tölkkiä tai tupakkaa kannettaisiin varoen.
+      L.armR.rotation.x *= KASI_KANTO.heiluKerroin;
+      if(L.foreR) L.foreR.rotation.x += KASI_KANTO.kyynarLisa;
+      // Nosto: käsi liukuu kävelyasennosta suun eteen. Juodessa kyynärpää nousee vielä
+      // vähän, jotta tölkin pohja kallistuu ylös.
+      if(pehmea > 0){
+        var o = as.olka, h = as.huikkaOlka || o;
+        _kasiE.set(o[0] + (h[0] - o[0])*jq, o[1] + (h[1] - o[1])*jq, -armRestZ + o[2] + (h[2] - o[2])*jq);
+        _kasiQ.setFromEuler(_kasiE);
+        L.armR.quaternion.slerp(_kasiQ, pehmea);
+      }
+      var kyynarKohde = as.kyynar + (as.huikkaKyynar - as.kyynar)*jq;
+      if(L.foreR) L.foreR.rotation.x += (kyynarKohde - L.foreR.rotation.x)*pehmea;
+      // Pää tulee tavaraa vastaan; juodessa se taipuu taakse huikan mukana.
+      if(L.head){
+        L.head.rotation.x += as.paaX*pehmea + as.juontiPaa*jq;
+        L.head.rotation.y *= (1 - pehmea*0.8);        // katse suoraan eteen, ei harhaile
       }
     }
     if(!k.malli) return;
-    k.malli.position.lerpVectors(KASI_LEPO, KASI_NOSTO, pehmea);
-    // tölkki kallistuu suuta kohti, tupakka kääntyy sormien välissä
-    if(k.laji === 'megis'){
-      // Loiva kallistus suuta kohti. Iso kulma sai tolkin nayttamaan silta
-      // kuin sisalto kaadettaisiin maahan.
-      k.malli.rotation.set(0.18*pehmea, 0, -0.62*pehmea);
-    } else {
-      k.malli.rotation.set(0, 0, Math.PI/2 - 0.55*pehmea);
+    var kohde = kadenKiinnitys();
+    var s = kasiSeurantaAlusta();
+    if(!s){
+      // varatapa: vanhat mitatut pisteet
+      k.malli.position.lerpVectors(KASI_LEPO, KASI_NOSTO, pehmea);
+      k.malli.quaternion.setFromUnitVectors(_kkY, _kkA.copy(_kkY).lerp(as.akseli, pehmea).normalize());
+      return;
+    }
+    // luiden uudet kulmat maailmamatriiseihin ennen kuin ihoa luetaan
+    player.updateMatrixWorld(true);
+    kasiPisteet(s, s.nyrkki, _kkN, kohde);
+    kasiPisteet(s, s.kyynar, _kkK, kohde);
+    _kkF.subVectors(_kkN, _kkK).normalize();          // kyynärvarren suunta, kohti nyrkkiä
+    // Kantoasento: tölkki pysyy lähes pystyssä ja kallistuu vain osittain käden mukana
+    // (muuten se kääntyisi vaakaan hölkässä, kun kyynärpää on koukussa). Tupakka
+    // sormien välissä eteenpäin, akseli kiertyy käden mukana.
+    if(k.laji === 'megis') _kkA.copy(_kkF).multiplyScalar(-0.45).add(_kkY).addScaledVector(_kkEteen, 0.15).normalize();
+    else _kkA.copy(_kkEteen).addScaledVector(_kkF, -_kkF.dot(_kkEteen)).addScaledVector(_kkF, 0.25).normalize();
+    // Suulla: kiinteä akseli suuta kohti, ja juodessa tölkki kallistuu lisää.
+    _kkS.copy(as.akseli).normalize();
+    if(as.juontiKulma > 0){
+      _kkS.y -= Math.sin(as.juontiKulma*jq)*0.9;
+      _kkS.normalize();
+    }
+    _kkA.lerp(_kkS, pehmea).normalize();
+    k.malli.quaternion.setFromUnitVectors(_kkY, _kkA);
+    // Paikka: nyrkissä kantaessa. Suulla tavaran pää viedään huulille - käsi on
+    // jo lähes siellä, joten loppusiirto on pieni eikä tavara irtoa kädestä.
+    var kantoSiirto = (k.laji === 'megis') ? 0.0 : 0.035;
+    k.malli.position.copy(_kkN).addScaledVector(_kkA, kantoSiirto);
+    if(s.suu && pehmea > 0){
+      suunPaikka(s, _kkS, kohde);
+      // megis: tölkin kansi huulilla, runko suun edessä. tupakka: suodatin huulilla.
+      var suulla = _kkS.addScaledVector(_kkA, (k.laji === 'megis') ? -as.suuSiirto : as.suuSiirto);
+      var veto = pehmea*pehmea;
+      k.malli.position.lerp(suulla, veto);
     }
   }
   // tupakan veto: lyhyt hiljainen kohina, kuin ilmaa imettäisiin suodattimen läpi
@@ -25326,6 +26027,25 @@
     mopoAsennaKannettu();
     return true;
   }
+  // Vihjerivin teksti kannetulle osalle, moottorille ja hyllylta nostolle - samassa
+  // jarjestyksessa kuin handleInteract ne kasittelee. null = ei tallin osatyota.
+  function tallinOsaVihje(){
+    if(inStore || mode === 'riding') return null;
+    if(typeof wrenchMode !== 'undefined' && wrenchMode) return null;
+    if(moottoriKadessa){
+      return mopoLahella()
+        ? 'Paina <b>E</b>: asenna moottori mopon runkoon'
+        : 'Kannat moottoria · vie se mopon runkoon, tai <b>E</b> laskee sen pukille';
+    }
+    if(engineCarry) return null;   // moottorin osan kanto: engineAction hoitaa vihjeen
+    var a = mopoOsaAction();
+    if(!a) return null;
+    var p = partById(a.partId);
+    var nimi = p ? p.name : 'Osa';
+    if(a.tyyppi === 'nosta') return 'Paina <b>E</b>: nosta ' + nimi.toLowerCase() + ' hyllyltä';
+    if(a.tyyppi === 'asenna') return 'Paina <b>E</b>: asenna ' + nimi.toLowerCase() + ' mopoon';
+    return 'Kannat osaa: ' + nimi + ' · vie se mopolle, tai <b>E</b> laskee sen hyllylle';
+  }
 
   // ==========================================================================
   // ---- HUOLTOLISTA SEINALLA ----
@@ -26022,6 +26742,7 @@
       if(inStore && clampInsideRoom(player.position)){
         if(indoorPlace === 'kauppa') exitStore();
         else if(indoorPlace === 'koti') exitHome();
+        else if(indoorPlace === 'kasino') exitKasino();
       }
       // inStore: ison kaupan sisätila ei ole osa oikeaa mäkistä maastoa (ks. selitys kauppaSisaOrigin-
       // kohdalla) - lattia on kiinteästi tasainen 0, muuten pelaaja "keinuisi" sisätilan ulkopuolisen
@@ -26042,22 +26763,27 @@
       // askelparia kohden, ja lantio ja hartiat kiertyvat vastakkain.
       var prevWalkPhase = playerWalkTime;
       var askelVauhti = Math.min(1, liikeLen);
-      playerWalkTime += dt*7.2*askelVauhti;
+      // Rytmi todellisesta nopeudesta, jotta askel pysyy maassa eikä luista. Taaksepäin
+      // ei hölkätä: peruutus pysyy kävelynä, vaikka vauhti on sama.
+      var askelV = liikeNopeus*askelVauhti;
+      var lajiTavoite = askelLajiNopeudelle(askelV) * (moveDir < 0 ? 0.35 : 1);
+      if(askelVauhti > 0.01) gaitBlend += (lajiTavoite - gaitBlend)*Math.min(1, dt*4);
+      playerWalkTime += dt*Math.PI*2*askelRytmi(askelV, gaitBlend)*askelVauhti;
       var walkAmountTarget = (askelVauhti > 0.01) ? 1 : 0;
       playerWalkAmount += (walkAmountTarget-playerWalkAmount) * (1-Math.pow(0.001,dt));
       var wA = playerWalkAmount, wPh = playerWalkTime;
-      applyWalkLimbs(wPh, wA, (moveDir < 0) ? -1 : 1);
+      var askelSuunta = (moveDir < 0) ? -1 : 1;
+      applyWalkLimbs(wPh, wA, askelSuunta);
       // Lepoanimaatio: voimistuu sitä mukaa kun kävely hiipuu, jolloin hahmo ei jähmety
       // patsaaksi sillä sekunnilla kun näppäin päästetään irti.
       updateIdlePose(dt, 1 - wA, playerLimbs);
-      applyWalkTwist(wPh, wA);
+      applyWalkTwist(wPh, wA, askelSuunta);
       // tupakan/tölkin nosto suulle tulee kävelyn päälle, ei sen tilalle
-      if(kadessa) paivitaKasiKasi(kadessa);
+      if(kadessa){ paivitaKasiKasi(kadessa); kadessa.asetettu = true; }
       updateBlink(dt, playerLimbs);
       // Kyparanakyman katemalli asetetaan vasta kameran jalkeen (ks. silmukan loppu).
-      // Askelaani kantaiskussa: vaiheet pi/2 ja 3pi/2. Siirretaan vaihetta neljanneksella,
-      // jolloin kokonaisluvun ylitys osuu juuri kantaiskuun.
-      if(wA > 0.35 && Math.floor((wPh - Math.PI/2)/Math.PI) !== Math.floor((prevWalkPhase - Math.PI/2)/Math.PI)) playFootstep();
+      // Askelaani kantaiskussa: kumpikin jalka osuu maahan syklin alussa (u = 0 ja u = 0,5).
+      if(wA > 0.35 && Math.floor(wPh/Math.PI) !== Math.floor(prevWalkPhase/Math.PI)) playFootstep();
 
       // kolmas persoona: kamera leijuu pelaajan takana samaan tapaan kuin ajaessakin
       updateCamOffsets(dt, moveDir !== 0);
@@ -26197,6 +26923,9 @@
         nearGarageBench = Math.sqrt(dgbx*dgbx+dgbz*dgbz) <= autotalliRadius;
       }
       var engAct = (typeof engineAction === 'function') ? engineAction() : null;
+      var osaVihje = (typeof tallinOsaVihje === 'function') ? tallinOsaVihje() : null;
+      var moottoriNostoVihje = !osaVihje && !engAct &&
+        typeof moottoriNostettavissa === 'function' && moottoriNostettavissa();
 
       // hitsauspiste ja bensapumppu: omat vihjeensä, tarkistetaan ennen työpaikkoja koska
       // molemmat sijaitsevat saman työpaikan (romuttamo / huoltoasema) alueen sisällä
@@ -26223,6 +26952,9 @@
         mountHintEl.innerHTML = fuel >= 99.5
           ? 'Tankki on täynnä'
           : 'Paina <b>R</b> tai <b>E</b> tankataksesi · tankissa <b>' + Math.round(fuel) + ' %</b>';
+      } else if(osaVihje){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = osaVihje;
       } else if(engAct){
         mountHintEl.hidden = false;
         if(engAct.tyyppi === 'nosta'){
@@ -26233,6 +26965,9 @@
         } else {
           mountHintEl.innerHTML = 'Kannat osaa: ' + engAct.osa.nimi + ' · vie se moottoripukille, tai <b>E</b> laskee sen poydalle';
         }
+      } else if(moottoriNostoVihje){
+        mountHintEl.hidden = false;
+        mountHintEl.innerHTML = 'Paina <b>E</b>: nosta kasattu moottori pukilta';
       } else if(nearGarageBench){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = garageShelf.length
@@ -26250,7 +26985,7 @@
         else if(mopedDead()) mountHintEl.innerHTML = 'Mopo ei käy - paina <b>E</b> työntääksesi se kotiin' + (breakdown && breakdownKindById(breakdown.kind).tarvike && spareCount(breakdownKindById(breakdown.kind).tarvike) > 0 ? ' tai <b>G</b> korjataksesi' : '');
         else mountHintEl.innerHTML = mopedAssembled()
           ? ('Paina <b>E</b> noustaksesi mopoon' + ((brokenTyre && spareCount('paikkaussarja') > 0) ? ' · <b>G</b> paikkaa rengas' : ''))
-          : 'Mopo on osina (' + installedCount() + '/' + parts.length + ') - kasaa se työpöydällä';
+          : 'Mopo on osina (' + installedCount() + '/' + parts.length + ') - kasaa moottori työpöydällä ja hae osat hyllyltä';
       } else if(!inStore && pillionCandidate()){
         mountHintEl.hidden = false;
         mountHintEl.innerHTML = 'Paina <b>E</b> noustaksesi kaverin tarakalle';
